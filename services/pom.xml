@@ -5,7 +5,7 @@
 	<modelVersion>4.0.0</modelVersion>
 
 	<parent>
-		<groupId>org.vietnamsea</groupId>
+		<groupId>org.retrade</groupId>
 		<artifactId>serve-monorepo</artifactId>
 		<version>0.0.0</version>
 		<relativePath>../pom.xml</relativePath>
@@ -77,10 +77,8 @@
 		<module>authentication</module>
 		<module>user</module>
 		<module>account</module>
-		<module>partner</module>
 		<module>gateway</module>
 		<module>feedback-notification</module>
-		<module>booking-payment</module>
 	</modules>
 
 	<build>
