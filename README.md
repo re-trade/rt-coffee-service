@@ -1,7 +1,7 @@
 # Vietnam Sea Monorepo Main Backend  
 
 ## Overview  
-This is the main backend service for the **Vietnam Sea (VNS)** monorepo project. It provides essential APIs and functionality to support the ecosystem of VNS, including services for user management, booking, payments, and more.  
+This is the main backend service for the **Re Trade (RT)** monorepo project. It provides essential APIs and functionality to support the ecosystem of RT, including services for user management, products, payments, and more.  
 
 ## Contributors  
 - [@AnataAria](https://github.com/AnataAria)  
@@ -25,8 +25,8 @@ Before starting development, ensure you have the following installed and running
 
 ### 1. Clone the Repository  
 ```bash  
-git clone https://github.com/vietnam-sea/sea-coffee-service.git  
-cd sea-coffee-service
+git clone https://github.com/re-trade/rt-coffee-service.git  
+cd rt-coffee-service
 ```
 ### 2. Build The Application (Remember your dev device should have maven installed or using maven wrapper)
 ```bash
@@ -43,7 +43,7 @@ Steps
 - Add value into it
 - Run docker compose dev
 ```bash
-docker compose -f docker-compose.dev.yaml up -d 
+docker compose -f ./docker/compose.local.yaml -p retrade-services --env-file .env up -d 
 ```
 ### 5. Enjoy and began to code
 
