@@ -1,0 +1,64 @@
+services:
+  authentication-services:
+    image: ${REGISTRY}/sea-authentication-service:latest
+    build:
+      context: ..
+      dockerfile: services/authentication/Dockerfile
+    profiles:
+      - backend
+      - build
+      - authentication
+  account-services:
+    image: ${REGISTRY}/sea-account-service:latest
+    build:
+      context: ..
+      dockerfile: services/account/Dockerfile
+    profiles:
+      - backend
+      - build
+      - account
+  booking-payment-services:
+    image: ${REGISTRY}/sea-booking-payment-service:latest
+    build:
+      context: ..
+      dockerfile: services/booking-payment/Dockerfile
+    profiles:
+      - backend
+      - build
+      - booking-payment
+  feedback-notification-services:
+    image: ${REGISTRY}/sea-feedback-notification-service:latest
+    build:
+      context: ..
+      dockerfile: services/feedback-notification/Dockerfile
+    profiles:
+      - backend
+      - build
+      - feedback-notification
+  partner-services:
+    image: ${REGISTRY}/partner-service:latest
+    build:
+      context: ..
+      dockerfile: services/partner/Dockerfile
+    profiles:
+      - backend
+      - build
+      - partner
+  user-services:
+    image: ${REGISTRY}/user-service:latest
+    build:
+      context: ..
+      dockerfile: services/user/Dockerfile
+    profiles:
+      - backend
+      - build
+      - user
+  gateway-services:
+    image: ${REGISTRY}/gateway-service:latest
+    build:
+      context: ..
+      dockerfile: services/gateway/Dockerfile
+    profiles:
+      - backend
+      - build
+      - gateway
