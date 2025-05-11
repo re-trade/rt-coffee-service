@@ -4,17 +4,15 @@
 	<modelVersion>4.0.0</modelVersion>
 
 	<parent>
-        <groupId>org.vietnamsea</groupId>
+        <groupId>org.retrade</groupId>
 		<artifactId>services</artifactId>
 		<version>0.0.0</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
-
-	<groupId>org.vietnamsea</groupId>
 	<artifactId>feedback-notification</artifactId>
 	<version>0.0.0</version>
 	<name>feedback-notification</name>
-	<description>Backend Feedback Notification Service for Vietnam Sea</description>
+	<description>Backend Feedback Notification Service for ReTrade</description>
     <dependencies>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>

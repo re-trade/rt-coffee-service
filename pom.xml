@@ -37,7 +37,7 @@
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 
-	<groupId>org.vietnamsea</groupId>
+	<groupId>org.retrade</groupId>
 	<artifactId>serve-monorepo</artifactId>
 	<version>0.0.0</version>
 	<name>serve-monorepo</name>

@@ -4,7 +4,7 @@
 	<modelVersion>4.0.0</modelVersion>
 
 	<parent>
-        <groupId>org.vietnamsea</groupId>
+        <groupId>org.retrade</groupId>
 		<artifactId>services</artifactId>
 		<version>0.0.0</version>
         <relativePath>../pom.xml</relativePath>
@@ -12,7 +12,7 @@
 	<artifactId>user</artifactId>
 	<version>0.0.0</version>
 	<name>user</name>
-	<description>Backend User Service for Vietnam Sea</description>
+	<description>Backend User Service for ReTrade Service</description>
     <dependencies>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>

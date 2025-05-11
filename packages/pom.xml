@@ -4,7 +4,7 @@
 	<modelVersion>4.0.0</modelVersion>
 
 	<parent>
-        <groupId>org.vietnamsea</groupId>
+        <groupId>org.retrade</groupId>
 		<artifactId>serve-monorepo</artifactId>
 		<version>0.0.0</version>
         <relativePath>../pom.xml</relativePath>
@@ -13,7 +13,7 @@
 	<artifactId>packages</artifactId>
 	<version>0.0.0</version>
 	<name>packages</name>
-	<description>Backend monorepo for Vietnam Sea</description>
+	<description>Backend monorepo for ReTrade</description>
 
     <packaging>pom</packaging>
 
