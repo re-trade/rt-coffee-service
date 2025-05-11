@@ -1,4 +1,4 @@
-# Vietnam Sea Monorepo Main Backend  
+# Re Trade Monorepo Main Backend  
 
 ## Overview  
 This is the main backend service for the **Re Trade (RT)** monorepo project. It provides essential APIs and functionality to support the ecosystem of RT, including services for user management, products, payments, and more.  
