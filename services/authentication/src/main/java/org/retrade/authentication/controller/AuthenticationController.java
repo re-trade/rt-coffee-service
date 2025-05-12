@@ -3,13 +3,13 @@ package org.retrade.authentication.controller;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
 import org.retrade.authentication.model.dto.request.AuthenticationRequest;
 import org.retrade.authentication.model.dto.request.ExternalCustomerAccountAuthRequest;
 import org.retrade.authentication.model.dto.response.AuthResponse;
 import org.retrade.authentication.service.AuthService;
 import org.retrade.common.model.dto.response.ResponseObject;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
 import java.awt.image.BufferedImage;
 
@@ -20,7 +20,7 @@ public class AuthenticationController {
     private final AuthService authService;
 
     @PostMapping("register/2fa")
-    public ResponseEntity<BufferedImage> signupTwoFactorAuth (@RequestParam(name = "width", value = "300") int width,@RequestParam(name = "height", value = "300") int height) {
+    public ResponseEntity<BufferedImage> signupTwoFactorAuth (@RequestParam(name = "width", defaultValue = "300") int width,@RequestParam(name = "height", defaultValue = "300") int height) {
         var result = authService.register2FaAuthentication(width, height);
         return ResponseEntity.ok(result);
     }

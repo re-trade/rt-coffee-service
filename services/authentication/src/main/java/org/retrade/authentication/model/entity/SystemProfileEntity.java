@@ -6,6 +6,6 @@ import org.springframework.data.mongodb.core.mapping.FieldType;
 
 @Data
 public class SystemProfileEntity {
-    @Field(name = "full_name", targetType = FieldType.STRING)
+    @Field(value = "full_name", targetType = FieldType.STRING)
     private String fullName;
 }

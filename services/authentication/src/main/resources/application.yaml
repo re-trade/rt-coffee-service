@@ -1,6 +1,8 @@
 spring:
   application:
-      name: Auth Service
+    name: Auth Service
+  config:
+    import: "optional:consul:"
   cloud:
     consul:
       host: ${CONSUL_HOST:localhost}
@@ -12,11 +14,15 @@ spring:
         health-check-interval: 10s
         instance-id: authentication-service
         health-check-path: /actuator/health
+  grpc:
+    server:
+      enabled: true
+      port: ${GRPC_PORT:9080}
   data:
     mongodb:
-      database: ${MONGO_DB:vns}
+      database: ${MONGO_DB:retrade}
       host: ${MONGO_HOST:localhost}
-      username: ${MONGO_USER:root} 
+      username: ${MONGO_USER:root}
       password: ${MONGO_PASS:example}
       port: 27017
       authentication-database: admin
@@ -28,20 +34,28 @@ spring:
     multipart:
       max-file-size: 10MB
       max-request-size: 10MB
-
 server:
   port: ${PORT:8081}
 
-grpc:
+security:
+  token:
+      jwt:
+        access-token:
+          key: ${JWT_ACCESS_KEY}
+          max-age: ${JWT_ACCESS_EX:3000}
+        refresh-token:
+          key: ${JWT_REFRESH_KEY}
+          max-age: ${JWT_REFRESH_EX:8000}
+        twofa-token:
+          key: ${JWT_2FA_KEY}
+          max-age: ${JWT_2FA_EX:3000}
+  host:
+    origin-allows: ${ORIGIN_ALLOWS:}
+    base-host: ${BASE_HOST:}
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
   server:
-    port: ${GRPC_PORT:9081}
-
-
-token:
-  jwt:
-    access-token:
-      key: ${JWT_ACCESS_KEY}
-      ex-time: ${JWT_ACCESS_EX}
-    refresh-token:
-      key: ${JWT_REFRESH_KEY}
-      ex-time: ${JWT_REFRESH_EX}
+    port: 8081

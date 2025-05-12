@@ -1,17 +1,18 @@
 package org.retrade.authentication.config;
 
 import lombok.RequiredArgsConstructor;
+import org.retrade.authentication.security.CustomAuthenticationEntryPoint;
+import org.retrade.authentication.security.JwtAuthenticationFilter;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.annotation.Order;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
-import org.retrade.authentication.security.CustomAuthenticationEntryPoint;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
 @EnableWebSecurity
@@ -20,8 +21,8 @@ import org.retrade.authentication.security.CustomAuthenticationEntryPoint;
 public class SecurityConfig {
     @Qualifier("customAuthenticationEntryPoint")
     private final CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
+    private final JwtAuthenticationFilter jwtAuthenticationFilter;
     @Bean
-    @Order(1)
     SecurityFilterChain authenticationFilterChain (HttpSecurity http) throws Exception {
         http.csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests((auth) -> {
@@ -29,11 +30,13 @@ public class SecurityConfig {
                            "/registers/**",
                            "/passwords/**",
                            "/pings/**")
-                           .permitAll().anyRequest().authenticated();
+                           .permitAll()
+                           .anyRequest().authenticated();
                 }).exceptionHandling(exception -> {
                     exception.authenticationEntryPoint(customAuthenticationEntryPoint);
                 })
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .addFilterBefore(this.jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
 }

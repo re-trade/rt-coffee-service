@@ -9,15 +9,15 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.stereotype.Service;
+import org.retrade.authentication.config.HostConfig;
 import org.retrade.authentication.config.JwtConfig;
 import org.retrade.authentication.model.constant.JwtTokenType;
 import org.retrade.authentication.model.other.UserClaims;
 import org.retrade.authentication.service.JwtService;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
 import java.sql.Date;
@@ -30,8 +30,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class JwtServiceImpl implements JwtService {
     private final JwtConfig jwtTokenConfig;
-    @Value(value = "${base-urls.root-host}")
-    private String hostUrl;
+    private final HostConfig hostConfig;
     @Override
     public String generateToken(Authentication authentication, JwtTokenType tokenType) {
         UserDetails user = (UserDetails) authentication.getPrincipal();
@@ -49,11 +48,11 @@ public class JwtServiceImpl implements JwtService {
         Date currentDate = new Date(System.currentTimeMillis());
         Date expiryDate = null;
         if(tokenType == JwtTokenType.ACCESS_TOKEN) {
-            expiryDate = new Date(currentDate.getTime() + jwtTokenConfig.getJwtExpiration());
+            expiryDate = new Date(currentDate.getTime() + jwtTokenConfig.getAccessToken().getMaxAge());
         }else if (tokenType == JwtTokenType.REFRESH_TOKEN) {
-            expiryDate = new Date(currentDate.getTime() + jwtTokenConfig.getJwtRefreshExpiration());
+            expiryDate = new Date(currentDate.getTime() + jwtTokenConfig.getRefreshToken().getMaxAge());
         }else if (tokenType == JwtTokenType.TWO_FA_TOKEN) {
-            expiryDate = new Date(currentDate.getTime() + jwtTokenConfig.getJwtTwo2FATokenExpiration());
+            expiryDate = new Date(currentDate.getTime() + jwtTokenConfig.getTwofaToken().getMaxAge());
         }
         return Jwts.builder()
                 .setSubject(username)
@@ -73,9 +72,9 @@ public class JwtServiceImpl implements JwtService {
     }
     private SecretKey getSigningKey(JwtTokenType tokenType) {
         String secretKey = switch (tokenType) {
-            case ACCESS_TOKEN -> jwtTokenConfig.getJwtSecret();
-            case REFRESH_TOKEN -> jwtTokenConfig.getJwtRefreshSecret();
-            case TWO_FA_TOKEN -> jwtTokenConfig.getJwtTwo2FASecret();
+            case ACCESS_TOKEN -> jwtTokenConfig.getAccessToken().getKey();
+            case REFRESH_TOKEN -> jwtTokenConfig.getRefreshToken().getKey();
+            case TWO_FA_TOKEN -> jwtTokenConfig.getTwofaToken().getKey();
         };
         return Keys.hmacShaKeyFor(Decoders.BASE64.decode(secretKey));
     }
@@ -104,9 +103,9 @@ public class JwtServiceImpl implements JwtService {
     @Override
     public Cookie tokenCookieWarp(String token, JwtTokenType tokenType) {
         long jwtEx = switch (tokenType) {
-            case ACCESS_TOKEN -> jwtTokenConfig.getJwtExpiration();
-            case REFRESH_TOKEN -> jwtTokenConfig.getJwtRefreshExpiration();
-            case TWO_FA_TOKEN -> jwtTokenConfig.getJwtTwo2FATokenExpiration();
+            case ACCESS_TOKEN -> jwtTokenConfig.getAccessToken().getMaxAge();
+            case REFRESH_TOKEN -> jwtTokenConfig.getRefreshToken().getMaxAge();
+            case TWO_FA_TOKEN -> jwtTokenConfig.getTwofaToken().getMaxAge();
         };
 
         var cookie = new Cookie(tokenType.toString(), token);
@@ -115,8 +114,8 @@ public class JwtServiceImpl implements JwtService {
         cookie.setSecure(true);
         cookie.setMaxAge((int) (jwtEx));
         cookie.setAttribute("SameSite", "None");
-        if (!hostUrl.isEmpty()) {
-            cookie.setDomain(hostUrl);
+        if (!hostConfig.getBaseHost().isEmpty()) {
+            cookie.setDomain(hostConfig.getBaseHost());
         }
         return cookie;
     }
@@ -140,8 +139,8 @@ public class JwtServiceImpl implements JwtService {
         cookie.setHttpOnly(true);
         cookie.setSecure(true);
         cookie.setAttribute("SameSite", "None");
-        if (!hostUrl.isEmpty()) {
-            cookie.setDomain(hostUrl);
+        if (!hostConfig.getBaseHost().isEmpty()) {
+            cookie.setDomain(hostConfig.getBaseHost());
         }
         response.addCookie(cookie);
     }
