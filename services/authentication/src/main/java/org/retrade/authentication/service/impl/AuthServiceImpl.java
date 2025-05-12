@@ -2,12 +2,6 @@ package org.retrade.authentication.service.impl;
 
 import jakarta.servlet.http.Cookie;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.stereotype.Service;
 import org.retrade.authentication.model.constant.JwtTokenType;
 import org.retrade.authentication.model.dto.request.AuthenticationRequest;
 import org.retrade.authentication.model.dto.response.AuthResponse;
@@ -18,6 +12,12 @@ import org.retrade.authentication.util.AuthUtils;
 import org.retrade.authentication.util.QRUtils;
 import org.retrade.authentication.util.TokenUtils;
 import org.retrade.common.model.exception.ValidationException;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Service;
 
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
@@ -83,15 +83,13 @@ public class AuthServiceImpl implements AuthService {
     }
     
     @Override
-    public void verify2FaAuthentication(String totp) {
+    public boolean verify2FaAuthentication(String totp) {
         var account = authUtils.getUserAccountFromAuthentication();
         if (!account.isUsing2FA()) {
             account.setUsing2FA(true);
             accountRepository.save(account);
         }
         var totpSystem = TokenUtils.getTOTPCode(account.getSecret());
-        if (!totpSystem.equals(totp)) {
-            throw new ValidationException("Invalid OTP");
-        }
+        return totpSystem.equals(totp);
     }
 }

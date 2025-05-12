@@ -15,5 +15,5 @@ public interface AuthService {
 
     BufferedImage register2FaAuthentication(int width, int height);
 
-    void verify2FaAuthentication(String totp);
+    boolean verify2FaAuthentication(String totp);
 }

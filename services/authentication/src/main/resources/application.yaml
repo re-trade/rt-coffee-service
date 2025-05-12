@@ -35,7 +35,9 @@ spring:
       max-file-size: 10MB
       max-request-size: 10MB
 server:
-  port: ${PORT:8081}
+  port: ${PORT:8080}
+  servlet:
+    context-path: /api/v1
 
 security:
   token:
@@ -52,10 +54,21 @@ security:
   host:
     origin-allows: ${ORIGIN_ALLOWS:}
     base-host: ${BASE_HOST:}
+
 management:
   endpoints:
     web:
       exposure:
         include: health,info
-  server:
-    port: 8081
+
+springdoc:
+  api-docs:
+    enabled: true
+    path: /api-docs
+  swagger-ui:
+    enabled: true
+    try-it-out-enabled: true
+    operations-sorter: method
+    tags-sorter: alpha
+    filter: true
+    path: /swagger-ui

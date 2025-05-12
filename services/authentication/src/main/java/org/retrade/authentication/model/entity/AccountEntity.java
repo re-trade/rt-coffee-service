@@ -4,12 +4,14 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
+import org.retrade.authentication.model.constant.AuthType;
+import org.retrade.common.model.entity.BaseMongoEntity;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 import org.springframework.data.mongodb.core.mapping.FieldType;
-import org.retrade.authentication.model.constant.AuthType;
-import org.retrade.common.model.entity.BaseMongoEntity;
+
+import java.util.Set;
 
 @Getter
 @Setter
@@ -41,4 +43,8 @@ public class AccountEntity extends BaseMongoEntity {
     private PartnerProfileEntity partnerProfile;
     @Field(value = "system_profile")
     private SystemProfileEntity systemProfile;
+    @Field(value = "login_sessions")
+    private Set<LoginSessionEntity> loginSessions;
+    @Field(value = "third_party_auths")
+    private Set<ThirdPartyAuthEntity> thirdPartyAuths;
 }

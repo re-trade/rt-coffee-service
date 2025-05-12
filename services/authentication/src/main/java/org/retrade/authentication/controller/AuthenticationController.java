@@ -12,6 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.awt.image.BufferedImage;
+import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
@@ -24,7 +25,16 @@ public class AuthenticationController {
         var result = authService.register2FaAuthentication(width, height);
         return ResponseEntity.ok(result);
     }
-
+    @PatchMapping("2fa/verify")
+    public ResponseEntity<ResponseObject<Map<String, Boolean>>> verifyTwoFactorAuth(@RequestParam(name = "code", defaultValue = "") String code) {
+        var result = authService.verify2FaAuthentication(code);
+        return ResponseEntity.ok(new ResponseObject.Builder<Map<String, Boolean>>()
+                        .success(true)
+                        .code("OTP_VALIDATE_SUCCESS")
+                        .messages("OTP_VALIDATE_SUCCESS")
+                        .content(Map.of("code", result))
+                .build());
+    }
     @PostMapping("local")
     public ResponseEntity<ResponseObject<AuthResponse>> customerAuthenticationInternal(@Valid @RequestBody AuthenticationRequest request, HttpServletResponse response) {
         var result = authService.localAuthentication(request, (cookies -> {
