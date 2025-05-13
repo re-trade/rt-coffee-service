@@ -1,19 +1,30 @@
 package org.retrade.authentication.controller;
 
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.retrade.authentication.model.dto.request.CustomerAccountRegisterRequest;
+import org.retrade.authentication.model.dto.response.CustomerAccountRegisterResponse;
+import org.retrade.authentication.service.RegisterService;
+import org.retrade.common.model.dto.response.ResponseObject;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/registers")
+@RequiredArgsConstructor
 public class RegisterController {
-    @PostMapping(path = "/customers/account") /// Use For Internal Authentication Only
-    public ResponseEntity<?> customerRegisterAccount () {
-        return null;
+    private final RegisterService registerService;
+    @PostMapping(path = "/customers/account")
+    public ResponseEntity<ResponseObject<CustomerAccountRegisterResponse>> customerRegisterAccount (@Valid @RequestBody CustomerAccountRegisterRequest request) {
+        var result = registerService.customerRegister(request);
+        return ResponseEntity.ok(new ResponseObject.Builder<CustomerAccountRegisterResponse>()
+                        .success(true)
+                        .code("SUCCESS")
+                        .content(result)
+                        .messages("Create account successfully")
+                .build());
     }
-    @PutMapping(path = "/customers/profile") /// Use For Posting Updating A Profile Customer Account When Account Create Success
+    @PutMapping(path = "/customers/profile")
     public ResponseEntity<?> customerRegisterProfile () {
         return null;
     }

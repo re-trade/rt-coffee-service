@@ -22,9 +22,11 @@ public class SecurityConfig {
     @Qualifier("customAuthenticationEntryPoint")
     private final CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final CorsConfig corsConfig;
     @Bean
     SecurityFilterChain authenticationFilterChain (HttpSecurity http) throws Exception {
         http.csrf(AbstractHttpConfigurer::disable)
+                .cors(cors -> cors.configurationSource(corsConfig.corsConfigurationSource()))
                 .authorizeHttpRequests((auth) -> {
                    auth.requestMatchers("/auth/**", "/api-docs/**", "/swagger-ui/**",
                            "/registers/**",
