@@ -2,14 +2,17 @@ package org.retrade.main.grpc;
 
 import io.grpc.stub.StreamObserver;
 import lombok.RequiredArgsConstructor;
+import org.retrade.base_proto.GrpcTokenServiceGrpc;
+import org.retrade.base_proto.TokenRequest;
+import org.retrade.base_proto.TokenValidationResponse;
+import org.retrade.base_proto.UserTokenResponse;
 import org.retrade.main.model.constant.JwtTokenType;
 import org.retrade.main.model.other.UserClaims;
 import org.retrade.main.service.JwtService;
 import org.springframework.grpc.server.service.GrpcService;
-import org.vietnamsea.base_proto.GrpcTokenServiceGrpc;
-import org.vietnamsea.base_proto.TokenRequest;
-import org.vietnamsea.base_proto.TokenValidationResponse;
-import org.vietnamsea.base_proto.UserTokenResponse;
+
+import java.util.Collections;
+import java.util.Objects;
 
 @GrpcService
 @RequiredArgsConstructor
@@ -37,7 +40,7 @@ public class TokenGrpcServiceImpl extends GrpcTokenServiceGrpc.GrpcTokenServiceI
         TokenValidationResponse tokenRpcResponse = TokenValidationResponse.newBuilder()
                 .setIsValid(true)
                 .setUserInfo(UserTokenResponse.newBuilder()
-                        .addAllRoles(userClaims.getRoles())
+                        .addAllRoles(Objects.requireNonNullElse(userClaims.getRoles(), Collections.emptyList()))
                         .setUsername(userClaims.getUsername())
                         .setIsActive(true)
                         .setIsVerified(true)

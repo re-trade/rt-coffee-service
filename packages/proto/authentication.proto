@@ -1,7 +1,7 @@
 syntax = "proto3";
 option java_multiple_files = true;
-package org.vietnamsea.base_proto;
-option java_package = "org.vietnamsea.base_proto";
+package org.retrade.base_proto;
+option java_package = "org.retrade.base_proto";
 
 enum TokenType {
     ACCESS_TOKEN = 0;
@@ -14,7 +14,7 @@ message TokenRequest {
 }
 
 message UserTokenResponse {
-    int32 id = 1;
+    string id = 1;
     repeated string roles = 2;
     string username = 3;
     bool is_active = 4;
