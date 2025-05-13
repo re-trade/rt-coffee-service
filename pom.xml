@@ -51,8 +51,9 @@
         <maven.compiler.target>24</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<grpc.version>1.70.0</grpc.version>
+		<spring.version>3.4.5</spring.version>
 		<protobuf-java.version>3.25.6</protobuf-java.version>
-		<spring-grpc.version>0.6.0-SNAPSHOT</spring-grpc.version>
+		<spring-grpc.version>0.9.0-SNAPSHOT</spring-grpc.version>
 		<spring-cloud.version>2024.0.1</spring-cloud.version>
 	</properties>
 

@@ -1,0 +1,80 @@
+spring:
+  application:
+    name: Auth Service
+  config:
+    import: "optional:consul:"
+  cloud:
+    consul:
+      host: ${CONSUL_HOST:localhost}
+      port: ${CONSUL_PORT:8500}
+      discovery:
+        enabled: true
+        prefer-ip-address: true
+        service-name: main-service
+        health-check-interval: 10s
+        instance-id: main-service
+        health-check-path: /actuator/health
+      config:
+        enabled: true
+        name: auth-service
+  grpc:
+    server:
+      enabled: true
+      port: ${GRPC_PORT:9080}
+  data:
+    redis:
+      port: ${REDIS_PORT:6379}
+      host: ${REDIS_HOST:localhost}
+  datasource:
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:12345}
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+server:
+  port: ${PORT:8080}
+  servlet:
+    context-path: /api/v1
+
+security:
+  token:
+      jwt:
+        access-token:
+          key: ${JWT_ACCESS_KEY}
+          max-age: ${JWT_ACCESS_EX:3000}
+        refresh-token:
+          key: ${JWT_REFRESH_KEY}
+          max-age: ${JWT_REFRESH_EX:8000}
+        twofa-token:
+          key: ${JWT_2FA_KEY}
+          max-age: ${JWT_2FA_EX:3000}
+  host:
+    origin-allows: ${ORIGIN_ALLOWS:}
+    base-host: ${BASE_HOST:}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+springdoc:
+  api-docs:
+    enabled: true
+    path: /api-docs
+  swagger-ui:
+    enabled: true
+    try-it-out-enabled: true
+    operations-sorter: method
+    tags-sorter: alpha
+    filter: true
+    path: /swagger-ui

@@ -10,15 +10,11 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
 
-	<artifactId>gateway</artifactId>
+	<artifactId>catalog</artifactId>
 	<version>0.0.0</version>
-	<name>gateway</name>
-	<description>Backend Load Balancer for ReTrade</description>
+	<name>catalog</name>
+	<description>Backend Catalog for ReTrade</description>
 	<dependencies>
-		<dependency>
-			<groupId>org.springframework.cloud</groupId>
-			<artifactId>spring-cloud-starter-gateway</artifactId>
-		</dependency>
 		<dependency>
 			<groupId>io.grpc</groupId>
 			<artifactId>grpc-services</artifactId>
@@ -51,6 +47,17 @@
 			<groupId>org.springframework.grpc</groupId>
 			<artifactId>spring-grpc-test</artifactId>
 			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.retrade</groupId>
+			<artifactId>common</artifactId>
+			<version>0.0.0</version>
+			<exclusions>
+				<exclusion>
+					<groupId>org.springframework.boot</groupId>
+					<artifactId>spring-boot-starter-data-jpa</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 	</dependencies>
     

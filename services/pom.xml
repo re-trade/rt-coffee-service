@@ -13,7 +13,7 @@
 	<artifactId>services</artifactId>
 	<version>0.0.0</version>
 	<name>services</name>
-	<description>Backend monorepo for Vietnam Sea</description>
+	<description>Backend monorepo for Re Trade</description>
 
 	<packaging>pom</packaging>
 	<dependencies>
@@ -24,7 +24,6 @@
 		<dependency>
 			<groupId>org.springframework.cloud</groupId>
 			<artifactId>spring-cloud-starter-consul-discovery</artifactId>
-			<version>4.1.2</version>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.cloud</groupId>
@@ -44,9 +43,16 @@
 			<dependency>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-starter-web</artifactId>
-				<version>3.2.9</version>
+				<version>${spring.version}</version>
+				<exclusions>
+					<exclusion>
+						<groupId>io.grpc</groupId>
+						<artifactId>grpc-netty</artifactId>
+					</exclusion>
+				</exclusions>
 			</dependency>
 			<dependency>
+
 				<groupId>org.apache.tomcat</groupId>
 				<artifactId>annotations-api</artifactId>
 				<version>6.0.53</version>
@@ -55,7 +61,7 @@
 			<dependency>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-starter-security</artifactId>
-                <version>3.2.9</version>
+				<version>${spring.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.springframework.security</groupId>
@@ -74,10 +80,10 @@
 	</dependencyManagement>
 
 	<modules>
-		<module>authentication</module>
-		<module>user</module>
+		<module>main</module>
 		<module>account</module>
 		<module>gateway</module>
+		<module>catalog</module>
 		<module>feedback-notification</module>
 	</modules>
 
