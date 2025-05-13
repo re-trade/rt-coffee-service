@@ -9,7 +9,6 @@ import lombok.Setter;
 import java.io.Serializable;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 @Getter
 @Setter
@@ -31,7 +30,6 @@ public class BaseSQLEntity implements Serializable {
     protected void onCreate() {
         createdDate = Timestamp.valueOf(LocalDateTime.now());
         updatedDate = Timestamp.valueOf(LocalDateTime.now());
-        id = UUID.randomUUID().toString();
     }
     @PreUpdate
     protected void onUpdate() {

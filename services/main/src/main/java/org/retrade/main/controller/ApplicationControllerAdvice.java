@@ -29,6 +29,7 @@ public class ApplicationControllerAdvice {
             ValidationException.class
     })
     public ResponseEntity<ResponseObject<String>> applicationException(BaseException exception) {
+        log.error(exception.getMessage());
         return ResponseEntity.status(HttpStatus.OK).body(exception.getErrors());
     }
     @ExceptionHandler(AccessDeniedException.class)

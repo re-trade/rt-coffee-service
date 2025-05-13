@@ -10,26 +10,29 @@ spring:
       discovery:
         enabled: true
         prefer-ip-address: true
-        service-name: authentication-service
+        service-name: main-service
         health-check-interval: 10s
-        instance-id: authentication-service
+        instance-id: main-service
         health-check-path: /actuator/health
   grpc:
     server:
       enabled: true
       port: ${GRPC_PORT:9080}
   data:
-    mongodb:
-      database: ${MONGO_DB:retrade}
-      host: ${MONGO_HOST:localhost}
-      username: ${MONGO_USER:root}
-      password: ${MONGO_PASS:example}
-      port: 27017
-      authentication-database: admin
-      auto-index-creation: true
     redis:
       port: ${REDIS_PORT:6379}
       host: ${REDIS_HOST:localhost}
+  datasource:
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:12345}
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
   servlet:
     multipart:
       max-file-size: 10MB

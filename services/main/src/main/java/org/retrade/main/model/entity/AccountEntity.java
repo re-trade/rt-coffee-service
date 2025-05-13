@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.retrade.common.model.entity.BaseSQLEntity;
 
+import java.time.LocalDateTime;
 import java.util.Set;
 
 @Getter
@@ -13,8 +14,6 @@ import java.util.Set;
 @Builder
 @Entity(name = "accounts")
 public class AccountEntity extends BaseSQLEntity {
-    @Column(name = "user_profile_id", nullable = false, unique = true)
-    private String userProfileId;
     @Column(name = "username", unique = true, nullable = false)
     private String username;
     @Column(name = "email", unique = true, nullable = false)
@@ -29,9 +28,11 @@ public class AccountEntity extends BaseSQLEntity {
     private boolean locked;
     @Column(name = "two_fa", nullable = false)
     private boolean using2FA;
-    @OneToOne(cascade = {CascadeType.PERSIST, CascadeType.MERGE}, fetch = FetchType.EAGER, mappedBy = "id")
+    @Column(name = "join_in_date", nullable = false)
+    private LocalDateTime joinInDate;
+    @OneToOne(cascade = {CascadeType.PERSIST, CascadeType.MERGE}, fetch = FetchType.EAGER)
     private CustomerProfileEntity customerProfile;
-    @OneToOne(cascade = {CascadeType.PERSIST, CascadeType.MERGE}, fetch = FetchType.EAGER, mappedBy = "id")
+    @OneToOne(cascade = {CascadeType.PERSIST, CascadeType.MERGE}, fetch = FetchType.EAGER)
     private SellerProfileEntity sellerProfile;
     @OneToMany(fetch = FetchType.LAZY, orphanRemoval = true, cascade = {CascadeType.PERSIST}, mappedBy = "id")
     private Set<LoginSessionEntity> loginSessions;
