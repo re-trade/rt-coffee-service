@@ -84,10 +84,10 @@
 	</dependencyManagement>
 
 	<modules>
-		<module>authentication</module>
-		<module>user</module>
+		<module>main</module>
 		<module>account</module>
 		<module>gateway</module>
+		<module>catalog</module>
 		<module>feedback-notification</module>
 	</modules>
 
