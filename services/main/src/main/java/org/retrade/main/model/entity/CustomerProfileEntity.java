@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.retrade.common.model.entity.BaseSQLEntity;
 
+import java.util.Set;
+
 @Getter
 @Setter
 @AllArgsConstructor
@@ -24,4 +26,6 @@ public class CustomerProfileEntity extends BaseSQLEntity {
     @OneToOne(fetch = FetchType.EAGER, optional = false, targetEntity = AccountEntity.class)
     @JoinColumn(name = "account_id", nullable = false, updatable = false)
     private AccountEntity account;
+    @OneToMany(fetch = FetchType.LAZY, orphanRemoval = true, cascade = {CascadeType.PERSIST, CascadeType.REMOVE})
+    private Set<CustomerContactEntity> contacts;
 }

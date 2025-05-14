@@ -2,52 +2,136 @@ package org.retrade.main.grpc;
 
 import io.grpc.stub.StreamObserver;
 import lombok.RequiredArgsConstructor;
-import org.retrade.base_proto.GrpcTokenServiceGrpc;
-import org.retrade.base_proto.TokenRequest;
-import org.retrade.base_proto.TokenValidationResponse;
-import org.retrade.base_proto.UserTokenResponse;
 import org.retrade.main.model.constant.JwtTokenType;
 import org.retrade.main.model.other.UserClaims;
+import org.retrade.main.repository.AccountRepository;
 import org.retrade.main.service.JwtService;
+import org.retrade.proto.authentication.*;
 import org.springframework.grpc.server.service.GrpcService;
 
 import java.util.Collections;
 import java.util.Objects;
+import java.util.Optional;
 
 @GrpcService
 @RequiredArgsConstructor
 public class TokenGrpcServiceImpl extends GrpcTokenServiceGrpc.GrpcTokenServiceImplBase {
     private final JwtService jwtService;
+    private final AccountRepository accountRepository;
 
     @Override
-    public void verifyToken(TokenRequest request, StreamObserver<TokenValidationResponse> responseObserver) {
-        UserClaims userClaims = null;
-        switch (request.getType()) {
-            case ACCESS_TOKEN:
-                userClaims = jwtService.getUserClaimsFromJwt(request.getToken(), JwtTokenType.ACCESS_TOKEN).orElse(null);
-                break;
-            case REFRESH_TOKEN:
-                userClaims = jwtService.getUserClaimsFromJwt(request.getToken(), JwtTokenType.REFRESH_TOKEN).orElse(null);
-                break;
-            default:
-                responseObserver.onNext(TokenValidationResponse.newBuilder()
-                        .setIsValid(false)
-                        .setErrorMessage("Token type is's supported")
-                        .build());
-                responseObserver.onCompleted();
-                return;
+    public void verifyToken(TokenRequest request, StreamObserver<VerifyTokenResponse> responseObserver) {
+        Optional<UserClaims> userClaims = getUserClaimsFromJwt(request.getToken(), request.getType());
+        if (userClaims.isEmpty()) {
+            responseObserver.onNext(VerifyTokenResponse
+                    .newBuilder()
+                    .setIsValid(false)
+                    .addErrorMessages("Unsupported token type")
+                    .build());
+            responseObserver.onCompleted();
+            return;
         }
-        TokenValidationResponse tokenRpcResponse = TokenValidationResponse.newBuilder()
+        var result = userClaims.get();
+        var account = accountRepository.findByUsername(result.getUsername());
+        if (account.isEmpty()) {
+            responseObserver.onNext(VerifyTokenResponse
+                    .newBuilder()
+                    .setIsValid(false)
+                    .addErrorMessages("Account does not exist")
+                    .build());
+            responseObserver.onCompleted();
+            return;
+        }
+        VerifyTokenResponse tokenRpcResponse = VerifyTokenResponse.newBuilder()
                 .setIsValid(true)
-                .setUserInfo(UserTokenResponse.newBuilder()
-                        .addAllRoles(Objects.requireNonNullElse(userClaims.getRoles(), Collections.emptyList()))
-                        .setUsername(userClaims.getUsername())
-                        .setIsActive(true)
+                .setUserInfo(UserTokenInfo.newBuilder()
+                        .setAcountId(account.get().getId())
+                        .addAllRoles(Objects.requireNonNullElse(result.getRoles(), Collections.emptyList()))
+                        .setUsername(result.getUsername())
+                        .setIsActive(account.get().isEnabled())
+                        .setIsVerified(!account.get().isLocked())
                         .setIsVerified(true)
                         .setType(request.getType())
                         .build())
-                .setErrorMessage("")
+                .addErrorMessages("")
                 .build();
         responseObserver.onNext(tokenRpcResponse);
     }
+
+    @Override
+    public void getCustomerProfile(TokenRequest request, StreamObserver<GetCustomerProfileResponse> responseObserver) {
+        Optional<UserClaims> userClaims = getUserClaimsFromJwt(request.getToken(), request.getType());
+        if (userClaims.isEmpty()) {
+            responseObserver.onNext(GetCustomerProfileResponse.newBuilder()
+                    .setIsValid(false)
+                    .addErrorMessages("Token type is's supported")
+                    .build());
+            responseObserver.onCompleted();
+            return;
+        }
+        var result = userClaims.get();
+        var account = accountRepository.findByUsername(result.getUsername());
+        if (account.isEmpty()) {
+            responseObserver.onNext(GetCustomerProfileResponse
+                    .newBuilder()
+                    .setIsValid(false)
+                    .addErrorMessages("Account does not exist")
+                    .build());
+            responseObserver.onCompleted();
+            return;
+        }
+        var customer = account.get().getCustomerProfile();
+        if (customer == null) {
+            responseObserver.onNext(GetCustomerProfileResponse
+                    .newBuilder()
+                    .setIsValid(false)
+                    .addErrorMessages("Customer does not exist")
+                    .build());
+            responseObserver.onCompleted();
+            return;
+        }
+        GetCustomerProfileResponse tokenRpcResponse = GetCustomerProfileResponse.newBuilder()
+                .setIsValid(true)
+                .setUserInfo(CustomerDetailInfo.newBuilder()
+                        .addAllRoles(Objects.requireNonNullElse(result.getRoles(), Collections.emptyList()))
+                        .setUsername(result.getUsername())
+                        .setEmail(account.get().getEmail())
+                        .setIsActive(account.get().isEnabled())
+                        .setIsVerified(!account.get().isLocked())
+                        .setFirstName(customer.getFirstName())
+                        .setLastName(customer.getLastName())
+                        .setPhone(customer.getPhone())
+                        .setAddress(customer.getAddress())
+                        .setAccountId(account.get().getId())
+                        .setCustomerId(customer.getId())
+                        .build())
+                .addErrorMessages("")
+                .build();
+        responseObserver.onNext(tokenRpcResponse);
+    }
+
+    private Optional<UserClaims> getUserClaimsFromJwt(String token, TokenType tokenType) {
+        Optional<UserClaims> userClaims = Optional.empty();
+        try {
+            switch (tokenType) {
+                case ACCESS_TOKEN -> {
+                    userClaims = jwtService.getUserClaimsFromJwt(token, JwtTokenType.ACCESS_TOKEN);
+                }
+                case REFRESH_TOKEN -> {
+                    userClaims =  jwtService.getUserClaimsFromJwt(token, JwtTokenType.REFRESH_TOKEN);
+                }
+                case TWO_FA_TOKEN -> {
+                    userClaims = jwtService.getUserClaimsFromJwt(token, JwtTokenType.TWO_FA_TOKEN);
+                }
+                case TOKEN_TYPE_UNSPECIFIED -> {
+                    userClaims = Optional.empty();
+                }
+            }
+        } catch (Exception ex) {
+            userClaims = Optional.empty();
+        }
+        return userClaims;
+    }
+
+
 }
