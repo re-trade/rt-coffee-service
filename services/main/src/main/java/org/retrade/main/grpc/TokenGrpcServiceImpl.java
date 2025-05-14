@@ -111,27 +111,20 @@ public class TokenGrpcServiceImpl extends GrpcTokenServiceGrpc.GrpcTokenServiceI
     }
 
     private Optional<UserClaims> getUserClaimsFromJwt(String token, TokenType tokenType) {
-        Optional<UserClaims> userClaims = Optional.empty();
-        try {
-            switch (tokenType) {
-                case ACCESS_TOKEN -> {
-                    userClaims = jwtService.getUserClaimsFromJwt(token, JwtTokenType.ACCESS_TOKEN);
-                }
-                case REFRESH_TOKEN -> {
-                    userClaims =  jwtService.getUserClaimsFromJwt(token, JwtTokenType.REFRESH_TOKEN);
-                }
-                case TWO_FA_TOKEN -> {
-                    userClaims = jwtService.getUserClaimsFromJwt(token, JwtTokenType.TWO_FA_TOKEN);
-                }
-                case TOKEN_TYPE_UNSPECIFIED -> {
-                    userClaims = Optional.empty();
-                }
-            }
-        } catch (Exception ex) {
-            userClaims = Optional.empty();
+        JwtTokenType type = null;
+        switch (tokenType) {
+            case ACCESS_TOKEN:
+                type = JwtTokenType.ACCESS_TOKEN;
+                break;
+            case REFRESH_TOKEN:
+                type = JwtTokenType.REFRESH_TOKEN;
+                break;
+            case TWO_FA_TOKEN:
+                type = JwtTokenType.TWO_FA_TOKEN;
+                break;
+            case TOKEN_TYPE_UNSPECIFIED:
+                return Optional.empty();
         }
-        return userClaims;
+        return jwtService.getUserClaimsFromJwt(token, type);
     }
-
-
 }
