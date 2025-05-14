@@ -56,6 +56,7 @@ public class TokenGrpcServiceImpl extends GrpcTokenServiceGrpc.GrpcTokenServiceI
                 .addErrorMessages("")
                 .build();
         responseObserver.onNext(tokenRpcResponse);
+        responseObserver.onCompleted();
     }
 
     @Override
@@ -108,6 +109,7 @@ public class TokenGrpcServiceImpl extends GrpcTokenServiceGrpc.GrpcTokenServiceI
                 .addErrorMessages("")
                 .build();
         responseObserver.onNext(tokenRpcResponse);
+        responseObserver.onCompleted();
     }
 
     private Optional<UserClaims> getUserClaimsFromJwt(String token, TokenType tokenType) {
