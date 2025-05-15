@@ -2,6 +2,7 @@ package org.retrade.main.service.impl;
 
 import jakarta.servlet.http.Cookie;
 import lombok.RequiredArgsConstructor;
+import org.retrade.common.model.exception.ValidationException;
 import org.retrade.main.model.constant.JwtTokenType;
 import org.retrade.main.model.dto.request.AuthenticationRequest;
 import org.retrade.main.model.dto.response.AuthResponse;
@@ -11,7 +12,6 @@ import org.retrade.main.service.JwtService;
 import org.retrade.main.util.AuthUtils;
 import org.retrade.main.util.QRUtils;
 import org.retrade.main.util.TokenUtils;
-import org.retrade.common.model.exception.ValidationException;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -78,7 +78,7 @@ public class AuthServiceImpl implements AuthService {
         if (account.isUsing2FA()) {
             throw new ValidationException("This user is using 2FA authentication now");
         }
-        var otpText = TokenUtils.generateOTPValue(account.getSecret(), account.getUsername(), "VietnamSea");
+        var otpText = TokenUtils.generateOTPValue(account.getSecret(), account.getUsername(), "ReTrade");
         return QRUtils.generateQRCode(otpText, width, height);
     }
     

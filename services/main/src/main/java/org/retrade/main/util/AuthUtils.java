@@ -5,6 +5,7 @@ import org.retrade.main.model.entity.AccountEntity;
 import org.retrade.main.repository.AccountRepository;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
@@ -41,6 +42,12 @@ public class AuthUtils {
 
     public static Collection<GrantedAuthority> convertRoleToAuthority (AccountEntity account) {
         List<GrantedAuthority> authorities = new ArrayList<>();
+        if(account.getCustomerProfile() != null) {
+            authorities.add(new SimpleGrantedAuthority("ROLE_CUSTOMER"));
+        }
+        if (account.getSellerProfile() != null) {
+            authorities.add(new SimpleGrantedAuthority("ROLE_SELLER"));
+        }
         return authorities;
     }
 
