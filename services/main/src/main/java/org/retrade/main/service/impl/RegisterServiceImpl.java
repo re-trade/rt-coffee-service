@@ -6,7 +6,7 @@ import org.retrade.common.model.exception.ValidationException;
 import org.retrade.main.model.dto.request.CustomerAccountRegisterRequest;
 import org.retrade.main.model.dto.response.CustomerAccountRegisterResponse;
 import org.retrade.main.model.entity.AccountEntity;
-import org.retrade.main.model.entity.CustomerProfileEntity;
+import org.retrade.main.model.entity.CustomerEntity;
 import org.retrade.main.repository.AccountRepository;
 import org.retrade.main.service.RegisterService;
 import org.retrade.main.util.TokenUtils;
@@ -38,7 +38,7 @@ public class RegisterServiceImpl implements RegisterService {
                 .joinInDate(LocalDateTime.now())
                 .secret(TokenUtils.generateSecretKey())
                 .build();
-        var customerProfile = CustomerProfileEntity.builder()
+        var customerProfile = CustomerEntity.builder()
                 .firstName(request.getFirstName())
                 .lastName(request.getLastName())
                 .address(request.getAddress())

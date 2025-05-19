@@ -83,9 +83,9 @@
 		<module>main</module>
 		<module>account</module>
 		<module>gateway</module>
-		<module>catalog</module>
 		<module>feedback-notification</module>
-	</modules>
+        <module>voucher</module>
+    </modules>
 
 	<build>
 		<plugins>

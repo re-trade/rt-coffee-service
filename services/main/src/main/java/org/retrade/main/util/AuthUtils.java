@@ -45,7 +45,7 @@ public class AuthUtils {
         if(account.getCustomerProfile() != null) {
             authorities.add(new SimpleGrantedAuthority("ROLE_CUSTOMER"));
         }
-        if (account.getSellerProfile() != null) {
+        if (account.getSeller() != null) {
             authorities.add(new SimpleGrantedAuthority("ROLE_SELLER"));
         }
         return authorities;
