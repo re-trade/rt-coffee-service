@@ -74,6 +74,10 @@ security:
   host:
     origin-allows: ${ORIGIN_ALLOWS:}
     base-host: ${BASE_HOST:}
+    front-end: ${FRONTEND_URL}
+  forgot-password:
+    timeout: ${FORGOT_PASSWORD_TIMEOUT:10}
+    callbackUrl: ${FORGOT_PASSWORD_CALLBACK:http://localhost:3000/forgot-password}
 
 management:
   endpoints:
@@ -92,3 +96,14 @@ springdoc:
     tags-sorter: alpha
     filter: true
     path: /swagger-ui
+
+
+oauth2:
+  google:
+    clientId: ${GOOGLE_CLIENT_ID}
+    clientSecret: ${GOOGLE_CLIENT_SECRET}
+    scopes:
+      - email
+      - profile
+    redirectUrl: ${GOOGLE_REDIRECT_URL}
+    userProfileEndpoint: ${GOOGLE_USERPROFILE_ENDPOINT}

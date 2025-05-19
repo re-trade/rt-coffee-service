@@ -81,7 +81,7 @@ public class TokenGrpcServiceImpl extends GrpcTokenServiceGrpc.GrpcTokenServiceI
             responseObserver.onCompleted();
             return;
         }
-        var customer = account.get().getCustomerProfile();
+        var customer = account.get().getCustomer();
         if (customer == null) {
             responseObserver.onNext(GetCustomerProfileResponse
                     .newBuilder()
