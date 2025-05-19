@@ -14,20 +14,8 @@ import java.util.Set;
 @Builder
 @Entity(name = "orders")
 public class OrderEntity extends BaseSQLEntity {
-    @Column(name = "customer_name", length = 255, nullable = false)
-    private String customerName;
-    @Column(name = "phone", length = 12, nullable = false)
-    private String phone;
-    @Column(name = "state", length = 20)
-    private String state;
-    @Column(name = "country", length = 20)
-    private String country;
-    @Column(name = "district", length = 20)
-    private String district;
-    @Column(name = "ward", length = 20)
-    private String ward;
-    @Column(name = "address", length = 50)
-    private String address;
+    @OneToOne(fetch = FetchType.EAGER, optional = false, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    private OrderDestinationEntity orderDestination;
     @Column(name = "tax_total", nullable = false)
     private BigDecimal taxTotal;
     @Column(name = "discount_total", nullable = false)

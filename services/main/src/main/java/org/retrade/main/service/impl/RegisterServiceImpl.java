@@ -1,13 +1,17 @@
 package org.retrade.main.service.impl;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.retrade.common.model.exception.ActionFailedException;
 import org.retrade.common.model.exception.ValidationException;
 import org.retrade.main.model.dto.request.CustomerAccountRegisterRequest;
 import org.retrade.main.model.dto.response.CustomerAccountRegisterResponse;
 import org.retrade.main.model.entity.AccountEntity;
 import org.retrade.main.model.entity.CustomerEntity;
+import org.retrade.main.model.message.EmailNotificationMessage;
+import org.retrade.main.model.message.UserRegistrationMessage;
 import org.retrade.main.repository.AccountRepository;
+import org.retrade.main.service.MessageProducerService;
 import org.retrade.main.service.RegisterService;
 import org.retrade.main.util.TokenUtils;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -15,9 +19,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class RegisterServiceImpl implements RegisterService {
     private final AccountRepository accountRepository;
     private final PasswordEncoder passwordEncoder;
@@ -49,6 +56,7 @@ public class RegisterServiceImpl implements RegisterService {
         customerAccount.setCustomerProfile(customerProfile);
         try {
             var result = accountRepository.save(customerAccount);
+            sendRegistrationMessages(result);
             return wrapAccountRegisterResponse(result);
         } catch (Exception ex) {
             throw new ActionFailedException("Failed to register account", ex);
@@ -67,5 +75,34 @@ public class RegisterServiceImpl implements RegisterService {
                 .phone(customerProfile.getPhone())
                 .avatarUrl(customerProfile.getAvatarUrl())
                 .build();
+    }
+
+    private void sendRegistrationMessages(AccountEntity accountEntity) {
+        try {
+            CustomerEntity customerProfile = accountEntity.getCustomerProfile();
+            UserRegistrationMessage registrationMessage = UserRegistrationMessage.builder()
+                    .userId(accountEntity.getId())
+                    .username(accountEntity.getUsername())
+                    .email(accountEntity.getEmail())
+                    .firstName(customerProfile.getFirstName())
+                    .lastName(customerProfile.getLastName())
+                    .registrationDate(accountEntity.getJoinInDate())
+                    .build();
+//            messageProducerService.sendUserRegistration(registrationMessage);
+            Map<String, Object> templateVariables = new HashMap<>();
+            templateVariables.put("firstName", customerProfile.getFirstName());
+            templateVariables.put("lastName", customerProfile.getLastName());
+            templateVariables.put("username", accountEntity.getUsername());
+            EmailNotificationMessage emailMessage = EmailNotificationMessage.builder()
+                    .to(accountEntity.getEmail())
+                    .subject("Welcome to RT Coffee Service!")
+                    .templateName("welcome-email")
+                    .templateVariables(templateVariables)
+                    .build();
+//            messageProducerService.sendEmailNotification(emailMessage);
+            log.info("Registration messages sent for user: {}", accountEntity.getUsername());
+        } catch (Exception e) {
+            log.error("Failed to send registration messages for user: {}", accountEntity.getUsername(), e);
+        }
     }
 }

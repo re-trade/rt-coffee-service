@@ -19,6 +19,22 @@ services:
       - database
       - local
       - storage
+  rabbitmq-services:
+    container_name: rabbitmq_service
+    image: rabbitmq:3-management
+    restart: always
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
+    networks:
+      - sea-local-networks
+    profiles:
+      - database
+      - local
+      - storage
   authentication-services:
     container_name: authentication_service
     image: sea-authentication-service:latest
