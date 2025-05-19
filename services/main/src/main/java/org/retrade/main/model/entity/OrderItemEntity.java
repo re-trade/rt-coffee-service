@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.retrade.common.model.entity.BaseSQLEntity;
 
+import java.math.BigDecimal;
+
 @Getter
 @Setter
 @NoArgsConstructor
@@ -14,10 +16,20 @@ public class OrderItemEntity extends BaseSQLEntity {
     @ManyToOne(targetEntity = OrderEntity.class, optional = false, fetch = FetchType.EAGER)
     @JoinColumn(name = "order_id", nullable = false)
     private OrderEntity order;
-    @Column(name = "product_id", nullable = false)
-    private String productId;
-    @Column(name = "quantity", nullable = false)
-    private Integer quantity;
-    @Column(name = "unit", nullable = false)
+    @ManyToOne(targetEntity = ProductEntity.class, optional = false, fetch = FetchType.EAGER)
+    @JoinColumn(name = "product_id", nullable = false)
+    private ProductEntity product;
+    @ManyToOne(targetEntity = OrderComboEntity.class, optional = false, fetch = FetchType.EAGER)
+    @JoinColumn(name = "order_combo_id", nullable = false)
+    private OrderComboEntity orderCombo;
+    @Column(name = "short_description", nullable = false, columnDefinition = "TEXT")
+    private String shortDescription;
+    @Column(name = "product_name", nullable = false, length = 128)
+    private String productName;
+    @Column(name = "background_url", nullable = false, length = 256)
+    private String backgroundUrl;
+    @Column(name = "base_price", nullable = false)
+    private BigDecimal basePrice;
+    @Column(name = "unit", nullable = false, length = 10)
     private String unit;
 }
