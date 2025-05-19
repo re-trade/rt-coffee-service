@@ -9,7 +9,7 @@ import org.retrade.common.model.entity.BaseSQLEntity;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-@Entity(name = "product_price_histories")
+@Entity(name = "product_reviews")
 public class ProductReviewEntity extends BaseSQLEntity {
     @ManyToOne(targetEntity = ProductEntity.class, fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "product_id", nullable = false)

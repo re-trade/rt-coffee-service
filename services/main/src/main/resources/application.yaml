@@ -40,11 +40,25 @@ spring:
     multipart:
       max-file-size: 10MB
       max-request-size: 10MB
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+    listener:
+      simple:
+        retry:
+          enabled: true
+          initial-interval: 1000
+          max-attempts: 3
+          max-interval: 10000
+          multiplier: 2.0
+        acknowledge-mode: manual
+    address-shuffle-mode: inorder
 server:
   port: ${PORT:8080}
   servlet:
     context-path: /api/v1
-
 security:
   token:
       jwt:
