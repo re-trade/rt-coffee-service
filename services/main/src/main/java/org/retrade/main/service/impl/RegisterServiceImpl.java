@@ -11,7 +11,6 @@ import org.retrade.main.model.entity.CustomerEntity;
 import org.retrade.main.model.message.EmailNotificationMessage;
 import org.retrade.main.model.message.UserRegistrationMessage;
 import org.retrade.main.repository.AccountRepository;
-import org.retrade.main.service.MessageProducerService;
 import org.retrade.main.service.RegisterService;
 import org.retrade.main.util.TokenUtils;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -53,7 +52,7 @@ public class RegisterServiceImpl implements RegisterService {
                 .avatarUrl(request.getAvatarUrl())
                 .account(customerAccount)
                 .build();
-        customerAccount.setCustomerProfile(customerProfile);
+        customerAccount.setCustomer(customerProfile);
         try {
             var result = accountRepository.save(customerAccount);
             sendRegistrationMessages(result);
@@ -64,7 +63,7 @@ public class RegisterServiceImpl implements RegisterService {
     }
 
     private CustomerAccountRegisterResponse wrapAccountRegisterResponse(AccountEntity accountEntity) {
-        var customerProfile = accountEntity.getCustomerProfile();
+        var customerProfile = accountEntity.getCustomer();
         return CustomerAccountRegisterResponse.builder()
                 .id(accountEntity.getId())
                 .username(accountEntity.getUsername())
@@ -79,7 +78,7 @@ public class RegisterServiceImpl implements RegisterService {
 
     private void sendRegistrationMessages(AccountEntity accountEntity) {
         try {
-            CustomerEntity customerProfile = accountEntity.getCustomerProfile();
+            CustomerEntity customerProfile = accountEntity.getCustomer();
             UserRegistrationMessage registrationMessage = UserRegistrationMessage.builder()
                     .userId(accountEntity.getId())
                     .username(accountEntity.getUsername())

@@ -31,7 +31,7 @@ public class AccountEntity extends BaseSQLEntity {
     @Column(name = "join_in_date", nullable = false)
     private LocalDateTime joinInDate;
     @OneToOne(cascade = {CascadeType.PERSIST, CascadeType.MERGE}, fetch = FetchType.EAGER)
-    private CustomerEntity customerProfile;
+    private CustomerEntity customer;
     @OneToOne(cascade = {CascadeType.PERSIST, CascadeType.MERGE}, fetch = FetchType.EAGER)
     private SellerEntity seller;
     @OneToMany(fetch = FetchType.LAZY, orphanRemoval = true, cascade = {CascadeType.PERSIST}, mappedBy = "id")

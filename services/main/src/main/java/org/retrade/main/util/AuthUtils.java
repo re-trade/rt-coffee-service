@@ -42,7 +42,7 @@ public class AuthUtils {
 
     public static Collection<GrantedAuthority> convertRoleToAuthority (AccountEntity account) {
         List<GrantedAuthority> authorities = new ArrayList<>();
-        if(account.getCustomerProfile() != null) {
+        if(account.getCustomer() != null) {
             authorities.add(new SimpleGrantedAuthority("ROLE_CUSTOMER"));
         }
         if (account.getSeller() != null) {

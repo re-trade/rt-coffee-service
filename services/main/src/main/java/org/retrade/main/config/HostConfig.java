@@ -10,4 +10,5 @@ import org.springframework.context.annotation.Configuration;
 public class HostConfig {
     private String originAllows;
     private String baseHost;
+    private String frontEnd;
 }
