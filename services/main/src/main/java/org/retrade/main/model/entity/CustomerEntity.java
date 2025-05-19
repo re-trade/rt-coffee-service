@@ -11,8 +11,8 @@ import java.util.Set;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-@Entity(name = "customer_profiles")
-public class CustomerProfileEntity extends BaseSQLEntity {
+@Entity(name = "customers")
+public class CustomerEntity extends BaseSQLEntity {
     @Column(name = "first_name", length = 255)
     private String firstName;
     @Column(name = "last_name", length = 255)

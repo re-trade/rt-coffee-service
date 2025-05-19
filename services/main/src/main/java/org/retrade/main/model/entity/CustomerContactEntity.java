@@ -31,7 +31,7 @@ public class CustomerContactEntity extends BaseSQLEntity {
     private Boolean defaulted;
     @Column(name = "type", nullable = false)
     private Integer type;
-    @ManyToOne(targetEntity = CustomerProfileEntity.class, fetch = FetchType.LAZY, optional = false)
+    @ManyToOne(targetEntity = CustomerEntity.class, fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "customer_id", nullable = false)
-    private CustomerProfileEntity customerProfile;
+    private CustomerEntity customer;
 }
