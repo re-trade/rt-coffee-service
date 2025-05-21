@@ -1,5 +1,6 @@
 package org.retrade.main.controller;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -58,11 +59,12 @@ public class AuthenticationController {
                         .content(Map.of("code", result))
                 .build());
     }
+
     @PostMapping("local")
-    public ResponseEntity<ResponseObject<AuthResponse>> customerAuthenticationInternal(@Valid @RequestBody AuthenticationRequest request, HttpServletResponse response) {
-        var result = authService.localAuthentication(request, (cookies -> {
+    public ResponseEntity<ResponseObject<AuthResponse>> authentication(@Valid @RequestBody AuthenticationRequest authenticationRequest, HttpServletRequest request, HttpServletResponse response) {
+        var result = authService.localAuthentication(authenticationRequest, request, (cookies -> {
             cookies.forEach(response::addCookie);
-        } ));
+        }));
         return ResponseEntity.ok(new ResponseObject.Builder<AuthResponse>()
                         .code("AUTH_SUCCESS")
                         .success(true)

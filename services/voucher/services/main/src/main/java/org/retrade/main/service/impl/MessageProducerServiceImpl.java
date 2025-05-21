@@ -25,6 +25,8 @@ public class MessageProducerServiceImpl implements MessageProducerService {
         if (message.getMessageId() == null) {
             message.setMessageId(UUID.randomUUID().toString());
         }
+
+        // Create a MessageObject wrapper for the message
         var messageWrapper = new MessageObject.Builder<EmailNotificationMessage>()
                 .withPayload(message)
                 .withMessageId(message.getMessageId())
@@ -32,6 +34,7 @@ public class MessageProducerServiceImpl implements MessageProducerService {
                 .withType("email")
                 .withTimestamp(LocalDateTime.now())
                 .build();
+
         log.info("Sending email notification message: {}", message.getMessageId());
         rabbitTemplate.convertAndSend(
                 RabbitMQConfig.ExchangeNameEnum.NOTIFICATION_EXCHANGE.getName(),
@@ -46,6 +49,8 @@ public class MessageProducerServiceImpl implements MessageProducerService {
         if (message.getMessageId() == null) {
             message.setMessageId(UUID.randomUUID().toString());
         }
+
+        // Create a MessageObject wrapper for the message
         var messageWrapper = new MessageObject.Builder<UserRegistrationMessage>()
                 .withPayload(message)
                 .withMessageId(message.getMessageId())
@@ -53,6 +58,7 @@ public class MessageProducerServiceImpl implements MessageProducerService {
                 .withType("registration")
                 .withTimestamp(LocalDateTime.now())
                 .build();
+
         log.info("Sending user registration message: {}", message.getMessageId());
         rabbitTemplate.convertAndSend(
                 RabbitMQConfig.ExchangeNameEnum.REGISTRATION_EXCHANGE.getName(),

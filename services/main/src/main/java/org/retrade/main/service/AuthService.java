@@ -12,9 +12,9 @@ import java.util.List;
 import java.util.function.Consumer;
 
 public interface AuthService {
-    AuthResponse localAuthentication(AuthenticationRequest authenticationRequest);
+    AuthResponse localAuthentication(AuthenticationRequest authenticationRequest, HttpServletRequest request);
 
-    AuthResponse localAuthentication(AuthenticationRequest authenticationRequest, Consumer<List<Cookie>> callback);
+    AuthResponse localAuthentication(AuthenticationRequest authenticationRequest, HttpServletRequest request, Consumer<List<Cookie>> callback);
 
     BufferedImage register2FaAuthentication(int width, int height);
 

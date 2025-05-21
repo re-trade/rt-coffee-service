@@ -4,8 +4,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.retrade.common.model.exception.ActionFailedException;
 import org.retrade.common.model.exception.ValidationException;
-import org.retrade.common.model.message.MessageObject;
-import org.retrade.main.config.RabbitMQConfig;
 import org.retrade.main.model.dto.request.CustomerAccountRegisterRequest;
 import org.retrade.main.model.dto.response.CustomerAccountRegisterResponse;
 import org.retrade.main.model.entity.AccountEntity;
@@ -16,7 +14,6 @@ import org.retrade.main.repository.AccountRepository;
 import org.retrade.main.service.MessageProducerService;
 import org.retrade.main.service.RegisterService;
 import org.retrade.main.util.TokenUtils;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,7 +29,6 @@ import java.util.UUID;
 public class RegisterServiceImpl implements RegisterService {
     private final AccountRepository accountRepository;
     private final PasswordEncoder passwordEncoder;
-    private final RabbitTemplate rabbitTemplate;
     private final MessageProducerService messageProducerService;
     @Override
     @Transactional(rollbackFor = {ActionFailedException.class, Exception.class})

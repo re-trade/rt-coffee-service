@@ -35,7 +35,7 @@ public class EmailServiceImpl implements EmailService {
             }
 
             final String templateName = emailNotification.getTemplateName();
-            final String htmlContent = templateEngine.process("email/" + templateName, context);
+            final String htmlContent = templateEngine.process(templateName, context);
 
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, 

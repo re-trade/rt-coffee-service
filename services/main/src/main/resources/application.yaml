@@ -1,6 +1,6 @@
 spring:
   application:
-    name: Auth Service
+    name: Main Service
   config:
     import: "optional:consul:"
   cloud:
@@ -107,3 +107,9 @@ oauth2:
       - profile
     redirectUrl: ${GOOGLE_REDIRECT_URL}
     userProfileEndpoint: ${GOOGLE_USERPROFILE_ENDPOINT}
+
+logging:
+  level:
+    org.springframework.amqp: DEBUG
+    org.springframework.messaging: DEBUG
+    org.springframework.retry: DEBUG

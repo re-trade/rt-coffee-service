@@ -1,17 +1,19 @@
 package org.retrade.common.model.message;
 
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
 
 @Getter
+@NoArgsConstructor
 public class MessageObject<T> implements Serializable {
-    private final String messageId;
-    private final T payload;
-    private final String type;
-    private final LocalDateTime timestamp;
-    private final String source;
+    private String messageId;
+    private T payload;
+    private String type;
+    private LocalDateTime timestamp;
+    private String source;
 
     private MessageObject(Builder<T> builder) {
         this.messageId = builder.messageId;

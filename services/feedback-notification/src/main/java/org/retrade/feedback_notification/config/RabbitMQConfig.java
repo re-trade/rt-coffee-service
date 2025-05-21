@@ -19,6 +19,7 @@ public class RabbitMQConfig {
 
     public static final String NOTIFICATION_EXCHANGE = "notification.exchange";
     public static final String REGISTRATION_EXCHANGE = "registration.exchange";
+    public static final String DEAD_LETTER_EXCHANGE = "dead.letter.exchange";
 
     public static final String EMAIL_NOTIFICATION_QUEUE = "email.notification.queue";
     public static final String USER_REGISTRATION_QUEUE = "user.registration.queue";
@@ -26,8 +27,6 @@ public class RabbitMQConfig {
 
     public static final String EMAIL_NOTIFICATION_ROUTING_KEY = "email.notification";
     public static final String USER_REGISTRATION_ROUTING_KEY = "user.registration";
-
-    public static final String DEAD_LETTER_EXCHANGE = "dead.letter.exchange";
     public static final String DEAD_LETTER_ROUTING_KEY = "dead.letter";
 
     @Bean
@@ -37,9 +36,9 @@ public class RabbitMQConfig {
 
     @Bean
     public RabbitTemplate rabbitTemplate(ConnectionFactory connectionFactory) {
-        RabbitTemplate rabbitTemplate = new RabbitTemplate(connectionFactory);
-        rabbitTemplate.setMessageConverter(jsonMessageConverter());
-        return rabbitTemplate;
+        RabbitTemplate template = new RabbitTemplate(connectionFactory);
+        template.setMessageConverter(jsonMessageConverter());
+        return template;
     }
 
     @Bean
@@ -63,58 +62,31 @@ public class RabbitMQConfig {
     }
 
     @Bean
-    public DirectExchange deadLetterExchange() {
-        return new DirectExchange(DEAD_LETTER_EXCHANGE);
-    }
+    public Declarables rabbitDeclarables() {
+        DirectExchange notificationExchange = new DirectExchange(NOTIFICATION_EXCHANGE);
+        DirectExchange registrationExchange = new DirectExchange(REGISTRATION_EXCHANGE);
 
-    @Bean
-    public Queue deadLetterQueue() {
-        return QueueBuilder.durable(DEAD_LETTER_QUEUE).build();
-    }
-
-    @Bean
-    public Binding deadLetterBinding() {
-        return BindingBuilder.bind(deadLetterQueue())
-                .to(deadLetterExchange())
-                .with(DEAD_LETTER_ROUTING_KEY);
-    }
-
-    @Bean
-    public DirectExchange notificationExchange() {
-        return new DirectExchange(NOTIFICATION_EXCHANGE);
-    }
-
-    @Bean
-    public Queue emailNotificationQueue() {
-        return QueueBuilder.durable(EMAIL_NOTIFICATION_QUEUE)
-                .withArgument("x-dead-letter-exchange", DEAD_LETTER_EXCHANGE)
-                .withArgument("x-dead-letter-routing-key", DEAD_LETTER_ROUTING_KEY)
+        Queue emailNotificationQueue = QueueBuilder.durable(EMAIL_NOTIFICATION_QUEUE)
                 .build();
-    }
 
-    @Bean
-    public Binding emailNotificationBinding() {
-        return BindingBuilder.bind(emailNotificationQueue())
-                .to(notificationExchange())
+        Queue userRegistrationQueue = QueueBuilder.durable(USER_REGISTRATION_QUEUE)
+                .build();
+
+        Binding emailBinding = BindingBuilder.bind(emailNotificationQueue)
+                .to(notificationExchange)
                 .with(EMAIL_NOTIFICATION_ROUTING_KEY);
-    }
-    @Bean
-    public DirectExchange registrationExchange() {
-        return new DirectExchange(REGISTRATION_EXCHANGE);
-    }
 
-    @Bean
-    public Queue userRegistrationQueue() {
-        return QueueBuilder.durable(USER_REGISTRATION_QUEUE)
-                .withArgument("x-dead-letter-exchange", DEAD_LETTER_EXCHANGE)
-                .withArgument("x-dead-letter-routing-key", DEAD_LETTER_ROUTING_KEY)
-                .build();
-    }
-
-    @Bean
-    public Binding userRegistrationBinding() {
-        return BindingBuilder.bind(userRegistrationQueue())
-                .to(registrationExchange())
+        Binding registrationBinding = BindingBuilder.bind(userRegistrationQueue)
+                .to(registrationExchange)
                 .with(USER_REGISTRATION_ROUTING_KEY);
+
+        return new Declarables(
+                notificationExchange,
+                registrationExchange,
+                emailNotificationQueue,
+                userRegistrationQueue,
+                emailBinding,
+                registrationBinding
+        );
     }
 }
