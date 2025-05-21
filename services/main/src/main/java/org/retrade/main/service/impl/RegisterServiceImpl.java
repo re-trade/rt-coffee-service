@@ -11,6 +11,7 @@ import org.retrade.main.model.entity.CustomerEntity;
 import org.retrade.main.model.message.EmailNotificationMessage;
 import org.retrade.main.model.message.UserRegistrationMessage;
 import org.retrade.main.repository.AccountRepository;
+import org.retrade.main.service.MessageProducerService;
 import org.retrade.main.service.RegisterService;
 import org.retrade.main.util.TokenUtils;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -20,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -27,6 +29,7 @@ import java.util.Map;
 public class RegisterServiceImpl implements RegisterService {
     private final AccountRepository accountRepository;
     private final PasswordEncoder passwordEncoder;
+    private final MessageProducerService messageProducerService;
     @Override
     @Transactional(rollbackFor = {ActionFailedException.class, Exception.class})
     public CustomerAccountRegisterResponse customerRegister(CustomerAccountRegisterRequest request) {
@@ -86,19 +89,24 @@ public class RegisterServiceImpl implements RegisterService {
                     .firstName(customerProfile.getFirstName())
                     .lastName(customerProfile.getLastName())
                     .registrationDate(accountEntity.getJoinInDate())
+                    .messageId(UUID.randomUUID().toString())
+                    .retryCount(0)
                     .build();
-//            messageProducerService.sendUserRegistration(registrationMessage);
+            messageProducerService.sendUserRegistration(registrationMessage);
             Map<String, Object> templateVariables = new HashMap<>();
             templateVariables.put("firstName", customerProfile.getFirstName());
             templateVariables.put("lastName", customerProfile.getLastName());
             templateVariables.put("username", accountEntity.getUsername());
+
             EmailNotificationMessage emailMessage = EmailNotificationMessage.builder()
                     .to(accountEntity.getEmail())
-                    .subject("Welcome to RT Coffee Service!")
+                    .subject("Welcome to ReTrade!")
                     .templateName("welcome-email")
                     .templateVariables(templateVariables)
+                    .messageId(UUID.randomUUID().toString())
+                    .retryCount(0)
                     .build();
-//            messageProducerService.sendEmailNotification(emailMessage);
+            messageProducerService.sendEmailNotification(emailMessage);
             log.info("Registration messages sent for user: {}", accountEntity.getUsername());
         } catch (Exception e) {
             log.error("Failed to send registration messages for user: {}", accountEntity.getUsername(), e);

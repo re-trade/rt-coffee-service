@@ -1,6 +1,8 @@
 spring:
   application:
       name: Feedback Notification Service
+  config:
+    import: "optional:consul:"
   cloud:
     consul:
       host: ${CONSUL_HOST:localhost}
@@ -12,8 +14,44 @@ spring:
         health-check-interval: 10s
         instance-id: feedback-notification-service
         health-check-path: /actuator/health
+  grpc:
+    server:
+      enabled: true
+      port: ${GRPC_PORT:9081}
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+    listener:
+      simple:
+        retry:
+          enabled: true
+          initial-interval: 1000
+          max-attempts: 3
+          max-interval: 10000
+          multiplier: 2.0
+        acknowledge-mode: manual
+    address-shuffle-mode: inorder
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:your-email@gmail.com}
+    password: ${MAIL_PASSWORD:your-app-password}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
 
 server:
   port: ${PORT:8084}
 
+logging:
+  level:
+    org.springframework.amqp: DEBUG
+    org.springframework.messaging: DEBUG
+    org.springframework.retry: DEBUG
+    org.springframework.amqp.rabbit.listener: DEBUG
 

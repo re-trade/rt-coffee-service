@@ -21,10 +21,14 @@ import org.retrade.main.model.dto.request.ForgotPasswordRequest;
 import org.retrade.main.model.dto.response.AuthResponse;
 import org.retrade.main.model.entity.AccountEntity;
 import org.retrade.main.model.entity.CustomerEntity;
+import org.retrade.main.model.entity.LoginSessionEntity;
+import org.retrade.main.model.message.EmailNotificationMessage;
 import org.retrade.main.model.other.GoogleProfileResponse;
 import org.retrade.main.repository.AccountRepository;
+import org.retrade.main.repository.LoginSessionRepository;
 import org.retrade.main.service.AuthService;
 import org.retrade.main.service.JwtService;
+import org.retrade.main.service.MessageProducerService;
 import org.retrade.main.util.AuthUtils;
 import org.retrade.main.util.QRUtils;
 import org.retrade.main.util.TokenUtils;
@@ -39,11 +43,11 @@ import org.springframework.stereotype.Service;
 
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.sql.Timestamp;
+import java.time.Instant;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.EnumMap;
-import java.util.List;
-import java.util.UUID;
+import java.time.ZoneId;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
@@ -55,13 +59,15 @@ public class AuthServiceImpl implements AuthService {
     private final JwtService jwtService;
     private final AuthUtils authUtils;
     private final AccountRepository accountRepository;
+    private final LoginSessionRepository loginSessionRepository;
     private final GoogleApisConfig googleApisConfig;
     private final ForgotPasswordConfig forgotPasswordConfig;
     private final RedisTemplate<String, Object> redisTemplate;
     private final PasswordEncoder passwordEncoder;
+    private final MessageProducerService messageProducerService;
 
     @Override
-    public AuthResponse localAuthentication(AuthenticationRequest authenticationRequest) {
+    public AuthResponse localAuthentication(AuthenticationRequest authenticationRequest, HttpServletRequest request) {
         Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(authenticationRequest.getUsername(), authenticationRequest.getPassword()));
         SecurityContextHolder.getContext().setAuthentication(authentication);
         var account = authUtils.getUserAccountFromAuthentication();
@@ -75,6 +81,7 @@ public class AuthServiceImpl implements AuthService {
             var twoFAToken = jwtService.generateToken(authentication, JwtTokenType.TWO_FA_TOKEN);
             tokenMap.put(JwtTokenType.TWO_FA_TOKEN, twoFAToken);
         }
+        saveSession(request, account);
         return AuthResponse.builder()
                 .tokens(tokenMap)
                 .roles(authentication.getAuthorities().stream().map(GrantedAuthority::getAuthority).toList())
@@ -83,8 +90,8 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public AuthResponse localAuthentication(AuthenticationRequest authenticationRequest, Consumer<List<Cookie>> callback) {
-        var result =  localAuthentication(authenticationRequest);
+    public AuthResponse localAuthentication(AuthenticationRequest authenticationRequest, HttpServletRequest request, Consumer<List<Cookie>> callback) {
+        var result =  localAuthentication(authenticationRequest, request);
         var cookieList = new ArrayList<Cookie>();
         var tokens = result.getTokens();
         if (!result.isTwoFA()) {
@@ -135,6 +142,19 @@ public class AuthServiceImpl implements AuthService {
         var token = UUID.randomUUID().toString();
         var url =  String.format("%s?token=%s",forgotPasswordConfig.getCallbackUrl(), token);
         redisTemplate.opsForValue().set(String.format("%s:%s", "user:forgot-password", token), email,forgotPasswordConfig.getTimeout(), TimeUnit.MINUTES);
+        Map<String, Object> templateVars = new HashMap<>();
+        templateVars.put("url", url);
+        templateVars.put("timeOut", forgotPasswordConfig.getTimeout());
+        templateVars.put("username", accountEntity.getUsername());
+        EmailNotificationMessage emailMessage = EmailNotificationMessage.builder()
+                .to(accountEntity.getEmail())
+                .subject("Forgot Password")
+                .templateName("forgot-password")
+                .templateVariables(templateVars)
+                .messageId(UUID.randomUUID().toString())
+                .retryCount(0)
+                .build();
+        messageProducerService.sendEmailNotification(emailMessage);
     }
 
     @Override
@@ -219,6 +239,28 @@ public class AuthServiceImpl implements AuthService {
     public void logout(HttpServletRequest request, HttpServletResponse response) {
         if (SecurityContextHolder.getContext().getAuthentication() != null) {
             jwtService.removeAuthToken(request,response);
+        }
+    }
+
+    private void saveSession (HttpServletRequest request, AccountEntity account) {
+        String deviceFingerprint = request.getHeader("device-fingerprint");
+        String deviceName = request.getHeader("device-name");
+        String ipAddress = request.getHeader("ip-address");
+        String location = request.getHeader("location");
+        String userAgent = request.getHeader("user-agent");
+        LoginSessionEntity loginSession = LoginSessionEntity.builder()
+                .account(account)
+                .deviceFingerprint(deviceFingerprint != null ? deviceFingerprint : "unknown")
+                .deviceName(deviceName != null ? deviceName : "unknown")
+                .ipAddress(ipAddress)
+                .location(location != null ? location : "unknown")
+                .userAgent(userAgent != null ? userAgent : "unknown")
+                .loginTime(Timestamp.valueOf(Instant.now().atZone(ZoneId.systemDefault()).toLocalDateTime()))
+                .build();
+        try {
+            loginSessionRepository.save(loginSession);
+        } catch (Exception ex) {
+            throw new ActionFailedException("Failed to save login session");
         }
     }
 
