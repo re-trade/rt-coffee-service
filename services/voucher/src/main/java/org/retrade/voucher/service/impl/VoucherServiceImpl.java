@@ -188,7 +188,7 @@ public class VoucherServiceImpl implements VoucherService {
         voucherRestrictionRepository.saveAll(restrictions);
     }
 
-    private static VoucherEntity getVoucherEntity(CreateVoucherRequest request) {
+    private VoucherEntity getVoucherEntity(CreateVoucherRequest request) {
         VoucherEntity voucherEntity = new VoucherEntity();
         voucherEntity.setCode(request.getCode());
         voucherEntity.setType(request.getType().name());
@@ -198,7 +198,6 @@ public class VoucherServiceImpl implements VoucherService {
         voucherEntity.setActived(request.getActive());
         voucherEntity.setMaxUses(request.getMaxUses());
         voucherEntity.setMaxUsesPerUser(request.getMaxUsesPerUser());
-        voucherEntity.setCurrentUses(0);
         voucherEntity.setMinSpend(request.getMinSpend());
         return voucherEntity;
     }
