@@ -10,8 +10,10 @@ import java.util.List;
 @Repository
 public interface VoucherRestrictionRepository extends BaseJpaRepository<VoucherRestrictionEntity, String> {
     List<VoucherRestrictionEntity> findByVoucher(VoucherEntity voucher);
-    
+
     List<VoucherRestrictionEntity> findByVoucherAndProductId(VoucherEntity voucher, String productId);
-    
+
+    List<VoucherRestrictionEntity> findByProductId(String productId);
+
     void deleteByVoucher(VoucherEntity voucher);
 }

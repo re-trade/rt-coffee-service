@@ -25,6 +25,12 @@ spring:
         csrf:
           enabled: false
 
+grpc:
+  client:
+    main-service:
+      host: ${MAIN_SERVICE_GRPC_HOST:localhost}
+      port: ${MAIN_SERVICE_GRPC_PORT:9080}
+
 logging:
   level:
     org:
