@@ -11,6 +11,7 @@ import org.retrade.main.service.AccountService;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -21,7 +22,7 @@ import java.util.List;
 public class AccountController {
     private final AccountService accountService;
 
-    @GetMapping("/me")
+    @GetMapping("me")
     public ResponseEntity<ResponseObject<AccountResponse>> getMe() {
         AccountResponse response = accountService.getMe();
         return ResponseEntity.ok(new ResponseObject.Builder<AccountResponse>()
@@ -32,7 +33,7 @@ public class AccountController {
                 .build());
     }
 
-    @GetMapping("/{id}")
+    @GetMapping("{id}")
     public ResponseEntity<ResponseObject<AccountResponse>> getAccountById(@PathVariable String id) {
         AccountResponse response = accountService.getAccountById(id);
         return ResponseEntity.ok(new ResponseObject.Builder<AccountResponse>()
@@ -43,7 +44,7 @@ public class AccountController {
                 .build());
     }
 
-    @PutMapping("/{id}/password")
+    @PutMapping("{id}/password")
     public ResponseEntity<ResponseObject<Void>> updatePassword(
             @PathVariable String id,
             @Valid @RequestBody UpdatePasswordRequest request) {
@@ -54,8 +55,18 @@ public class AccountController {
                 .messages("Password updated successfully")
                 .build());
     }
+    @PreAuthorize(value = "hasRole('ROLE_ADMIN')")
+    @PatchMapping("customer/{id}/reset-password")
+    public ResponseEntity<ResponseObject<Void>> resetAccount(@PathVariable String id) {
+        accountService.resetPassword(id);
+        return ResponseEntity.ok(new ResponseObject.Builder<Void>()
+                        .success(true)
+                        .code("SUCCESS")
+                        .messages("Account password reset successfully")
+                .build());
+    }
 
-    @DeleteMapping("/{id}")
+    @DeleteMapping("{id}")
     public ResponseEntity<ResponseObject<Void>> deleteAccount(@PathVariable String id) {
         accountService.deleteAccount(id);
         return ResponseEntity.ok(new ResponseObject.Builder<Void>()
@@ -66,7 +77,8 @@ public class AccountController {
     }
 
     @GetMapping
-    public ResponseEntity<ResponseObject<List<AccountResponse>>> getAllAccounts(@PageableDefault(size = 10, page = 0) Pageable page, @RequestParam String q) {
+    @PreAuthorize(value = "hasRole('ROLE_ADMIN')")
+    public ResponseEntity<ResponseObject<List<AccountResponse>>> getAllAccounts(@PageableDefault(size = 10, page = 0) Pageable page, @RequestParam(required = false) String q) {
         PaginationWrapper<List<AccountResponse>> response = accountService.getAllAccounts(QueryWrapper.builder().search(q).pageable(page).build());
         return ResponseEntity.ok(new ResponseObject.Builder<List<AccountResponse>>()
                 .success(true)

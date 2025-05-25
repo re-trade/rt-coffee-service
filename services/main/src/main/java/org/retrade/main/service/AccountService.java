@@ -16,5 +16,7 @@ public interface AccountService {
 
     void deleteAccount(String id);
 
+    void resetPassword(String id);
+
     PaginationWrapper<List<AccountResponse>> getAllAccounts(QueryWrapper queryWrapper);
 }

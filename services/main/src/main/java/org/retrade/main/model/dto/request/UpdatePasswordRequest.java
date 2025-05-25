@@ -15,7 +15,7 @@ public class UpdatePasswordRequest {
     
     @NotEmpty(message = "New password is required")
     @NotNull(message = "New password cannot be null")
-    @Size(min = 8, message = "New password must be at least 8 characters long")
+    @Size(min = 12, message = "New password must be at least 8 characters long")
     private String newPassword;
     
     @NotEmpty(message = "Confirm password is required")

@@ -8,21 +8,24 @@ import org.retrade.common.model.exception.ValidationException;
 import org.retrade.main.model.dto.request.UpdatePasswordRequest;
 import org.retrade.main.model.dto.response.AccountResponse;
 import org.retrade.main.model.entity.AccountEntity;
+import org.retrade.main.model.message.EmailNotificationMessage;
 import org.retrade.main.repository.AccountRepository;
 import org.retrade.main.service.AccountService;
+import org.retrade.main.service.MessageProducerService;
 import org.retrade.main.util.AuthUtils;
+import org.retrade.main.util.TokenUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class AccountServiceImpl implements AccountService {
+    private final MessageProducerService messageProducerService;
     private final AccountRepository accountRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuthUtils authUtils;
@@ -76,6 +79,28 @@ public class AccountServiceImpl implements AccountService {
         account.setEnabled(false);
         account.setLocked(true);
         accountRepository.save(account);
+    }
+
+    @Override
+    public void resetPassword(String id) {
+        var account = accountRepository.findById(id).orElseThrow(() -> new ValidationException("Account not found with id: " + id));
+        var passwordGen = TokenUtils.generatePassword(12);
+        account.setHashPassword(passwordEncoder.encode(passwordGen));
+        try {
+            accountRepository.save(account);
+            Map<String, Object> templateVars = new HashMap<>();
+            EmailNotificationMessage emailMessage = EmailNotificationMessage.builder()
+                    .to(account.getEmail())
+                    .subject("Reset Password")
+                    .templateName("reset-password")
+                    .templateVariables(templateVars)
+                    .messageId(UUID.randomUUID().toString())
+                    .retryCount(0)
+                    .build();
+            messageProducerService.sendEmailNotification(emailMessage);
+        } catch (Exception e) {
+            throw new ActionFailedException("Error while resetting password", e);
+        }
     }
 
     @Override
