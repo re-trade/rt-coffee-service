@@ -47,9 +47,8 @@ public class AccountServiceImpl implements AccountService {
         return mapToAccountResponse(account);
     }
 
-
     @Override
-    @Transactional
+    @Transactional(rollbackFor = {ActionFailedException.class, Exception.class})
     public void updatePassword(String id, UpdatePasswordRequest request) {
         AccountEntity currentAccount = authUtils.getUserAccountFromAuthentication();
         AccountEntity account = accountRepository.findById(id)

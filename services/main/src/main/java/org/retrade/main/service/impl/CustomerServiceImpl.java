@@ -129,7 +129,6 @@ public class CustomerServiceImpl implements CustomerService {
                 cb.like(cb.lower(root.join("account").get("username")),
                     "%" + field.getValue().toString().toLowerCase() + "%"));
         }
-
         if (searchFields.containsKey("email")) {
             var field = searchFields.get("email");
             spec = spec.and((root, query, cb) ->
