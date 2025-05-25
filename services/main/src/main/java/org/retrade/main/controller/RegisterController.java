@@ -13,11 +13,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/registers")
+@RequestMapping("registers")
 @RequiredArgsConstructor
 public class RegisterController {
     private final RegisterService registerService;
-    @PostMapping(path = "/customers/account")
+    @PostMapping(path = "customers/account")
     public ResponseEntity<ResponseObject<CustomerAccountRegisterResponse>> customerRegisterAccount (@Valid @RequestBody CustomerAccountRegisterRequest request) {
         var result = registerService.customerRegister(request);
         return ResponseEntity.ok(new ResponseObject.Builder<CustomerAccountRegisterResponse>()

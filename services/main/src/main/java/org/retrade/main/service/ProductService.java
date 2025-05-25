@@ -1,0 +1,34 @@
+package org.retrade.main.service;
+
+import org.retrade.common.model.dto.request.QueryWrapper;
+import org.retrade.common.model.dto.response.PaginationWrapper;
+import org.retrade.main.model.dto.request.CreateProductRequest;
+import org.retrade.main.model.dto.request.UpdateProductRequest;
+import org.retrade.main.model.dto.response.ProductResponse;
+
+import java.util.List;
+
+public interface ProductService {
+    ProductResponse createProduct(CreateProductRequest request);
+    
+    ProductResponse updateProduct(String id, UpdateProductRequest request);
+    
+    void deleteProduct(String id);
+    
+    ProductResponse getProductById(String id);
+    
+    PaginationWrapper<List<ProductResponse>> getAllProducts(QueryWrapper queryWrapper);
+    
+    PaginationWrapper<List<ProductResponse>> getProductsBySeller(String sellerId, QueryWrapper queryWrapper);
+    
+    PaginationWrapper<List<ProductResponse>> getMyProducts(QueryWrapper queryWrapper);
+    
+    List<ProductResponse> getProductsByBrand(String brand);
+    
+    List<ProductResponse> searchProductsByName(String name);
+    
+    
+    void verifyProduct(String id);
+    
+    void unverifyProduct(String id);
+}
