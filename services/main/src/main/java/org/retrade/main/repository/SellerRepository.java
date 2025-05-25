@@ -11,4 +11,5 @@ import java.util.Optional;
 public interface SellerRepository extends BaseJpaRepository<SellerEntity, String> {
     Optional<SellerEntity> findByEmail(String email);
     Optional<SellerEntity> findByShopName(String shopName);
+    Optional<SellerEntity> findByAccount(AccountEntity account);
 }

@@ -27,6 +27,13 @@ public class TokenUtils {
                 + URLEncoder.encode(issuer + ":" + username, StandardCharsets.UTF_8).replace("+", "%20")
                 + "?secret=" + URLEncoder.encode(secretKey, StandardCharsets.UTF_8).replace("+", "%20")
                 + "&issuer=" + URLEncoder.encode(issuer, StandardCharsets.UTF_8).replace("+", "%20");
-
+    }
+    
+    public static String generatePassword(int length) {
+        SecureRandom secureRandom = new SecureRandom();
+        byte[] bytes = new byte[length];
+        secureRandom.nextBytes(bytes);
+        Base32 base32 = new Base32();
+        return base32.encodeToString(bytes);
     }
 }
