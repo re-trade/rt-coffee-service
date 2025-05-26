@@ -46,14 +46,7 @@ public class JwtServiceImpl implements JwtService {
     @Override
     public String generateToken(String username, List<String> role, JwtTokenType tokenType) {
         Date currentDate = new Date(System.currentTimeMillis());
-        Date expiryDate = null;
-        if(tokenType == JwtTokenType.ACCESS_TOKEN) {
-            expiryDate = new Date(currentDate.getTime() + jwtTokenConfig.getAccessToken().getMaxAge());
-        }else if (tokenType == JwtTokenType.REFRESH_TOKEN) {
-            expiryDate = new Date(currentDate.getTime() + jwtTokenConfig.getRefreshToken().getMaxAge());
-        }else if (tokenType == JwtTokenType.TWO_FA_TOKEN) {
-            expiryDate = new Date(currentDate.getTime() + jwtTokenConfig.getTwofaToken().getMaxAge());
-        }
+        Date expiryDate = getExpiryDate(tokenType, currentDate);
         return Jwts.builder()
                 .setSubject(username)
                 .setIssuedAt(currentDate)
@@ -66,6 +59,9 @@ public class JwtServiceImpl implements JwtService {
                 .signWith(getSigningKey(tokenType))
                 .compact();
     }
+
+
+
     @Override
     public String generateToken(UserClaims userClaims) {
         return generateToken(userClaims.getUsername(),userClaims.getRoles(),userClaims.getTokenType());
@@ -156,5 +152,17 @@ public class JwtServiceImpl implements JwtService {
             return true;
         }
         return false;
+    }
+    
+    private Date getExpiryDate(JwtTokenType tokenType, Date currentDate) {
+        Date expiryDate = null;
+        if(tokenType == JwtTokenType.ACCESS_TOKEN) {
+            expiryDate = new Date(currentDate.getTime() + jwtTokenConfig.getAccessToken().getMaxAge());
+        }else if (tokenType == JwtTokenType.REFRESH_TOKEN) {
+            expiryDate = new Date(currentDate.getTime() + jwtTokenConfig.getRefreshToken().getMaxAge());
+        }else if (tokenType == JwtTokenType.TWO_FA_TOKEN) {
+            expiryDate = new Date(currentDate.getTime() + jwtTokenConfig.getTwofaToken().getMaxAge());
+        }
+        return expiryDate;
     }
 }

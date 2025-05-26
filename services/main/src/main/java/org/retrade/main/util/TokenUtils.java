@@ -1,6 +1,7 @@
 package org.retrade.main.util;
 
 import de.taimos.totp.TOTP;
+import jakarta.servlet.http.HttpServletRequest;
 import org.apache.commons.codec.binary.Base32;
 import org.apache.commons.codec.binary.Hex;
 
@@ -35,5 +36,13 @@ public class TokenUtils {
         secureRandom.nextBytes(bytes);
         Base32 base32 = new Base32();
         return base32.encodeToString(bytes);
+    }
+    
+    public static String getTokenFromHeader(HttpServletRequest request) {
+        String bearerToken = request.getHeader("Authorization");
+        if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
+            return bearerToken.substring(7);
+        }
+        return null;
     }
 }
