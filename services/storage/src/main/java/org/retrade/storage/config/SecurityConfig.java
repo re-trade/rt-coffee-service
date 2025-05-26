@@ -25,10 +25,7 @@ public class SecurityConfig {
     SecurityFilterChain authenticationFilterChain (HttpSecurity http) throws Exception {
         http.csrf(AbstractHttpConfigurer::disable);
         http.cors(cors -> cors.configurationSource(corsConfig.corsConfigurationSource()));
-        http.authorizeHttpRequests((auth) -> auth.requestMatchers("/auth/**", "/api-docs/**", "/swagger-ui/**",
-                        "/registers/**",
-                        "/passwords/**",
-                        "/pings/**")
+        http.authorizeHttpRequests((auth) -> auth.requestMatchers("/api-docs/**", "/swagger-ui/**")
                 .permitAll()
                 .anyRequest().authenticated());
         http.exceptionHandling(exception -> {

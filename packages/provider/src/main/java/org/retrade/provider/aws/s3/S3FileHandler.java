@@ -27,7 +27,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
-public abstract class S3FileHandler {
+public class S3FileHandler {
     private final S3Client s3Client;
     private final S3AsyncClient s3AsyncClient;
     private final AWSConfigValue awsConfig;
