@@ -16,7 +16,7 @@ spring:
         health-check-path: /actuator/health
       config:
         enabled: true
-        name: auth-service
+        name: main-service
   grpc:
     server:
       enabled: true
@@ -35,7 +35,9 @@ spring:
     show-sql: true
     properties:
       hibernate:
+        format_sql: true
         dialect: org.hibernate.dialect.PostgreSQLDialect
+        default_schema: main
   servlet:
     multipart:
       max-file-size: 10MB

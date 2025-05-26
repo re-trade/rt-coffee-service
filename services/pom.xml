@@ -52,7 +52,6 @@
 				</exclusions>
 			</dependency>
 			<dependency>
-
 				<groupId>org.apache.tomcat</groupId>
 				<artifactId>annotations-api</artifactId>
 				<version>6.0.53</version>
@@ -85,6 +84,7 @@
 		<module>gateway</module>
 		<module>feedback-notification</module>
         <module>voucher</module>
+        <module>storage</module>
     </modules>
 
 	<build>

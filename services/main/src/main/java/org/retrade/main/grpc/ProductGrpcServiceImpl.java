@@ -11,6 +11,7 @@ import org.springframework.grpc.server.service.GrpcService;
 
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @GrpcService
@@ -65,7 +66,7 @@ public class ProductGrpcServiceImpl extends GrpcProductServiceGrpc.GrpcProductSe
                             return null;
                         }
                     })
-                    .filter(product -> product != null)
+                    .filter(Objects::nonNull)
                     .collect(Collectors.toList());
             
             GetProductsResponse response = GetProductsResponse.newBuilder()
@@ -94,8 +95,7 @@ public class ProductGrpcServiceImpl extends GrpcProductServiceGrpc.GrpcProductSe
     public void getProductsByCategory(GetProductsByCategoryRequest request, StreamObserver<GetProductsByCategoryResponse> responseObserver) {
         try {
             log.info("Getting products by category: {}", request.getCategory());
-            
-            // Build query for category search
+
             String searchQuery = "categories=" + request.getCategory();
             var queryWrapper = new QueryWrapper.QueryWrapperBuilder()
                     .search(searchQuery)
@@ -135,8 +135,7 @@ public class ProductGrpcServiceImpl extends GrpcProductServiceGrpc.GrpcProductSe
     public void getProductsBySeller(GetProductsBySellerRequest request, StreamObserver<GetProductsBySellerResponse> responseObserver) {
         try {
             log.info("Getting products by seller: {}", request.getSellerId());
-            
-            // Build query for seller search
+
             String searchQuery = "sellerId=" + request.getSellerId();
             var queryWrapper = new QueryWrapper.QueryWrapperBuilder()
                     .search(searchQuery)
