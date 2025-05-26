@@ -41,6 +41,16 @@ spring:
       security:
         csrf:
           enabled: false
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+
+grpc:
+  client:
+    main-service:
+      host: ${MAIN_SERVICE_GRPC_HOST:localhost}
+      port: ${MAIN_SERVICE_GRPC_PORT:9080}
 
 logging:
   level:
@@ -83,4 +93,9 @@ security:
     base-host: ${BASE_HOST:}
     front-end: ${FRONTEND_URL}
 
-
+aws:
+  region: ${AWS_REGION:hcm}
+  access-key: ${AWS_ACCESS_KEY:}
+  secret-key: ${AWS_SECRET_KEY:}
+  endpoint: ${AWS_ENDPOINT:}
+  bucket: ${AWS_BUCKET:}
