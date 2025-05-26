@@ -4,7 +4,7 @@ services:
     image: postgres:latest
     restart: always
     networks:
-      - sea-local-networks
+      - rt-local-networks
     profiles:
       - database
       - local
@@ -14,7 +14,7 @@ services:
     image: redis:latest
     restart: always
     networks:
-      - sea-local-networks
+      - rt-local-networks
     profiles:
       - database
       - local
@@ -23,56 +23,28 @@ services:
     container_name: rabbitmq_service
     image: rabbitmq:3-management
     restart: always
-    ports:
-      - "5672:5672"
-      - "15672:15672"
     environment:
       - RABBITMQ_DEFAULT_USER=guest
       - RABBITMQ_DEFAULT_PASS=guest
     networks:
-      - sea-local-networks
+      - rt-local-networks
     profiles:
       - database
       - local
       - storage
-  authentication-services:
-    container_name: authentication_service
-    image: sea-authentication-service:latest
+  main-services:
+    container_name: main_service
+    image: main-authentication-service:latest
     restart: always
     build:
       context: ..
-      dockerfile: services/authentication/Dockerfile
+      dockerfile: services/main/Dockerfile
     networks:
-      - sea-local-networks
+      - rt-local-networks
     profiles:
       - backend
       - local
-      - authentication
-  account-services:
-    container_name: account_service
-    image: sea-account-service:latest
-    restart: always
-    build:
-      context: ..
-      dockerfile: services/account/Dockerfile
-    networks:
-      - sea-local-networks
-    profiles:
-      - backend
-      - local
-      - account
-  booking-payment-services:
-    container_name: booking_payment_service
-    image: sea-booking-payment-service:latest
-    build:
-      context: ..
-      dockerfile: services/booking-payment/Dockerfile
-    networks:
-      - sea-local-networks
-    profiles:
-      - backend
-      - local
-      - booking-payment
+      - main
   feedback-notification-services:
     container_name: feedback_notification_service
     image: sea-feedback-notification-service:latest
@@ -81,37 +53,24 @@ services:
       context: ..
       dockerfile: services/feedback-notification/Dockerfile
     networks:
-      - sea-local-networks
+      - rt-local-networks
     profiles:
       - backend
       - local
       - feedback-notification
-  partner-services:
-    container_name: partner_service
-    image: partner-service:latest
+  vouche-services:
+    container_name: voucher_service
+    image: voucher-service:latest
     restart: always
     build:
       context: ..
-      dockerfile: services/partner/Dockerfile
+      dockerfile: services/voucher/Dockerfile
     networks:
-      - sea-local-networks
+      - rt-local-networks
     profiles:
       - backend
       - local
-      - partner
-  user-services:
-    container_name: user_service
-    image: user-service:latest
-    restart: always
-    build:
-      context: ..
-      dockerfile: services/user/Dockerfile
-    networks:
-      - sea-local-networks
-    profiles:
-      - backend
-      - local
-      - user
+      - voucher
   gateway-services:
     container_name: gateway_services
     image: gateway-service:latest
@@ -119,7 +78,7 @@ services:
       context: ..
       dockerfile: services/gateway/Dockerfile
     networks:
-      - sea-local-networks
+      - rt-local-networks
     profiles:
       - backend
       - local
@@ -129,11 +88,11 @@ services:
     image: consul:latest
     restart: always
     networks:
-      - sea-local-networks
+      - rt-local-networks
     profiles:
       - consul
       - local
       - consul
 networks:
-  sea-local-networks:
-    name: sea-local-networks
+  rt-local-networks:
+    name: rt-local-networks

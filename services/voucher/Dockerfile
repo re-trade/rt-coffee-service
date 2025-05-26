@@ -7,10 +7,10 @@ USER retrade
 FROM maven:3.9.9-eclipse-temurin-24 AS builder
 WORKDIR /application-builder
 COPY . .
-RUN mvn clean package -pl :main -am -DskipTests
+RUN mvn clean package -pl :voucher -am -DskipTests
 
 FROM base AS deploy
 WORKDIR /application
-COPY --chown=retrade:retrade --from=builder /application-builder/services/main/target/*.jar ./app.jar
+COPY --chown=retrade:retrade --from=builder /application-builder/services/voucher/target/*.jar ./app.jar
 USER retrade
 ENTRYPOINT ["java", "-jar", "app.jar"]
