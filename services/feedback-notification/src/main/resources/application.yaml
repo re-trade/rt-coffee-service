@@ -47,6 +47,8 @@ spring:
 
 server:
   port: ${PORT:8084}
+  servlet:
+    context-path: /api/v1
 
 logging:
   level:
