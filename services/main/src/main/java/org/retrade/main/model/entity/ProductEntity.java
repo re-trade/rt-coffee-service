@@ -33,7 +33,13 @@ public class ProductEntity extends BaseSQLEntity {
     private String model;
     @Column(name = "current_price", nullable = false)
     private BigDecimal currentPrice;
-    private Set<String> categories;
+    @ManyToMany(targetEntity = CategoryEntity.class, fetch = FetchType.EAGER)
+    @JoinTable(
+            name = "product_categories",
+            joinColumns = @JoinColumn(name = "product_id", nullable = false),
+            inverseJoinColumns = @JoinColumn(name = "category_id", nullable = false)
+    )
+    private Set<CategoryEntity> categories;
     private Set<String> keywords;
     private Set<String> tags;
     @Column(name = "verified", nullable = false)

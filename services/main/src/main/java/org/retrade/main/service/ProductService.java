@@ -10,25 +10,28 @@ import java.util.List;
 
 public interface ProductService {
     ProductResponse createProduct(CreateProductRequest request);
-    
+
     ProductResponse updateProduct(String id, UpdateProductRequest request);
-    
+
     void deleteProduct(String id);
-    
+
     ProductResponse getProductById(String id);
-    
+
     PaginationWrapper<List<ProductResponse>> getAllProducts(QueryWrapper queryWrapper);
-    
+
     PaginationWrapper<List<ProductResponse>> getProductsBySeller(String sellerId, QueryWrapper queryWrapper);
-    
+
     PaginationWrapper<List<ProductResponse>> getMyProducts(QueryWrapper queryWrapper);
-    
+
     List<ProductResponse> getProductsByBrand(String brand);
-    
+
     List<ProductResponse> searchProductsByName(String name);
-    
-    
+
+    List<ProductResponse> getProductsByCategory(String categoryName);
+
+    PaginationWrapper<List<ProductResponse>> getProductsByCategory(String categoryName, QueryWrapper queryWrapper);
+
     void verifyProduct(String id);
-    
+
     void unverifyProduct(String id);
 }
