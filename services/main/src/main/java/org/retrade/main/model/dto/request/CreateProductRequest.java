@@ -49,7 +49,7 @@ public class CreateProductRequest {
     @DecimalMin(value = "0.0", inclusive = false, message = "Current price must be greater than 0")
     private BigDecimal currentPrice;
 
-    private Set<String> categories;
+    private Set<String> categoryIds;
     private Set<String> keywords;
     private Set<String> tags;
 }

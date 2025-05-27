@@ -14,6 +14,7 @@ import org.retrade.main.model.dto.request.UpdateProductRequest;
 import org.retrade.main.model.dto.response.ProductResponse;
 import org.retrade.main.model.entity.CategoryEntity;
 import org.retrade.main.model.entity.ProductEntity;
+import org.retrade.main.model.entity.SellerEntity;
 import org.retrade.main.repository.CategoryRepository;
 import org.retrade.main.repository.ProductRepository;
 import org.retrade.main.repository.SellerRepository;
@@ -38,9 +39,12 @@ public class ProductServiceImpl implements ProductService {
     @Transactional(rollbackFor = {ActionFailedException.class, Exception.class})
     public ProductResponse createProduct(CreateProductRequest request) {
         var account = authUtils.getUserAccountFromAuthentication();
-        var seller = sellerRepository.findByAccount(account)
-                .orElseThrow(() -> new ValidationException("Seller profile not found"));
-        validateCategories(request.getCategories());
+        var seller = account.getSeller();
+        if (seller == null) {
+            throw new ValidationException("Seller profile not found");
+        }
+
+        validateCategories(request.getCategoryIds());
 
         var product = ProductEntity.builder()
                 .name(request.getName())
@@ -53,7 +57,7 @@ public class ProductServiceImpl implements ProductService {
                 .discount(request.getDiscount())
                 .model(request.getModel())
                 .currentPrice(request.getCurrentPrice())
-                .categories(convertCategoryNamesToEntities(request.getCategories()))
+                .categories(convertCategoryIdsToEntities(request.getCategoryIds()))
                 .keywords(request.getKeywords())
                 .tags(request.getTags())
                 .verified(false)
@@ -72,51 +76,26 @@ public class ProductServiceImpl implements ProductService {
     public ProductResponse updateProduct(String id, UpdateProductRequest request) {
         var product = getProductEntityById(id);
         var account = authUtils.getUserAccountFromAuthentication();
-        var seller = sellerRepository.findByAccount(account)
-                .orElseThrow(() -> new ValidationException("Seller profile not found"));
-
+        var seller = account.getSeller();
+        if (seller == null) {
+            throw new ValidationException("Seller profile not found");
+        }
         if (!product.getSeller().getId().equals(seller.getId())) {
             throw new ValidationException("You can only update your own products");
         }
-
-        if (request.getName() != null) {
-            product.setName(request.getName());
-        }
-        if (request.getShortDescription() != null) {
-            product.setShortDescription(request.getShortDescription());
-        }
-        if (request.getDescription() != null) {
-            product.setDescription(request.getDescription());
-        }
-        if (request.getThumbnail() != null) {
-            product.setThumbnail(request.getThumbnail());
-        }
-        if (request.getProductImages() != null) {
-            product.setProductImages(request.getProductImages());
-        }
-        if (request.getBrand() != null) {
-            product.setBrand(request.getBrand());
-        }
-        if (request.getDiscount() != null) {
-            product.setDiscount(request.getDiscount());
-        }
-        if (request.getModel() != null) {
-            product.setModel(request.getModel());
-        }
-        if (request.getCurrentPrice() != null) {
-            product.setCurrentPrice(request.getCurrentPrice());
-        }
-        if (request.getCategories() != null) {
-            validateCategories(request.getCategories());
-            product.setCategories(convertCategoryNamesToEntities(request.getCategories()));
-        }
-        if (request.getKeywords() != null) {
-            product.setKeywords(request.getKeywords());
-        }
-        if (request.getTags() != null) {
-            product.setTags(request.getTags());
-        }
-
+        product.setName(request.getName());
+        product.setShortDescription(request.getShortDescription());
+        product.setDescription(request.getDescription());
+        product.setThumbnail(request.getThumbnail());
+        product.setProductImages(request.getProductImages());
+        product.setBrand(request.getBrand());
+        product.setDiscount(request.getDiscount());
+        product.setModel(request.getModel());
+        product.setCurrentPrice(request.getCurrentPrice());
+        validateCategories(request.getCategoryIds());
+        product.setCategories(convertCategoryIdsToEntities(request.getCategoryIds()));
+        product.setKeywords(request.getKeywords());
+        product.setTags(request.getTags());
         try {
             var updatedProduct = productRepository.save(product);
             return mapToProductResponse(updatedProduct);
@@ -166,36 +145,17 @@ public class ProductServiceImpl implements ProductService {
     public PaginationWrapper<List<ProductResponse>> getProductsBySeller(String sellerId, QueryWrapper queryWrapper) {
         var seller = sellerRepository.findById(sellerId)
                 .orElseThrow(() -> new ValidationException("Seller not found"));
-        return productRepository.query(queryWrapper, (param) -> (root, query, criteriaBuilder) -> {
-            List<Predicate> predicates = new ArrayList<>();
-            predicates.add(criteriaBuilder.equal(root.get("seller"), seller));
-            return getPredicate(param, root, criteriaBuilder, predicates);
-        }, (items) -> {
-            var list = items.map(this::mapToProductResponse).stream().toList();
-            return new PaginationWrapper.Builder<List<ProductResponse>>()
-                    .setPaginationInfo(items)
-                    .setData(list)
-                    .build();
-        });
+        return getProductsBySeller(seller, queryWrapper);
     }
 
     @Override
     public PaginationWrapper<List<ProductResponse>> getMyProducts(QueryWrapper queryWrapper) {
         var account = authUtils.getUserAccountFromAuthentication();
-        var seller = sellerRepository.findByAccount(account)
-                .orElseThrow(() -> new ValidationException("Seller profile not found"));
-
-        Page<ProductEntity> productPage = productRepository.findBySeller(seller, queryWrapper.pagination());
-
-        List<ProductResponse> productResponses = productPage.getContent()
-                .stream()
-                .map(this::mapToProductResponse)
-                .toList();
-
-        return new PaginationWrapper.Builder<List<ProductResponse>>()
-                .setData(productResponses)
-                .setPaginationInfo(productPage)
-                .build();
+        var seller = account.getSeller();
+        if (seller == null) {
+            throw new ValidationException("Seller profile not found");
+        }
+       return getProductsBySeller(seller, queryWrapper);
     }
 
     @Override
@@ -295,38 +255,43 @@ public class ProductServiceImpl implements ProductService {
         }
         return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
     }
-    private void validateCategories(Set<String> categories) {
-        if (categories == null || categories.isEmpty()) {
-            return;
-        }
-        List<String> invalidCategories = new ArrayList<>();
-        for (String categoryName : categories) {
-            if (!categoryRepository.existsByName(categoryName)) {
-                invalidCategories.add(categoryName);
-            }
-        }
-        if (!invalidCategories.isEmpty()) {
-            throw new ValidationException("Invalid categories: " + String.join(", ", invalidCategories));
-        }
-    }
 
-    private Set<CategoryEntity> convertCategoryNamesToEntities(Set<String> categoryNames) {
-        if (categoryNames == null || categoryNames.isEmpty()) {
+    private void validateCategories(Set<String> categoryIds) {
+        if (categoryIds == null || categoryIds.isEmpty()) {
             throw new ValidationException("Invalid categories");
         }
-        return categoryNames.stream()
-                .map(categoryName -> categoryRepository.findByName(categoryName)
-                        .orElseThrow(() -> new ValidationException("Category not found: " + categoryName)))
-                .collect(Collectors.toSet());
+        var categoryCount = categoryRepository.countDistinctByIdIn(categoryIds);
+        if (categoryCount != categoryIds.size()) {
+            throw new ValidationException("Invalid categories");
+        }
     }
-
     private Set<String> convertCategoryEntitiesToNames(Set<CategoryEntity> categoryEntities) {
         if (categoryEntities == null || categoryEntities.isEmpty()) {
             return Set.of();
         }
-
         return categoryEntities.stream()
                 .map(CategoryEntity::getName)
                 .collect(Collectors.toSet());
+    }
+    private Set<CategoryEntity> convertCategoryIdsToEntities(Set<String> categoryIds) {
+        if (categoryIds == null || categoryIds.isEmpty()) {
+            throw new ValidationException("Invalid categories");
+        }
+        return categoryRepository.findByIdIn(categoryIds);
+    }
+
+    private PaginationWrapper<List<ProductResponse>> getProductsBySeller (SellerEntity seller, QueryWrapper queryWrapper) {
+        return productRepository.query(queryWrapper, (param) -> (root, query, criteriaBuilder) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            predicates.add(criteriaBuilder.equal(root.get("seller"), seller));
+            return getPredicate(param, root, criteriaBuilder, predicates);
+        }, (items) -> {
+            var list = items.map(this::mapToProductResponse).stream().toList();
+            return new PaginationWrapper.Builder<List<ProductResponse>>()
+                    .setPaginationInfo(items)
+                    .setData(list)
+                    .build();
+        });
+
     }
 }
