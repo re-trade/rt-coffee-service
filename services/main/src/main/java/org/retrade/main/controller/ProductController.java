@@ -153,6 +153,38 @@ public class ProductController {
                 .build());
     }
 
+    @GetMapping("category/{categoryName}")
+    public ResponseEntity<ResponseObject<List<ProductResponse>>> getProductsByCategory(
+            @PathVariable String categoryName,
+            @RequestParam(required = false, name = "q") String search,
+            @PageableDefault(size = 10) Pageable pageable) {
+
+        var queryWrapper = new QueryWrapper.QueryWrapperBuilder()
+                .search(search)
+                .wrapSort(pageable)
+                .build();
+
+        var result = productService.getProductsByCategory(categoryName, queryWrapper);
+        return ResponseEntity.ok(new ResponseObject.Builder<List<ProductResponse>>()
+                .success(true)
+                .code("SUCCESS")
+                .unwrapPaginationWrapper(result)
+                .messages("Products in category retrieved successfully")
+                .build());
+    }
+
+    @GetMapping("category/{categoryName}/simple")
+    public ResponseEntity<ResponseObject<List<ProductResponse>>> getProductsByCategorySimple(
+            @PathVariable String categoryName) {
+        var result = productService.getProductsByCategory(categoryName);
+        return ResponseEntity.ok(new ResponseObject.Builder<List<ProductResponse>>()
+                .success(true)
+                .code("SUCCESS")
+                .content(result)
+                .messages("Products in category retrieved successfully")
+                .build());
+    }
+
     @PutMapping("{id}/verify")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     public ResponseEntity<ResponseObject<Void>> verifyProduct(@PathVariable String id) {
