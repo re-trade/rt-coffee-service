@@ -1,5 +1,7 @@
 package org.retrade.main.service;
 
+import org.retrade.common.model.dto.request.QueryWrapper;
+import org.retrade.common.model.dto.response.PaginationWrapper;
 import org.retrade.main.model.dto.response.CategoryResponse;
 import org.retrade.main.model.entity.CategoryEntity;
 
@@ -11,15 +13,15 @@ public interface CategoryService {
     
     CategoryResponse getCategoryByName(String name);
     
-    List<CategoryResponse> getAllVisibleCategories();
+    PaginationWrapper<List<CategoryResponse>> getAllVisibleCategories(QueryWrapper queryWrapper);
+
+    PaginationWrapper<List<CategoryResponse>> getAllCategories(QueryWrapper queryWrapper);
+
+    PaginationWrapper<List<CategoryResponse>> getCategoriesByParent(String parentId, QueryWrapper queryWrapper);
     
-    List<CategoryResponse> getCategoriesByParent(String parentId);
+    PaginationWrapper<List<CategoryResponse>> getRootCategories(QueryWrapper queryWrapper);
     
-    List<CategoryResponse> getRootCategories();
-    
-    List<CategoryResponse> getCategoriesByType(String type);
-    
-    List<CategoryResponse> searchCategoriesByName(String name);
+    PaginationWrapper<List<CategoryResponse>> getCategoriesByType(String type, QueryWrapper queryWrapper);
     
     CategoryEntity getCategoryEntityById(String id);
     
