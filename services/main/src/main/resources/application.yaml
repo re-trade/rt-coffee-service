@@ -110,6 +110,12 @@ oauth2:
     redirectUrl: ${GOOGLE_REDIRECT_URL}
     userProfileEndpoint: ${GOOGLE_USERPROFILE_ENDPOINT}
 
+cart:
+  ttl-days: 30
+  max-items-per-cart: 100
+  max-quantity-per-item: 99
+  key-prefix: "cart:user:"
+
 logging:
   level:
     org.springframework.amqp: DEBUG
