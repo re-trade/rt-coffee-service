@@ -1,5 +1,9 @@
 package org.retrade.main.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.retrade.common.model.dto.request.QueryWrapper;
@@ -19,13 +23,19 @@ import java.util.List;
 @RestController
 @RequestMapping("products")
 @RequiredArgsConstructor
+@Tag(name = "Products", description = "Product management and catalog endpoints")
 public class ProductController {
     private final ProductService productService;
 
+    @Operation(
+            summary = "Create new product",
+            description = "Create a new product in the catalog. Requires SELLER role.",
+            security = {@SecurityRequirement(name = "bearerAuth"), @SecurityRequirement(name = "cookieAuth")}
+    )
     @PostMapping
     @PreAuthorize("hasRole('ROLE_SELLER')")
     public ResponseEntity<ResponseObject<ProductResponse>> createProduct(
-            @Valid @RequestBody CreateProductRequest request) {
+            @Parameter(description = "Product creation data") @Valid @RequestBody CreateProductRequest request) {
         var result = productService.createProduct(request);
         return ResponseEntity.ok(new ResponseObject.Builder<ProductResponse>()
                 .success(true)
@@ -71,10 +81,14 @@ public class ProductController {
                 .build());
     }
 
+    @Operation(
+            summary = "Get all products",
+            description = "Retrieve all products with optional search and pagination. Public endpoint."
+    )
     @GetMapping
     public ResponseEntity<ResponseObject<List<ProductResponse>>> getAllProducts(
-            @RequestParam(required = false, name = "q") String search,
-            @PageableDefault(size = 10) Pageable pageable) {
+            @Parameter(description = "Search query to filter products") @RequestParam(required = false, name = "q") String search,
+            @Parameter(description = "Pagination parameters") @PageableDefault(size = 10) Pageable pageable) {
         var queryWrapper = new QueryWrapper.QueryWrapperBuilder()
                 .search(search)
                 .wrapSort(pageable)

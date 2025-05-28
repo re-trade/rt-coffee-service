@@ -7,10 +7,12 @@ import org.retrade.common.model.exception.ValidationException;
 import org.retrade.main.model.dto.request.CustomerAccountRegisterRequest;
 import org.retrade.main.model.dto.response.CustomerAccountRegisterResponse;
 import org.retrade.main.model.entity.AccountEntity;
+import org.retrade.main.model.entity.AccountRoleEntity;
 import org.retrade.main.model.entity.CustomerEntity;
 import org.retrade.main.model.message.EmailNotificationMessage;
 import org.retrade.main.model.message.UserRegistrationMessage;
 import org.retrade.main.repository.AccountRepository;
+import org.retrade.main.repository.RoleRepository;
 import org.retrade.main.service.MessageProducerService;
 import org.retrade.main.service.RegisterService;
 import org.retrade.main.util.TokenUtils;
@@ -21,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -28,6 +31,7 @@ import java.util.UUID;
 @Slf4j
 public class RegisterServiceImpl implements RegisterService {
     private final AccountRepository accountRepository;
+    private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
     private final MessageProducerService messageProducerService;
     @Override
@@ -37,6 +41,8 @@ public class RegisterServiceImpl implements RegisterService {
         if (accountCheck.isPresent()) {
             throw new ValidationException("Username already exists");
         }
+        var roleCustomer = roleRepository.findByCode("ROLE_CUSTOMER")
+                .orElseThrow(() -> new ValidationException("Role not found"));
         var customerAccount = AccountEntity.builder()
                 .username(request.getUsername())
                 .email(request.getEmail())
@@ -47,6 +53,12 @@ public class RegisterServiceImpl implements RegisterService {
                 .joinInDate(LocalDateTime.now())
                 .secret(TokenUtils.generateSecretKey())
                 .build();
+        var accountRoleEntity = AccountRoleEntity.builder()
+                .account(customerAccount)
+                .role(roleCustomer)
+                .enabled(true)
+                .build();
+        customerAccount.setAccountRoles(Set.of(accountRoleEntity));
         var customerProfile = CustomerEntity.builder()
                 .firstName(request.getFirstName())
                 .lastName(request.getLastName())

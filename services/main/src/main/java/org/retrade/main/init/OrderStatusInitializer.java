@@ -13,7 +13,7 @@ import java.util.List;
 public class OrderStatusInitializer implements CommandLineRunner {
     private final OrderStatusRepository orderStatusRepository;
     @Override
-    public void run(String... args) throws Exception {
+    public void run(String... args) {
         List<OrderStatusEntity> defaultOrderStatuses = List.of(
                 OrderStatusEntity.builder()
                         .name("Pending")

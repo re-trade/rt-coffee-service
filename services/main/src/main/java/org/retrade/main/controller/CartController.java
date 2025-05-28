@@ -1,5 +1,9 @@
 package org.retrade.main.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.retrade.common.model.dto.response.ResponseObject;
@@ -16,12 +20,18 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("cart")
 @RequiredArgsConstructor
 @PreAuthorize("hasRole('ROLE_CUSTOMER')")
+@Tag(name = "Shopping Cart", description = "Shopping cart management endpoints - requires CUSTOMER role")
 public class CartController {
     private final CartService cartService;
 
+    @Operation(
+            summary = "Add item to cart",
+            description = "Add a product to the shopping cart with specified quantity. Requires CUSTOMER role.",
+            security = {@SecurityRequirement(name = "bearerAuth"), @SecurityRequirement(name = "cookieAuth")}
+    )
     @PostMapping("items")
     public ResponseEntity<ResponseObject<CartResponse>> addToCart(
-            @Valid @RequestBody AddToCartRequest request) {
+            @Parameter(description = "Product and quantity to add") @Valid @RequestBody AddToCartRequest request) {
         var result = cartService.addToCart(request);
         return ResponseEntity.ok(new ResponseObject.Builder<CartResponse>()
                 .success(true)
@@ -56,6 +66,11 @@ public class CartController {
                 .build());
     }
 
+    @Operation(
+            summary = "Get shopping cart",
+            description = "Retrieve the current user's shopping cart with all items and details.",
+            security = {@SecurityRequirement(name = "bearerAuth"), @SecurityRequirement(name = "cookieAuth")}
+    )
     @GetMapping
     public ResponseEntity<ResponseObject<CartResponse>> getCart() {
         var result = cartService.getCart();

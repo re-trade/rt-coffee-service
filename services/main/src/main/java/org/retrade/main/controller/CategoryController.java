@@ -1,5 +1,8 @@
 package org.retrade.main.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.retrade.common.model.dto.request.QueryWrapper;
 import org.retrade.common.model.dto.response.ResponseObject;
@@ -15,13 +18,19 @@ import java.util.List;
 @RestController
 @RequestMapping("categories")
 @RequiredArgsConstructor
+@Tag(name = "Categories", description = "Product category management endpoints")
 public class CategoryController {
     private final CategoryService categoryService;
 
+    @Operation(
+            summary = "Get all categories",
+            description = "Retrieve all visible categories with optional search and pagination. " +
+                    "This endpoint returns categories that are marked as visible in the system."
+    )
     @GetMapping
     public ResponseEntity<ResponseObject<List<CategoryResponse>>> getAllCategories(
-            @PageableDefault Pageable pageable,
-            @RequestParam(required = false, name = "q") String query
+            @Parameter(description = "Pagination parameters (page, size, sort)") @PageableDefault Pageable pageable,
+            @Parameter(description = "Search query to filter categories by name") @RequestParam(required = false, name = "q") String query
     ) {
         var wrapper = QueryWrapper.builder()
                 .pageable(pageable)
@@ -58,10 +67,15 @@ public class CategoryController {
                 .build());
     }
 
+    @Operation(
+            summary = "Get categories by parent",
+            description = "Retrieve child categories for a specific parent category with optional search and pagination."
+    )
     @GetMapping("parent/{parentId}")
-    public ResponseEntity<ResponseObject<List<CategoryResponse>>> getCategoriesByParent(@PathVariable String parentId,
-                                                                                        @PageableDefault Pageable pageable,
-                                                                                        @RequestParam(required = false, name = "q") String query ) {
+    public ResponseEntity<ResponseObject<List<CategoryResponse>>> getCategoriesByParent(
+            @Parameter(description = "ID of the parent category") @PathVariable String parentId,
+            @Parameter(description = "Pagination parameters") @PageableDefault Pageable pageable,
+            @Parameter(description = "Search query to filter child categories") @RequestParam(required = false, name = "q") String query ) {
         var wrapper = QueryWrapper.builder()
                 .pageable(pageable)
                 .search(query)
@@ -75,10 +89,14 @@ public class CategoryController {
                 .build());
     }
 
+    @Operation(
+            summary = "Get root categories",
+            description = "Retrieve top-level categories (categories without parent) with optional search and pagination."
+    )
     @GetMapping("root")
     public ResponseEntity<ResponseObject<List<CategoryResponse>>> getRootCategories(
-            @PageableDefault Pageable pageable,
-            @RequestParam(required = false, name = "q") String query
+            @Parameter(description = "Pagination parameters") @PageableDefault Pageable pageable,
+            @Parameter(description = "Search query to filter root categories") @RequestParam(required = false, name = "q") String query
     ) {
         var wrapper = QueryWrapper.builder()
                 .pageable(pageable)
@@ -93,11 +111,15 @@ public class CategoryController {
                 .build());
     }
 
+    @Operation(
+            summary = "Get categories by type",
+            description = "Retrieve categories filtered by a specific type with optional search and pagination."
+    )
     @GetMapping("type/{type}")
     public ResponseEntity<ResponseObject<List<CategoryResponse>>> getCategoriesByType(
-            @PathVariable String type,
-            @PageableDefault Pageable pageable,
-            @RequestParam(required = false, name = "q") String query) {
+            @Parameter(description = "Category type to filter by") @PathVariable String type,
+            @Parameter(description = "Pagination parameters") @PageableDefault Pageable pageable,
+            @Parameter(description = "Search query to filter categories") @RequestParam(required = false, name = "q") String query) {
         var wrapper = QueryWrapper.builder()
                 .pageable(pageable)
                 .search(query)
@@ -111,10 +133,15 @@ public class CategoryController {
                 .build());
     }
 
+    @Operation(
+            summary = "Search categories",
+            description = "Search for categories using a query string with pagination support. " +
+                    "This endpoint searches across all categories regardless of visibility status."
+    )
     @GetMapping("search")
     public ResponseEntity<ResponseObject<List<CategoryResponse>>> searchCategories(
-            @PageableDefault Pageable pageable,
-            @RequestParam(required = false, name = "q") String query) {
+            @Parameter(description = "Pagination parameters") @PageableDefault Pageable pageable,
+            @Parameter(description = "Search query string", required = true) @RequestParam(required = false, name = "q") String query) {
         var wrapper = QueryWrapper.builder()
                 .pageable(pageable)
                 .search(query)

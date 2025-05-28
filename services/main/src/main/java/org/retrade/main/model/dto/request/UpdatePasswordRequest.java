@@ -3,11 +3,15 @@ package org.retrade.main.model.dto.request;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class UpdatePasswordRequest {
     @NotEmpty(message = "Current password is required")
     @NotNull(message = "Current password cannot be null")

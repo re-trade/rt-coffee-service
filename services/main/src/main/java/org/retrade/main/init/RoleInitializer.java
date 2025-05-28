@@ -13,7 +13,7 @@ import java.util.List;
 public class RoleInitializer implements CommandLineRunner {
     private final RoleRepository roleRepository;
     @Override
-    public void run(String... args) throws Exception {
+    public void run(String... args) {
         List<RoleEntity> defaultRoles = List.of(
                 RoleEntity.builder()
                         .name("Role Customer")
@@ -24,9 +24,10 @@ public class RoleInitializer implements CommandLineRunner {
                         .name("Role Customer")
                         .code("ROLE_CUSTOMER")
                         .build(),
+
                 RoleEntity.builder()
-                        .name("Role Customer")
-                        .code("ROLE_CUSTOMER")
+                        .name("Role Admin")
+                        .code("ROLE_ADMIN")
                         .build()
         );
         defaultRoles.forEach(orderStatus -> {
