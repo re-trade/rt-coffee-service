@@ -39,6 +39,12 @@ services:
     build:
       context: ..
       dockerfile: services/main/Dockerfile
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.main-service.rule=PathPrefix(`/api/main/v1/`)"
+      - "traefik.http.routers.main-service.entrypoints=web"
+      - "traefik.http.routers.main-service.tls=true"
+      - "traefik.http.services.main-service.loadbalancer.server.port=8080"
     networks:
       - rt-local-networks
     profiles:
@@ -52,37 +58,56 @@ services:
     build:
       context: ..
       dockerfile: services/feedback-notification/Dockerfile
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.feedback-service.rule=PathPrefix(`/api/feedback-notification/v1/`)"
+      - "traefik.http.routers.feedback-service.entrypoints=web"
+      - "traefik.http.routers.feedback-service.tls=true"
+      - "traefik.http.services.feedback-service.loadbalancer.server.port=8080"
     networks:
       - rt-local-networks
     profiles:
       - backend
       - local
       - feedback-notification
-  vouche-services:
+
+  storage-service:
+    container_name: storage_service
+    image: rt-storage-service:latest
+    restart: always
+    networks:
+      - rt-prod-networks
+    profiles:
+      - backend
+      - prod
+      - storage
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.storage-service.rule=PathPrefix(`/api/storage/v1/`)"
+      - "traefik.http.routers.storage-service.entrypoints=web"
+      - "traefik.http.routers.storage-service.tls=true"
+      - "traefik.http.services.storage-service.loadbalancer.server.port=8080"
+
+  voucher-services:
     container_name: voucher_service
     image: voucher-service:latest
     restart: always
     build:
       context: ..
       dockerfile: services/voucher/Dockerfile
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.voucher-service.rule=PathPrefix(`/api/voucher/v1/`)"
+      - "traefik.http.routers.voucher-service.entrypoints=web"
+      - "traefik.http.routers.voucher-service.tls=true"
+      - "traefik.http.services.voucher-service.loadbalancer.server.port=8080"
     networks:
       - rt-local-networks
     profiles:
       - backend
       - local
       - voucher
-  gateway-services:
-    container_name: gateway_services
-    image: gateway-service:latest
-    build:
-      context: ..
-      dockerfile: services/gateway/Dockerfile
-    networks:
-      - rt-local-networks
-    profiles:
-      - backend
-      - local
-      - gateway
+
   consul-services:
     container_name: consul_service
     image: consul:latest
