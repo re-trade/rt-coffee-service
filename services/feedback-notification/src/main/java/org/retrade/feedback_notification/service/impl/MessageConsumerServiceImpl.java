@@ -77,15 +77,15 @@ public class MessageConsumerServiceImpl {
         }
     }
 
-//    @RabbitListener(queues = RabbitMQConfig.DEAD_LETTER_QUEUE)
-//    public void processDeadLetterQueue(Message message) {
-//        log.error("Message in dead letter queue: {}", message);
-//        String messageId = message.getMessageProperties().getMessageId();
-//        String exchange = message.getMessageProperties().getReceivedExchange();
-//        String routingKey = message.getMessageProperties().getReceivedRoutingKey();
-//        String contentType = message.getMessageProperties().getContentType();
-//
-//        log.error("Dead letter message details - ID: {}, Exchange: {}, Routing Key: {}, Content Type: {}",
-//                messageId, exchange, routingKey, contentType);
-//    }
+    @RabbitListener(queues = RabbitMQConfig.DEAD_LETTER_QUEUE)
+    public void processDeadLetterQueue(Message message) {
+        log.error("Message in dead letter queue: {}", message);
+        String messageId = message.getMessageProperties().getMessageId();
+        String exchange = message.getMessageProperties().getReceivedExchange();
+        String routingKey = message.getMessageProperties().getReceivedRoutingKey();
+        String contentType = message.getMessageProperties().getContentType();
+
+        log.error("Dead letter message details - ID: {}, Exchange: {}, Routing Key: {}, Content Type: {}",
+                messageId, exchange, routingKey, contentType);
+    }
 }
