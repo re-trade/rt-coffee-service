@@ -84,7 +84,6 @@ public class MessageConsumerServiceImpl {
         String exchange = message.getMessageProperties().getReceivedExchange();
         String routingKey = message.getMessageProperties().getReceivedRoutingKey();
         String contentType = message.getMessageProperties().getContentType();
-
         log.error("Dead letter message details - ID: {}, Exchange: {}, Routing Key: {}, Content Type: {}",
                 messageId, exchange, routingKey, contentType);
     }
