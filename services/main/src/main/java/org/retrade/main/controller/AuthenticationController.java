@@ -1,5 +1,9 @@
 package org.retrade.main.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -27,14 +31,20 @@ import java.util.Map;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping(path = "auth")
+@Tag(name = "Authentication", description = "Authentication and authorization endpoints")
 public class AuthenticationController {
     private final AuthService authService;
     private final HostConfig hostConfig;
 
+    @Operation(
+            summary = "Generate 2FA QR Code",
+            description = "Generate a QR code for setting up Two-Factor Authentication. Requires authentication.",
+            security = {@SecurityRequirement(name = "bearerAuth"), @SecurityRequirement(name = "cookieAuth")}
+    )
     @PostMapping("register/2fa")
     public ResponseEntity<byte[]> signupTwoFactorAuth(
-            @RequestParam(name = "width", defaultValue = "300") int width,
-            @RequestParam(name = "height", defaultValue = "300") int height) {
+            @Parameter(description = "QR code width in pixels") @RequestParam(name = "width", defaultValue = "300") int width,
+            @Parameter(description = "QR code height in pixels") @RequestParam(name = "height", defaultValue = "300") int height) {
 
         BufferedImage result = authService.register2FaAuthentication(width, height);
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
@@ -49,8 +59,14 @@ public class AuthenticationController {
         }
     }
 
+    @Operation(
+            summary = "Verify 2FA Code",
+            description = "Verify the Two-Factor Authentication code from authenticator app. Requires authentication.",
+            security = {@SecurityRequirement(name = "bearerAuth"), @SecurityRequirement(name = "cookieAuth")}
+    )
     @PatchMapping("2fa/verify")
-    public ResponseEntity<ResponseObject<Map<String, Boolean>>> verifyTwoFactorAuth(@RequestParam(name = "code", defaultValue = "") String code) {
+    public ResponseEntity<ResponseObject<Map<String, Boolean>>> verifyTwoFactorAuth(
+            @Parameter(description = "6-digit 2FA code from authenticator app") @RequestParam(name = "code", defaultValue = "") String code) {
         var result = authService.verify2FaAuthentication(code);
         return ResponseEntity.ok(new ResponseObject.Builder<Map<String, Boolean>>()
                         .success(true)
@@ -60,6 +76,11 @@ public class AuthenticationController {
                 .build());
     }
 
+    @Operation(
+            summary = "Login with username and password",
+            description = "Authenticate user with username/password and return JWT tokens. " +
+                    "This endpoint does not require authentication and will set authentication cookies automatically."
+    )
     @PostMapping("local")
     public ResponseEntity<ResponseObject<AuthResponse>> authentication(@Valid @RequestBody AuthenticationRequest authenticationRequest, HttpServletRequest request, HttpServletResponse response) {
         var result = authService.localAuthentication(authenticationRequest, request, (cookies -> {

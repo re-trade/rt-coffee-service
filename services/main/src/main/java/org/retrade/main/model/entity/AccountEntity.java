@@ -38,4 +38,6 @@ public class AccountEntity extends BaseSQLEntity {
     private Set<LoginSessionEntity> loginSessions;
     @OneToMany(fetch = FetchType.LAZY, orphanRemoval = true, cascade = {CascadeType.PERSIST}, mappedBy = "id")
     private Set<ThirdPartyAuthEntity> thirdPartyAuths;
+    @OneToMany(fetch = FetchType.LAZY, orphanRemoval = true, cascade = {CascadeType.PERSIST, CascadeType.MERGE}, mappedBy = "account")
+    private Set<AccountRoleEntity> accountRoles;
 }

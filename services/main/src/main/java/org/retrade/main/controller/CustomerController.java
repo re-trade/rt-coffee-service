@@ -1,5 +1,9 @@
 package org.retrade.main.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.retrade.common.model.dto.request.QueryWrapper;
@@ -18,9 +22,15 @@ import java.util.List;
 @RestController
 @RequestMapping("customers")
 @RequiredArgsConstructor
+@Tag(name = "Customer Management", description = "Customer profile and management endpoints")
 public class CustomerController {
     private final CustomerService customerService;
 
+    @Operation(
+            summary = "Get current customer profile",
+            description = "Retrieve the authenticated customer's profile information. Requires CUSTOMER role.",
+            security = {@SecurityRequirement(name = "bearerAuth"), @SecurityRequirement(name = "cookieAuth")}
+    )
     @GetMapping("profile")
     @PreAuthorize("hasRole('ROLE_CUSTOMER')")
     public ResponseEntity<ResponseObject<CustomerResponse>> getCurrentCustomerProfile() {

@@ -1,5 +1,9 @@
 package org.retrade.main.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.retrade.common.model.dto.request.QueryWrapper;
@@ -19,9 +23,15 @@ import java.util.List;
 @RestController
 @RequestMapping("/accounts")
 @RequiredArgsConstructor
+@Tag(name = "Account Management", description = "User account management and profile endpoints")
 public class AccountController {
     private final AccountService accountService;
 
+    @Operation(
+            summary = "Get current user account",
+            description = "Retrieve the authenticated user's account information.",
+            security = {@SecurityRequirement(name = "bearerAuth"), @SecurityRequirement(name = "cookieAuth")}
+    )
     @GetMapping("me")
     public ResponseEntity<ResponseObject<AccountResponse>> getMe() {
         AccountResponse response = accountService.getMe();
