@@ -110,6 +110,12 @@ oauth2:
     redirectUrl: ${GOOGLE_REDIRECT_URL}
     userProfileEndpoint: ${GOOGLE_USERPROFILE_ENDPOINT}
 
+grpc:
+  client:
+    voucher-service:
+      host: ${VOUCHER_SERVICE_GRPC_HOST:localhost}
+      port: ${VOUCHER_SERVICE_GRPC_PORT:9081}
+
 cart:
   ttl-days: 30
   max-items-per-cart: 100

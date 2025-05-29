@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/admin/vouchers")
+@RequestMapping("admin/vouchers")
 @RequiredArgsConstructor
 public class VoucherAdminController {
     private final VoucherService voucherService;
@@ -32,7 +32,7 @@ public class VoucherAdminController {
                 .build());
     }
 
-    @PutMapping("/{id}")
+    @PutMapping("{id}")
     public ResponseEntity<ResponseObject<VoucherResponse>> updateVoucher(
             @PathVariable String id,
             @Valid @RequestBody UpdateVoucherRequest request) {
@@ -45,7 +45,7 @@ public class VoucherAdminController {
                 .build());
     }
 
-    @DeleteMapping("/{id}")
+    @DeleteMapping("{id}")
     public ResponseEntity<ResponseObject<Void>> deleteVoucher(@PathVariable String id) {
         voucherService.deleteVoucher(id);
         return ResponseEntity.ok(new ResponseObject.Builder<Void>()
@@ -55,7 +55,7 @@ public class VoucherAdminController {
                 .build());
     }
 
-    @GetMapping("/{id}")
+    @GetMapping("{id}")
     public ResponseEntity<ResponseObject<VoucherResponse>> getVoucherById(@PathVariable String id) {
         VoucherResponse response = voucherService.getVoucherById(id);
         return ResponseEntity.ok(new ResponseObject.Builder<VoucherResponse>()
@@ -65,7 +65,7 @@ public class VoucherAdminController {
                 .build());
     }
 
-    @GetMapping("/code/{code}")
+    @GetMapping("code/{code}")
     public ResponseEntity<ResponseObject<VoucherResponse>> getVoucherByCode(@PathVariable String code) {
         VoucherResponse response = voucherService.getVoucherByCode(code);
         return ResponseEntity.ok(new ResponseObject.Builder<VoucherResponse>()
@@ -75,7 +75,7 @@ public class VoucherAdminController {
                 .build());
     }
 
-    @GetMapping("/active")
+    @GetMapping("active")
     public ResponseEntity<ResponseObject<List<VoucherResponse>>> getActiveVouchers() {
         List<VoucherResponse> responses = voucherService.getActiveVouchers();
         return ResponseEntity.ok(new ResponseObject.Builder<List<VoucherResponse>>()
