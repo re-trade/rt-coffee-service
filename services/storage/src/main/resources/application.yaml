@@ -10,14 +10,6 @@ spring:
     username: ${DB_USERNAME:postgres}
     password: ${DB_PASSWORD:12345}
     url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME}
-  jpa:
-    hibernate:
-      ddl-auto: update
-    show-sql: true
-    properties:
-      hibernate:
-        format_sql: true
-        default_schema: storage
   config:
     import: "optional:consul:"
   cloud:
@@ -41,16 +33,45 @@ spring:
       security:
         csrf:
           enabled: false
+      max-inbound-message-size: 100MB
+      max-inbound-metadata-size: 8KB
+
   servlet:
     multipart:
-      max-file-size: 10MB
-      max-request-size: 10MB
+      max-file-size: 100MB
+      max-request-size: 100MB
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        default_schema: storage
 
 grpc:
   client:
     main-service:
       host: ${MAIN_SERVICE_GRPC_HOST:localhost}
       port: ${MAIN_SERVICE_GRPC_PORT:9080}
+
+
+storage:
+  video:
+    max-file-size: 500MB
+    supported-formats: mp4,avi,mov,mkv,webm
+    processing:
+      chunk-size: 1MB
+      timeout: 300s
+  media:
+    max-file-size: 50MB
+    supported-image-formats: jpg,jpeg,png,gif,webp,bmp
+    supported-video-formats: mp4,avi,mov,mkv,webm
+    supported-audio-formats: mp3,wav,aac,ogg
+    thumbnail:
+      width: 300
+      height: 300
+      quality: 85
 
 logging:
   level:
