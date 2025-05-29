@@ -27,7 +27,7 @@ public class FileController {
     private final FileService fileService;
 
     @PostMapping(path = "upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @Operation(summary = "Upload a file (legacy endpoint)")
+    @Operation(summary = "Upload a file")
     public ResponseEntity<ResponseObject<String>> uploadFile(
             @Parameter(description = "File to upload") @RequestPart("file") MultipartFile file) {
         var result = fileService.upload(file);
@@ -40,7 +40,7 @@ public class FileController {
     }
 
     @PostMapping(path = "upload/bulk", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @Operation(summary = "Upload multiple files (legacy endpoint)")
+    @Operation(summary = "Upload multiple files")
     public ResponseEntity<ResponseObject<Set<String>>> uploadBulkFiles(
             @Parameter(description = "Files to upload") @RequestPart("files") List<MultipartFile> files) {
         var result = fileService.uploadBulkFile(files);
