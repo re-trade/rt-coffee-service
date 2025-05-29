@@ -7,16 +7,12 @@ import org.retrade.provider.aws.model.S3FileRequest;
 import org.retrade.provider.aws.model.S3FileResponse;
 import org.retrade.provider.aws.s3.S3FileHandler;
 import org.retrade.provider.aws.util.FileUtils;
-import org.retrade.storage.model.constant.FileType;
-import org.retrade.storage.model.dto.FileUploadResponse;
 import org.retrade.storage.model.entity.MediaFileEntity;
 import org.retrade.storage.repository.MediaFileRepository;
 import org.retrade.storage.service.FileService;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -44,6 +40,7 @@ public class FileServiceImpl implements FileService {
                     .file(file.getBytes())
                     .fileName(fileName)
                     .build());
+            saveMediaFile(result);
             return result;
         } catch (ValidationException e) {
             throw e;
@@ -78,7 +75,9 @@ public class FileServiceImpl implements FileService {
                         }
                     })
                     .collect(Collectors.toList());
-            return s3FileHandler.uploadBulkFile(fileMapper);
+            var fileS3Response =  s3FileHandler.uploadBulkFile(fileMapper);
+            saveMediaFile(fileS3Response);
+            return fileS3Response;
         } catch (ValidationException e) {
             throw e;
         } catch (Exception e) {
@@ -86,123 +85,46 @@ public class FileServiceImpl implements FileService {
         }
     }
 
-    @Override
-    public FileUploadResponse uploadFile(MultipartFile file, FileType fileType) {
-        if (file == null || file.isEmpty()) {
-            throw new ValidationException("File cannot be empty");
-        }
-        try {
-            return uploadFile(file.getBytes(), file.getOriginalFilename(), file.getContentType(), fileType);
-        } catch (Exception e) {
-            throw new ValidationException("Failed to upload file: " + e.getMessage());
-        }
-    }
-
-    @Override
-    public FileUploadResponse uploadFile(byte[] fileData, String originalName, String mimeType, FileType fileType) {
-        if (fileData == null || fileData.length == 0) {
-            throw new ValidationException("File data cannot be empty");
-        }
-
-        if (originalName == null || originalName.trim().isEmpty()) {
-            throw new ValidationException("Original file name is required");
-        }
-
-        if (fileType == null) {
-            throw new ValidationException("File type is required");
-        }
-
-        try {
-            if (!FileUtils.verifyFile(fileData)) {
-                throw new ValidationException("Invalid file type");
-            }
-
-            String fileName = FileUtils.generateFileName(originalName);
-            String checksum = calculateChecksum(fileData);
-
-            S3FileResponse response = s3FileHandler.upload(S3FileRequest.builder()
-                    .file(fileData)
-                    .fileName(fileName)
-                    .build());
-
-            log.info("Uploaded file: {} with type: {}", originalName, fileType);
-
-            return FileUploadResponse.builder()
-                    .fileName(fileName)
-                    .originalName(originalName)
-                    .fileUrl(response.getFileUrl())
-                    .mimeType(mimeType != null ? mimeType : "application/octet-stream")
-                    .fileSize((long) fileData.length)
-                    .checksum(checksum)
-                    .fileType(fileType)
-                    .build();
-
-        } catch (ValidationException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new ValidationException("Failed to upload file: " + e.getMessage());
-        }
-    }
-
-    @Override
-    public FileUploadResponse uploadAvatar(MultipartFile file) {
-        return uploadFile(file, FileType.AVATAR);
-    }
-
-    @Override
-    public FileUploadResponse uploadImage(MultipartFile file) {
-        return uploadFile(file, FileType.IMAGE);
-    }
-
-    @Override
-    public FileUploadResponse uploadDocument(MultipartFile file) {
-        return uploadFile(file, FileType.DOCUMENT);
-    }
-
-    public MediaFileEntity saveMediaFile(FileUploadResponse fileUploadResponse, String ownerId) {
+    private void saveMediaFile(Set<S3FileResponse> fileUploadResponse) {
         if (fileUploadResponse == null) {
             throw new ValidationException("File upload response cannot be null");
         }
 
+        var mediaFiles = fileUploadResponse.stream().map(item -> MediaFileEntity.builder()
+                .originalName(item.getFileName())
+                .storedName(item.getFileName())
+                .fileUrl(item.getFileUrl())
+                .fileSize((long) item.getFile().length)
+                .isPublic(true)
+                .downloadCount(0L)
+                .build()).collect(Collectors.toSet());
+
         try {
-            MediaFileEntity mediaFile = MediaFileEntity.builder()
-                    .originalName(fileUploadResponse.getOriginalName())
-                    .storedName(fileUploadResponse.getFileName())
-                    .fileUrl(fileUploadResponse.getFileUrl())
-                    .fileSize(fileUploadResponse.getFileSize())
-                    .mimeType(fileUploadResponse.getMimeType())
-                    .ownerId(ownerId)
-                    .isPublic(false)
-                    .downloadCount(0L)
-                    .checksum(fileUploadResponse.getChecksum())
-                    .build();
-
-            MediaFileEntity savedEntity = mediaFileRepository.save(mediaFile);
-            log.info("Saved media file to database: {} with ID: {}", fileUploadResponse.getOriginalName(), savedEntity.getId());
-            return savedEntity;
-
+            mediaFileRepository.saveAllAndFlush(mediaFiles);
         } catch (Exception e) {
-            log.error("Failed to save media file to database: {}", fileUploadResponse.getOriginalName(), e);
             throw new ValidationException("Failed to save media file to database: " + e.getMessage());
         }
     }
 
-    private String calculateChecksum(byte[] data) {
+    private void saveMediaFile(S3FileResponse fileUploadResponse) {
+        if (fileUploadResponse == null) {
+            throw new ValidationException("File upload response cannot be null");
+        }
         try {
-            MessageDigest md = MessageDigest.getInstance("SHA-256");
-            byte[] hash = md.digest(data);
-            StringBuilder hexString = new StringBuilder();
-            for (byte b : hash) {
-                String hex = Integer.toHexString(0xff & b);
-                if (hex.length() == 1) {
-                    hexString.append('0');
-                }
-                hexString.append(hex);
-            }
-            return hexString.toString();
-        } catch (NoSuchAlgorithmException e) {
-            log.warn("SHA-256 algorithm not available, skipping checksum calculation");
-            return null;
+            MediaFileEntity mediaFile = MediaFileEntity.builder()
+                    .originalName(fileUploadResponse.getFileName())
+                    .storedName(fileUploadResponse.getFileName())
+                    .fileUrl(fileUploadResponse.getFileUrl())
+                    .fileSize((long) fileUploadResponse.getFile().length)
+                    .isPublic(true)
+                    .downloadCount(0L)
+                    .build();
+            MediaFileEntity savedEntity = mediaFileRepository.save(mediaFile);
+            log.info("Saved media file to database: {} with ID: {}", mediaFile.getOriginalName(), savedEntity.getId());
+
+        } catch (Exception e) {
+            log.error("Failed to save media file to database: {}", fileUploadResponse.getFileName(), e);
+            throw new ValidationException("Failed to save media file to database: " + e.getMessage());
         }
     }
 }

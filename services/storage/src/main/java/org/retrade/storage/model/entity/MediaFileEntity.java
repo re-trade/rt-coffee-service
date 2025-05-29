@@ -25,30 +25,9 @@ public class MediaFileEntity extends BaseSQLEntity {
     @Column(name = "file_size", nullable = false)
     private Long fileSize;
     
-    @Column(name = "mime_type", nullable = false, length = 100)
-    private String mimeType;
-    
-    @Column(name = "owner_id", length = 36)
-    private String ownerId;
-    
-    @Column(name = "width")
-    private Integer width;
-    
-    @Column(name = "height")
-    private Integer height;
-    
-    @Column(name = "alt_text", length = 500)
-    private String altText;
-    
-    @Column(name = "tags", columnDefinition = "TEXT")
-    private String tags;
-    
     @Column(name = "is_public", nullable = false)
     private Boolean isPublic;
     
     @Column(name = "download_count")
     private Long downloadCount;
-    
-    @Column(name = "checksum", length = 64)
-    private String checksum;
 }
