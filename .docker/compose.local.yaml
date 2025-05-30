@@ -108,16 +108,7 @@ services:
       - local
       - voucher
 
-  consul-services:
-    container_name: consul_service
-    image: consul:latest
-    restart: always
-    networks:
-      - rt-local-networks
-    profiles:
-      - consul
-      - local
-      - consul
+
 networks:
   rt-local-networks:
     name: rt-local-networks

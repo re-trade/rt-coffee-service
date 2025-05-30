@@ -1,7 +1,7 @@
 server:
-  port: 8083
+  port: ${PORT:8083}
   servlet:
-    context-path: /api/v1
+    context-path: ${CONTEXT_PATH:/api/v1}
 
 spring:
   application:
@@ -10,22 +10,6 @@ spring:
     username: ${DB_USERNAME:postgres}
     password: ${DB_PASSWORD:12345}
     url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME}
-  config:
-    import: "optional:consul:"
-  cloud:
-    consul:
-      host: ${CONSUL_HOST:localhost}
-      port: ${CONSUL_PORT:8500}
-      discovery:
-        enabled: true
-        prefer-ip-address: true
-        service-name: storage-service
-        health-check-interval: 10s
-        instance-id: storage-service
-        health-check-path: /actuator/health
-      config:
-        enabled: true
-        name: storage-service
   grpc:
     server:
       enabled: true

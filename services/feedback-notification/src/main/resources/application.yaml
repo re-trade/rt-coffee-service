@@ -1,19 +1,6 @@
 spring:
   application:
       name: Feedback Notification Service
-  config:
-    import: "optional:consul:"
-  cloud:
-    consul:
-      host: ${CONSUL_HOST:localhost}
-      port: ${CONSUL_PORT:8500}
-      discovery:
-        enabled: true
-        prefer-ip-address: true
-        service-name: feedback-notification-service
-        health-check-interval: 10s
-        instance-id: feedback-notification-service
-        health-check-path: /actuator/health
   grpc:
     server:
       enabled: true
@@ -46,9 +33,9 @@ spring:
             enable: true
 
 server:
-  port: ${PORT:8084}
+  port: ${PORT:8085}
   servlet:
-    context-path: /api/v1
+    context-path: ${CONTEXT_PATH:/api/v1}
 
 logging:
   level:

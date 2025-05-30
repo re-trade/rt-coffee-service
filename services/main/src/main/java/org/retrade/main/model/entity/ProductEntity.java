@@ -44,4 +44,6 @@ public class ProductEntity extends BaseSQLEntity {
     private Set<String> tags;
     @Column(name = "verified", nullable = false)
     private Boolean verified;
+    @OneToMany(fetch = FetchType.EAGER, cascade = {CascadeType.PERSIST}, mappedBy = "product")
+    private Set<ProductPriceHistoryEntity> productPriceHistories;
 }

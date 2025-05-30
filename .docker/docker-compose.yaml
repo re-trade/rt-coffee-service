@@ -13,7 +13,6 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.main-service.rule=PathPrefix(`/api/main/v1/`)"
       - "traefik.http.routers.main-service.entrypoints=web"
-      - "traefik.http.routers.main-service.tls=true"
       - "traefik.http.services.main-service.loadbalancer.server.port=8080"
 
   feedback-notification-service:
@@ -67,17 +66,7 @@ services:
       - "traefik.http.routers.voucher-service.tls=true"
       - "traefik.http.services.voucher-service.loadbalancer.server.port=8080"
 
-  consul-service:
-    container_name: consul_service
-    image: consul:latest
-    restart: always
-    networks:
-      - rt-prod-networks
-    profiles:
-      - prod
-      - consul
-    labels:
-      - "traefik.enable=false"
+
 networks:
   rt-prod-networks:
     name: rt-prod-networks

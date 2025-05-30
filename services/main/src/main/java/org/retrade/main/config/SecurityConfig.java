@@ -6,6 +6,7 @@ import org.retrade.main.security.CustomAuthenticationEntryPoint;
 import org.retrade.main.security.JwtAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -32,6 +33,8 @@ public class SecurityConfig {
                            "/registers/**",
                            "/passwords/**",
                            "/pings/**")
+                           .permitAll()
+                           .requestMatchers(HttpMethod.GET, "/products/**", "/categories/**", "/payments/**")
                            .permitAll()
                            .anyRequest().authenticated();
                 }).exceptionHandling(exception -> {

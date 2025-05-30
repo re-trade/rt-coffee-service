@@ -1,22 +1,6 @@
 spring:
   application:
     name: Main Service
-  config:
-    import: "optional:consul:"
-  cloud:
-    consul:
-      host: ${CONSUL_HOST:localhost}
-      port: ${CONSUL_PORT:8500}
-      discovery:
-        enabled: true
-        prefer-ip-address: true
-        service-name: main-service
-        health-check-interval: 10s
-        instance-id: main-service
-        health-check-path: /actuator/health
-      config:
-        enabled: true
-        name: main-service
   grpc:
     server:
       enabled: true
@@ -60,7 +44,7 @@ spring:
 server:
   port: ${PORT:8080}
   servlet:
-    context-path: /api/v1
+    context-path: ${CONTEXT_PATH:/api/v1}
 security:
   token:
       jwt:
