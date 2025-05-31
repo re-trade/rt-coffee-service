@@ -8,6 +8,7 @@ import io.swagger.v3.oas.models.info.License;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
 import io.swagger.v3.oas.models.servers.Server;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -16,11 +17,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Configuration
+@RequiredArgsConstructor
 public class SwaggerConfig {
     @Value("${server.servlet.context-path}")
     private String contextPath;
     @Value("${server.port}")
     private String port;
+    private final HostConfig hostConfig;
     @Bean
     public OpenAPI openAPI() {
         List<Server> serverList = new ArrayList<>();
@@ -78,4 +81,20 @@ public class SwaggerConfig {
                 .components(components)
                 .security(securityRequirements);
     };
+    private List<Server> getServerList() {
+        List<Server> serverList = new ArrayList<>();
+        if (!contextPath.equals("/")) {
+            var productionServer = new Server();
+            productionServer.setUrl(String.format("https://%s%s", hostConfig.getBaseHost(), hostConfig.getSwaggerContextPath()));
+            productionServer.setDescription("Production Server");
+            serverList.add(productionServer);
+            return serverList;
+        }
+        var localServer = new Server();
+        localServer.setUrl(String.format("http://localhost:%s%s", port, contextPath));
+        localServer.setDescription("Local Development Server");
+        serverList.add(localServer);
+        return serverList;
+    }
+
 }

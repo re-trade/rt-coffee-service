@@ -33,6 +33,7 @@ services:
       ORIGIN_ALLOWS: ${ORIGIN_ALLOWS}
       BASE_HOST: ${BASE_HOST}
       FRONTEND_URL: ${FRONTEND_URL}
+      SWAGGER_CONTEXT_PATH: /api/main/v1
       FORGOT_PASSWORD_TIMEOUT: 10
       FORGOT_PASSWORD_CALLBACK: ${FORGOT_PASSWORD_CALLBACK}
     profiles:
@@ -69,6 +70,10 @@ services:
       RABBITMQ_USERNAME: ${RABBITMQ_USERNAME}
       RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
       CONTEXT_PATH: /
+      ORIGIN_ALLOWS: ${ORIGIN_ALLOWS}
+      BASE_HOST: ${BASE_HOST}
+      FRONTEND_URL: ${FRONTEND_URL}
+      SWAGGER_CONTEXT_PATH: /api/feedback-notification/v1
       PORT: 8080
     profiles:
       - backend
@@ -107,6 +112,8 @@ services:
       PORT: 8080
       ORIGIN_ALLOWS: ${ORIGIN_ALLOWS}
       BASE_HOST: ${BASE_HOST}
+      FRONTEND_URL: ${FRONTEND_URL}
+      SWAGGER_CONTEXT_PATH: /api/storage/v1
       MAIN_SERVICE_GRPC_HOST: main-service
       MAIN_SERVICE_GRPC_PORT: 9080
       AWS_REGION: ${AWS_REGION}
@@ -114,6 +121,7 @@ services:
       AWS_SECRET_KEY: ${AWS_SECRET_KEY}
       AWS_ENDPOINT: ${AWS_ENDPOINT}
       AWS_BUCKET: ${AWS_BUCKET}
+
     profiles:
       - backend
       - prod
@@ -151,6 +159,8 @@ services:
       PORT: 8080
       ORIGIN_ALLOWS: ${ORIGIN_ALLOWS}
       BASE_HOST: ${BASE_HOST}
+      FRONTEND_URL: ${FRONTEND_URL}
+      SWAGGER_CONTEXT_PATH: /api/voucher/v1
       MAIN_SERVICE_GRPC_HOST: main-service
       MAIN_SERVICE_GRPC_PORT: 9080
     profiles:

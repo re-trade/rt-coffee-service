@@ -11,4 +11,5 @@ public class HostConfig {
     private String originAllows;
     private String baseHost;
     private String frontEnd;
+    private String swaggerContextPath;
 }

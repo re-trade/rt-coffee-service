@@ -1,4 +1,4 @@
-package org.retrade.main.config;
+package org.retrade.feedback_notification.config;
 
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
