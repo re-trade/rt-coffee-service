@@ -243,10 +243,10 @@ public class AuthServiceImpl implements AuthService {
     }
 
     private void saveSession (HttpServletRequest request, AccountEntity account) {
-        String deviceFingerprint = request.getHeader("device-fingerprint");
-        String deviceName = request.getHeader("device-name");
-        String ipAddress = request.getHeader("ip-address");
-        String location = request.getHeader("location");
+        String deviceFingerprint = request.getHeader("x-device-fingerprint");
+        String deviceName = request.getHeader("x-device-name");
+        String ipAddress = request.getHeader("x-ip-address");
+        String location = request.getHeader("x-location");
         String userAgent = request.getHeader("user-agent");
         LoginSessionEntity loginSession = LoginSessionEntity.builder()
                 .account(account)

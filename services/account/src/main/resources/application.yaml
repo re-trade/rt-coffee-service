@@ -7,4 +7,11 @@ server:
   servlet:
     context-path: ${CONTEXT_PATH:/api/v1}
 
+security:
+  host:
+    origin-allows: ${ORIGIN_ALLOWS:}
+    base-host: ${BASE_HOST:}
+    front-end: ${FRONTEND_URL}
+    swagger-context-path: ${SWAGGER_CONTEXT_PATH:/api/v1}
+
 

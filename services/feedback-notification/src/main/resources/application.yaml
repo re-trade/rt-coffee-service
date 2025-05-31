@@ -50,3 +50,16 @@ security:
     base-host: ${BASE_HOST:}
     front-end: ${FRONTEND_URL}
     swagger-context-path: ${SWAGGER_CONTEXT_PATH:/api/v1}
+
+
+springdoc:
+  api-docs:
+    enabled: true
+    path: /api-docs
+  swagger-ui:
+    enabled: true
+    try-it-out-enabled: true
+    operations-sorter: method
+    tags-sorter: alpha
+    filter: true
+    path: /swagger-ui

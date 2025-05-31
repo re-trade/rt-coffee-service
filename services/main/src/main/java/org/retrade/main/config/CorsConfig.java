@@ -24,7 +24,7 @@ public class CorsConfig {
             @SuppressWarnings("null")
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/**")
-                        .allowedOrigins("*")
+                        .allowedOrigins(getCorsAllowed())
                         .allowedMethods("*")
                         .allowedHeaders("*")
                         .allowedMethods("GET", "HEAD", "POST", "PUT", "DELETE", "OPTIONS", "PATCH")
@@ -37,7 +37,7 @@ public class CorsConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(Arrays.asList(getCorsAllowed()));
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "HEAD", "PATCH"));
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "HEAD", "PATCH", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList(
                 "Accept",
                 "Access-Control-Allow-Headers",
@@ -46,7 +46,11 @@ public class CorsConfig {
                 "Authorization",
                 "Content-Type",
                 "Origin",
-                "X-Requested-With"));
+                "X-Requested-With",
+                "x-device-fingerprint",
+                "x-device-name",
+                "x-ip-address",
+                "x-location"));
         configuration.setAllowCredentials(true);
         configuration.setExposedHeaders(Arrays.asList(
                 "Accept",
@@ -56,7 +60,11 @@ public class CorsConfig {
                 "Authorization",
                 "Content-Type",
                 "Origin",
-                "X-Requested-With"));
+                "X-Requested-With",
+                "x-device-fingerprint",
+                "x-device-name",
+                "x-ip-address",
+                "x-location"));
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
