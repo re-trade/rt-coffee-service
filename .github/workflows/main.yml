@@ -53,3 +53,4 @@ jobs:
         continue-on-error: true
       - name: Clean Old Image
         run: docker image prune -a -f
+        continue-on-error: true
