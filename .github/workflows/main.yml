@@ -27,6 +27,7 @@ jobs:
           docker compose -f .docker/compose.build.yaml --profile build push
   deploy-dev:
     runs-on: retrade-dev
+    needs: [build-image]
     permissions:
       contents: read
       packages: write
