@@ -5,22 +5,6 @@ spring:
     username: ${DB_USERNAME:postgres}
     password: ${DB_PASSWORD:12345}
     url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME}
-  config:
-    import: "optional:consul:"
-  cloud:
-    consul:
-      host: ${CONSUL_HOST:localhost}
-      port: ${CONSUL_PORT:8500}
-      discovery:
-        enabled: true
-        prefer-ip-address: true
-        service-name: voucher-service
-        health-check-interval: 10s
-        instance-id: voucher-service
-        health-check-path: /actuator/health
-      config:
-        enabled: true
-        name: voucher-service
 
   jpa:
     hibernate:
@@ -48,7 +32,7 @@ grpc:
 server:
   port: ${PORT:8084}
   servlet:
-    context-path: /api/v1
+    context-path: ${CONTEXT_PATH:/api/v1}
 
 logging:
   level:

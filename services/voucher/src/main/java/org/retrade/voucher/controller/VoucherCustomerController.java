@@ -22,7 +22,7 @@ public class VoucherCustomerController {
     private final VoucherClaimService voucherClaimService;
     private final VoucherValidationService voucherValidationService;
 
-    @PostMapping("/claim")
+    @PostMapping("claim")
     public ResponseEntity<ResponseObject<VoucherClaimResponse>> claimVoucher(
             @Valid @RequestBody ClaimVoucherRequest request) {
         VoucherClaimResponse response = voucherClaimService.claimVoucher(request);
@@ -34,7 +34,7 @@ public class VoucherCustomerController {
                 .build());
     }
 
-    @GetMapping("/user/{accountId}")
+    @GetMapping("user/{accountId}")
     public ResponseEntity<ResponseObject<List<VoucherClaimResponse>>> getUserVouchers(
             @PathVariable String accountId) {
         List<VoucherClaimResponse> responses = voucherClaimService.getUserVouchers(accountId);
@@ -45,7 +45,7 @@ public class VoucherCustomerController {
                 .build());
     }
 
-    @GetMapping("/user/{accountId}/active")
+    @GetMapping("user/{accountId}/active")
     public ResponseEntity<ResponseObject<List<VoucherClaimResponse>>> getUserActiveVouchers(
             @PathVariable String accountId) {
         List<VoucherClaimResponse> responses = voucherClaimService.getUserActiveVouchers(accountId);
@@ -56,7 +56,7 @@ public class VoucherCustomerController {
                 .build());
     }
 
-    @PostMapping("/validate")
+    @PostMapping("validate")
     public ResponseEntity<ResponseObject<VoucherValidationResponse>> validateVoucher(
             @Valid @RequestBody ValidateVoucherRequest request) {
         VoucherValidationResponse response = voucherValidationService.validateVoucher(request);
@@ -68,7 +68,7 @@ public class VoucherCustomerController {
                 .build());
     }
 
-    @PostMapping("/apply")
+    @PostMapping("apply")
     public ResponseEntity<ResponseObject<VoucherValidationResponse>> applyVoucher(
             @Valid @RequestBody ApplyVoucherRequest request) {
         VoucherValidationResponse response = voucherValidationService.applyVoucher(request);

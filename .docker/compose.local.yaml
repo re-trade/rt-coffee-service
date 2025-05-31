@@ -1,16 +1,21 @@
 services:
   database-services:
-    container_name: database_service
+    container_name: database_local_service
     image: postgres:latest
     restart: always
+    environment:
+      POSTGRES_DB: ${DB_NAME:-retrade_db}
+      POSTGRES_USER: ${DB_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-12345}
     networks:
       - rt-local-networks
     profiles:
       - database
       - local
       - storage
+
   redis-services:
-    container_name: redis_service
+    container_name: redis_local_service
     image: redis:latest
     restart: always
     networks:
@@ -19,105 +24,240 @@ services:
       - database
       - local
       - storage
+
   rabbitmq-services:
-    container_name: rabbitmq_service
+    container_name: rabbitmq_local_service
     image: rabbitmq:3-management
     restart: always
     environment:
-      - RABBITMQ_DEFAULT_USER=guest
-      - RABBITMQ_DEFAULT_PASS=guest
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USERNAME:-guest}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-guest}
     networks:
       - rt-local-networks
     profiles:
       - database
       - local
       - storage
-  main-services:
+
+  main-service:
     container_name: main_service
-    image: main-authentication-service:latest
+    image: main-service:latest
     restart: always
     build:
       context: ..
       dockerfile: services/main/Dockerfile
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.main-service.rule=PathPrefix(`/api/main/v1/`)"
-      - "traefik.http.routers.main-service.entrypoints=web"
-      - "traefik.http.routers.main-service.tls=true"
-      - "traefik.http.services.main-service.loadbalancer.server.port=8080"
     networks:
       - rt-local-networks
+    environment:
+      GRPC_PORT: 9080
+      REDIS_HOST: redis-services
+      REDIS_PORT: 6379
+      DB_HOST: database-services
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-retrade_db}
+      DB_USERNAME: ${DB_USERNAME:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-12345}
+      RABBITMQ_HOST: rabbitmq-services
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USERNAME: ${RABBITMQ_USERNAME:-guest}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-guest}
+      CONTEXT_PATH: /
+      PORT: 8080
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      GOOGLE_REDIRECT_URL: ${GOOGLE_REDIRECT_URL}
+      GOOGLE_USERPROFILE_ENDPOINT: ${GOOGLE_USERPROFILE_ENDPOINT}
+      JWT_ACCESS_KEY: ${JWT_ACCESS_KEY:-default-access-key}
+      JWT_REFRESH_KEY: ${JWT_REFRESH_KEY:-default-refresh-key}
+      JWT_2FA_KEY: ${JWT_2FA_KEY:-default-2fa-key}
+      JWT_ACCESS_EX: 3000
+      JWT_REFRESH_EX: 8000
+      JWT_2FA_EX: 3000
+      ORIGIN_ALLOWS: ${ORIGIN_ALLOWS:-*}
+      BASE_HOST: ${BASE_HOST:-localhost}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+      FORGOT_PASSWORD_TIMEOUT: 10
+      FORGOT_PASSWORD_CALLBACK: ${FORGOT_PASSWORD_CALLBACK:-http://localhost:3000/forgot-password}
+      VOUCHER_SERVICE_GRPC_HOST: voucher-service
+      VOUCHER_SERVICE_GRPC_PORT: 9081
     profiles:
       - backend
       - local
       - main
-  feedback-notification-services:
+    labels:
+      - "traefik.enable=true"
+      - "traefik.constraint-label=retrade-service"
+      - "traefik.docker.network=rt-local-networks"
+      - "traefik.http.routers.main-service.rule=PathPrefix(`/api/main/v1`)"
+      - "traefik.http.middlewares.strip-main-prefix.stripprefix.prefixes=/api/main/v1"
+      - "traefik.http.routers.main-service.middlewares=strip-main-prefix"
+      - "traefik.http.routers.main-service.entrypoints=web"
+      - "traefik.http.services.main-service.loadbalancer.server.port=8080"
+    depends_on:
+      - database-services
+      - redis-services
+      - rabbitmq-services
+  feedback-notification-service:
     container_name: feedback_notification_service
-    image: sea-feedback-notification-service:latest
+    image: feedback-notification-service:latest
     restart: always
     build:
       context: ..
       dockerfile: services/feedback-notification/Dockerfile
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.feedback-service.rule=PathPrefix(`/api/feedback-notification/v1/`)"
-      - "traefik.http.routers.feedback-service.entrypoints=web"
-      - "traefik.http.routers.feedback-service.tls=true"
-      - "traefik.http.services.feedback-service.loadbalancer.server.port=8080"
     networks:
       - rt-local-networks
+    environment:
+      GRPC_PORT: 9081
+      RABBITMQ_HOST: rabbitmq-services
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USERNAME: ${RABBITMQ_USERNAME:-guest}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-guest}
+      CONTEXT_PATH: /
+      PORT: 8080
+      MAIL_HOST: ${MAIL_HOST:-smtp.gmail.com}
+      MAIL_PORT: ${MAIL_PORT:-587}
+      MAIL_USERNAME: ${MAIL_USERNAME:-your-email@gmail.com}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-your-app-password}
     profiles:
       - backend
       - local
       - feedback-notification
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.feedback-service.rule=PathPrefix(`/api/feedback-notification/v1`)"
+      - "traefik.http.routers.feedback-service.entrypoints=web"
+      - "traefik.http.middlewares.strip-feedback-notification-prefix.stripprefix.prefixes=/api/feedback-notification/v1"
+      - "traefik.http.routers.feedback-service.middlewares=strip-feedback-notification-prefix"
+      - "traefik.constraint-label=retrade-service"
+      - "traefik.docker.network=rt-local-networks"
+      - "traefik.http.services.feedback-service.loadbalancer.server.port=8080"
+    depends_on:
+      - rabbitmq-services
 
   storage-service:
     container_name: storage_service
-    image: rt-storage-service:latest
+    image: storage-service:latest
     restart: always
+    build:
+      context: ..
+      dockerfile: services/storage/Dockerfile
     networks:
-      - rt-prod-networks
+      - rt-local-networks
+    environment:
+      GRPC_PORT: 9082
+      DB_HOST: database-services
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-retrade_db}
+      DB_USERNAME: ${DB_USERNAME:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-12345}
+      CONTEXT_PATH: /
+      PORT: 8080
+      JWT_ACCESS_KEY: ${JWT_ACCESS_KEY:-default-access-key}
+      JWT_REFRESH_KEY: ${JWT_REFRESH_KEY:-default-refresh-key}
+      JWT_2FA_KEY: ${JWT_2FA_KEY:-default-2fa-key}
+      ORIGIN_ALLOWS: ${ORIGIN_ALLOWS:-*}
+      BASE_HOST: ${BASE_HOST:-localhost}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+      MAIN_SERVICE_GRPC_HOST: main-service
+      MAIN_SERVICE_GRPC_PORT: 9080
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+      AWS_ACCESS_KEY: ${AWS_ACCESS_KEY:-}
+      AWS_SECRET_KEY: ${AWS_SECRET_KEY:-}
+      AWS_ENDPOINT: ${AWS_ENDPOINT:-}
+      AWS_BUCKET: ${AWS_BUCKET:-}
     profiles:
       - backend
-      - prod
-      - storage
+      - local
+      - stream-storage
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.storage-service.rule=PathPrefix(`/api/storage/v1/`)"
+      - "traefik.http.routers.storage-service.rule=PathPrefix(`/api/storage/v1`)"
       - "traefik.http.routers.storage-service.entrypoints=web"
-      - "traefik.http.routers.storage-service.tls=true"
+      - "traefik.http.middlewares.strip-storage-prefix.stripprefix.prefixes=/api/storage/v1"
+      - "traefik.http.routers.storage-service.middlewares=strip-storage-prefix"
+      - "traefik.constraint-label=retrade-service"
+      - "traefik.docker.network=rt-local-networks"
       - "traefik.http.services.storage-service.loadbalancer.server.port=8080"
+    depends_on:
+      - database-services
 
-  voucher-services:
+  voucher-service:
     container_name: voucher_service
     image: voucher-service:latest
     restart: always
     build:
       context: ..
       dockerfile: services/voucher/Dockerfile
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.voucher-service.rule=PathPrefix(`/api/voucher/v1/`)"
-      - "traefik.http.routers.voucher-service.entrypoints=web"
-      - "traefik.http.routers.voucher-service.tls=true"
-      - "traefik.http.services.voucher-service.loadbalancer.server.port=8080"
     networks:
       - rt-local-networks
+    environment:
+      GRPC_PORT: 9083
+      DB_HOST: database-services
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-retrade_db}
+      DB_USERNAME: ${DB_USERNAME:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-12345}
+      CONTEXT_PATH: /
+      PORT: 8080
+      MAIN_SERVICE_GRPC_HOST: main-service
+      MAIN_SERVICE_GRPC_PORT: 9080
     profiles:
       - backend
       - local
       - voucher
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.voucher-service.rule=PathPrefix(`/api/voucher/v1`)"
+      - "traefik.http.routers.voucher-service.entrypoints=web"
+      - "traefik.http.middlewares.strip-voucher-prefix.stripprefix.prefixes=/api/voucher/v1"
+      - "traefik.http.routers.voucher-service.middlewares=strip-voucher-prefix"
+      - "traefik.constraint-label=retrade-service"
+      - "traefik.docker.network=rt-local-networks"
+      - "traefik.http.services.voucher-service.loadbalancer.server.port=8080"
+    depends_on:
+      - database-services
 
-  consul-services:
-    container_name: consul_service
-    image: consul:latest
+  retrade-traefik:
+    container_name: retrade_traefik
+    image: traefik:v2.10
     restart: always
+    ports:
+      - 8090:8080
+      - 80:80
+      - 443:443
+    command:
+      - "--log"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--providers.docker.network=rt-local-networks"
+      - "--providers.docker.constraints=Label(`traefik.constraint-label`, `retrade-service`)"
+      - "--api.dashboard=true"
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--log.level=${LOG_LEVEL:-INFO}"
+      - "--accesslog=true"
+      - "--serversTransport.insecureSkipVerify=true"
+      - "--metrics.prometheus=true"
+      - "--metrics.prometheus.addEntryPointsLabels=true"
+      - "--metrics.prometheus.addRoutersLabels=true"
+      - "--metrics.prometheus.addServicesLabels=true"
+      - "--metrics.prometheus.entryPoint=web"
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: "512M"
+        reservations:
+          cpus: "0.25"
+          memory: "256M"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
     networks:
       - rt-local-networks
-    profiles:
-      - consul
-      - local
-      - consul
+    labels:
+      - "traefik.enable=true"
+
 networks:
   rt-local-networks:
     name: rt-local-networks

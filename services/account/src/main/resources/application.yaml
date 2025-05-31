@@ -1,19 +1,10 @@
 spring:
   application:
       name: Account Service
-  cloud:
-    consul:
-      host: ${CONSUL_HOST:localhost}
-      port: ${CONSUL_PORT:8500}
-      discovery:
-        enabled: true
-        prefer-ip-address: true
-        service-name: account-service
-        health-check-interval: 10s
-        instance-id: account-service
-        health-check-path: /actuator/health
 
 server:
   port: ${PORT:8082}
+  servlet:
+    context-path: ${CONTEXT_PATH:/api/v1}
 
 

@@ -1,0 +1,81 @@
+syntax = "proto3";
+option java_multiple_files = true;
+package storage;
+option java_package = "org.retrade.proto.storage";
+option java_outer_classname = "StorageServiceProto";
+
+enum StreamStatus {
+  STREAM_STATUS_UNSPECIFIED = 0;
+  ACTIVE = 1;
+  INACTIVE = 2;
+  PROCESSING = 3;
+  COMPLETED = 4;
+  FAILED = 5;
+}
+
+message VideoStreamInfo {
+  string stream_id = 1;
+  string source_service = 2;
+  string stream_url = 3;
+  string title = 4;
+  string description = 5;
+  StreamStatus status = 6;
+  int64 duration_seconds = 7;
+  string resolution = 8;
+  int32 bitrate = 9;
+  string format = 10;
+  string created_at = 11;
+  string updated_at = 12;
+}
+
+message VideoStreamChunk {
+  string stream_id = 1;
+  bytes data = 2;
+  int32 sequence_number = 3;
+  bool is_final = 4;
+  string timestamp = 5;
+}
+
+message StreamVideoRequest {
+  oneof request {
+    VideoStreamInfo stream_info = 1;
+    VideoStreamChunk chunk = 2;
+  }
+}
+
+message StreamVideoResponse {
+  bool success = 1;
+  string message = 2;
+  string stream_id = 3;
+  StreamStatus status = 4;
+}
+
+message GetVideoStreamRequest {
+  string stream_id = 1;
+}
+
+message GetVideoStreamResponse {
+  bool success = 1;
+  string message = 2;
+  VideoStreamInfo stream_info = 3;
+}
+
+message ListVideoStreamsRequest {
+  string source_service = 1;
+  StreamStatus status = 2;
+  int32 page = 3;
+  int32 size = 4;
+}
+
+message ListVideoStreamsResponse {
+  bool success = 1;
+  string message = 2;
+  repeated VideoStreamInfo streams = 3;
+  int32 total_count = 4;
+}
+
+service GrpcStorageService {
+  rpc StreamVideo(stream StreamVideoRequest) returns (StreamVideoResponse);
+  rpc GetVideoStream(GetVideoStreamRequest) returns (GetVideoStreamResponse);
+  rpc ListVideoStreams(ListVideoStreamsRequest) returns (ListVideoStreamsResponse);
+}

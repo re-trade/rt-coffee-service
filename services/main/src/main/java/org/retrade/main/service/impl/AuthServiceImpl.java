@@ -252,7 +252,7 @@ public class AuthServiceImpl implements AuthService {
                 .account(account)
                 .deviceFingerprint(deviceFingerprint != null ? deviceFingerprint : "unknown")
                 .deviceName(deviceName != null ? deviceName : "unknown")
-                .ipAddress(ipAddress)
+                .ipAddress(ipAddress != null ? ipAddress : "unknown")
                 .location(location != null ? location : "unknown")
                 .userAgent(userAgent != null ? userAgent : "unknown")
                 .loginTime(Timestamp.valueOf(Instant.now().atZone(ZoneId.systemDefault()).toLocalDateTime()))

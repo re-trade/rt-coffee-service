@@ -1,7 +1,7 @@
 server:
-  port: 8083
+  port: ${PORT:8083}
   servlet:
-    context-path: /api/v1
+    context-path: ${CONTEXT_PATH:/api/v1}
 
 spring:
   application:
@@ -10,6 +10,20 @@ spring:
     username: ${DB_USERNAME:postgres}
     password: ${DB_PASSWORD:12345}
     url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME}
+  grpc:
+    server:
+      enabled: true
+      port: ${GRPC_PORT:9080}
+      security:
+        csrf:
+          enabled: false
+      max-inbound-message-size: 100MB
+      max-inbound-metadata-size: 8KB
+
+  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 100MB
   jpa:
     hibernate:
       ddl-auto: update
@@ -18,39 +32,30 @@ spring:
       hibernate:
         format_sql: true
         default_schema: storage
-  config:
-    import: "optional:consul:"
-  cloud:
-    consul:
-      host: ${CONSUL_HOST:localhost}
-      port: ${CONSUL_PORT:8500}
-      discovery:
-        enabled: true
-        prefer-ip-address: true
-        service-name: storage-service
-        health-check-interval: 10s
-        instance-id: storage-service
-        health-check-path: /actuator/health
-      config:
-        enabled: true
-        name: storage-service
-  grpc:
-    server:
-      enabled: true
-      port: ${GRPC_PORT:9080}
-      security:
-        csrf:
-          enabled: false
-  servlet:
-    multipart:
-      max-file-size: 10MB
-      max-request-size: 10MB
 
 grpc:
   client:
     main-service:
       host: ${MAIN_SERVICE_GRPC_HOST:localhost}
       port: ${MAIN_SERVICE_GRPC_PORT:9080}
+
+
+storage:
+  video:
+    max-file-size: 500MB
+    supported-formats: mp4,avi,mov,mkv,webm
+    processing:
+      chunk-size: 1MB
+      timeout: 300s
+  media:
+    max-file-size: 50MB
+    supported-image-formats: jpg,jpeg,png,gif,webp,bmp
+    supported-video-formats: mp4,avi,mov,mkv,webm
+    supported-audio-formats: mp3,wav,aac,ogg
+    thumbnail:
+      width: 300
+      height: 300
+      quality: 85
 
 logging:
   level:
@@ -77,17 +82,6 @@ springdoc:
     path: /swagger-ui
 
 security:
-  token:
-    jwt:
-      access-token:
-        key: ${JWT_ACCESS_KEY}
-        max-age: ${JWT_ACCESS_EX:3000}
-      refresh-token:
-        key: ${JWT_REFRESH_KEY}
-        max-age: ${JWT_REFRESH_EX:8000}
-      twofa-token:
-        key: ${JWT_2FA_KEY}
-        max-age: ${JWT_2FA_EX:3000}
   host:
     origin-allows: ${ORIGIN_ALLOWS:}
     base-host: ${BASE_HOST:}

@@ -1,12 +1,12 @@
 package org.retrade.common.model.dto.request;
 
 import jakarta.validation.ValidationException;
+import org.retrade.common.model.constant.QueryOperatorEnum;
+import org.retrade.common.util.TextUtils;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Sort.Order;
-import org.retrade.common.model.constant.QueryOperatorEnum;
-import org.retrade.common.util.TextUtils;
 
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;

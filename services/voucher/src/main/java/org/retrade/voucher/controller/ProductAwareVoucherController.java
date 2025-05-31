@@ -35,7 +35,7 @@ public class ProductAwareVoucherController {
                 .build());
     }
 
-    @GetMapping("/{id}")
+    @GetMapping("{id}")
     public ResponseEntity<ResponseObject<ProductAwareVoucherResponse>> getProductAwareVoucherById(
             @PathVariable String id) {
         var result = productAwareVoucherService.getProductAwareVoucherById(id);
@@ -47,7 +47,7 @@ public class ProductAwareVoucherController {
                 .build());
     }
 
-    @GetMapping("/code/{code}")
+    @GetMapping("code/{code}")
     public ResponseEntity<ResponseObject<ProductAwareVoucherResponse>> getProductAwareVoucherByCode(
             @PathVariable String code) {
         var result = productAwareVoucherService.getProductAwareVoucherByCode(code);

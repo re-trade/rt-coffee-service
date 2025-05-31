@@ -1,5 +1,8 @@
 package org.retrade.storage.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.retrade.common.model.dto.response.ResponseObject;
 import org.retrade.provider.aws.model.S3FileResponse;
@@ -19,12 +22,14 @@ import java.util.stream.Collectors;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("files")
+@Tag(name = "File Management", description = "APIs for file upload, download, and management without database storage")
 public class FileController {
     private final FileService fileService;
 
     @PostMapping(path = "upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(summary = "Upload a file")
     public ResponseEntity<ResponseObject<String>> uploadFile(
-            @RequestPart("file") MultipartFile file) {
+            @Parameter(description = "File to upload") @RequestPart("file") MultipartFile file) {
         var result = fileService.upload(file);
         return ResponseEntity.ok(new ResponseObject.Builder<String>()
                 .success(true)
@@ -35,8 +40,9 @@ public class FileController {
     }
 
     @PostMapping(path = "upload/bulk", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(summary = "Upload multiple files")
     public ResponseEntity<ResponseObject<Set<String>>> uploadBulkFiles(
-            @RequestPart("files") List<MultipartFile> files) {
+            @Parameter(description = "Files to upload") @RequestPart("files") List<MultipartFile> files) {
         var result = fileService.uploadBulkFile(files);
         var links = result.stream().map(S3FileResponse::getFileUrl).collect(Collectors.toSet());
         return ResponseEntity.ok(new ResponseObject.Builder<Set<String>>()

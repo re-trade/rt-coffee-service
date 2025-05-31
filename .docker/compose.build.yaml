@@ -26,6 +26,15 @@ services:
       - backend
       - build
       - voucher
+  storage-services:
+    image: ${REGISTRY}/rt-storage-service:latest
+    build:
+      context: ..
+      dockerfile: services/storage/Dockerfile
+    profiles:
+      - backend
+      - build
+      - storage
   gateway-services:
     image: ${REGISTRY}/rt-gateway-service:latest
     build:
