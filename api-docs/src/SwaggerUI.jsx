@@ -29,7 +29,7 @@ const SwaggerUIComponent = () => {
           </Form.Control>
         </Form.Group>
   
-        <SwaggerUI url={selectedUrl + '/api/v1/api-docs'} />
+        <SwaggerUI url={selectedUrl} />
       </Container>
     )
 }
