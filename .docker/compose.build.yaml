@@ -44,3 +44,12 @@ services:
       - backend
       - build
       - gateway
+  api-docs:
+    image: ${REGISTRY}/rt-api-docs:latest
+    build:
+      context: ../api-docs
+      dockerfile: Dockerfile
+    profiles:
+      - backend
+      - build
+      - docs

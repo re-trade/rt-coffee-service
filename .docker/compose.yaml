@@ -85,7 +85,7 @@ services:
       - "traefik.http.services.feedback-service.loadbalancer.server.port=8080"
 
   storage-service:
-    container_name: feedback_notification_service
+    container_name: storage_service
     image: ${REGISTRY}/rt-storage-service:latest
     restart: always
     networks:
@@ -166,6 +166,25 @@ services:
       - "traefik.docker.network=rt-prod-networks"
       - "traefik.constraint-label=retrade-service"
       - "traefik.http.services.voucher-service.loadbalancer.server.port=8080"
+  api-docs:
+    container_name: api_docs
+    image: ${REGISTRY}/rt-api-docs:latest
+    restart: always
+    networks:
+      - rt-prod-networks
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.api-docs.rule=PathPrefix(`/api/docs`)"
+      - "traefik.http.middlewares.strip-api-docs-prefix.stripprefix.prefixes=/api/docs"
+      - "traefik.http.routers.api-docs.middlewares=strip-api-docs-prefix"
+      - "traefik.http.routers.api-docs.entrypoints=web"
+      - "traefik.docker.network=rt-prod-networks"
+      - "traefik.constraint-label=retrade-service"
+      - "traefik.http.services.api-docs.loadbalancer.server.port=80"
+    profiles:
+      - backend
+      - prod
+      - docs
 networks:
   rt-prod-networks:
     name: rt-prod-networks
