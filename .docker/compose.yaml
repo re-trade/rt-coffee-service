@@ -4,7 +4,7 @@ services:
     image: ${REGISTRY}/rt-main-service:latest
     restart: always
     networks:
-      - rt-prod-networks
+      - retrade-network
     environment:
       GRPC_PORT: 9080
       REDIS_HOST: retrade-redis
@@ -54,7 +54,7 @@ services:
     image: ${REGISTRY}/rt-feedback-notification-service:latest
     restart: always
     networks:
-      - rt-prod-networks
+      - retrade-network
     environment:
       GRPC_PORT: 9080
       REDIS_HOST: retrade-redis
@@ -89,7 +89,7 @@ services:
     image: ${REGISTRY}/rt-storage-service:latest
     restart: always
     networks:
-      - rt-prod-networks
+      - retrade-network
     environment:
       GRPC_PORT: 9080
       REDIS_HOST: retrade-redis
@@ -133,7 +133,7 @@ services:
     image: ${REGISTRY}/rt-voucher-service:latest
     restart: always
     networks:
-      - rt-prod-networks
+      - retrade-network
     environment:
       GRPC_PORT: 9080
       REDIS_HOST: retrade-redis
@@ -171,7 +171,7 @@ services:
     image: ${REGISTRY}/rt-api-docs:latest
     restart: always
     networks:
-      - rt-prod-networks
+      - retrade-network
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.api-docs.rule=PathPrefix(`/api/docs`)"
@@ -186,6 +186,6 @@ services:
       - prod
       - docs
 networks:
-  rt-prod-networks:
-    name: rt-prod-networks
+  retrade-network:
+    name: retrade-network
     external: true
