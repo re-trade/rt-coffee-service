@@ -1,7 +1,7 @@
 services:
   main-service:
     container_name: main_service
-    image: main-authentication-service:latest
+    image: ${REGISTRY}/rt-main-service:latest
     restart: always
     networks:
       - rt-prod-networks
@@ -51,7 +51,7 @@ services:
 
   feedback-notification-service:
     container_name: feedback_notification_service
-    image: rt-feedback-notification-service:latest
+    image: ${REGISTRY}/rt-feedback-notification-service:latest
     restart: always
     networks:
       - rt-prod-networks
@@ -86,7 +86,7 @@ services:
 
   storage-service:
     container_name: feedback_notification_service
-    image: rt-storage-service:latest
+    image: ${REGISTRY}/rt-storage-service:latest
     restart: always
     networks:
       - rt-prod-networks
@@ -130,7 +130,7 @@ services:
 
   voucher-service:
     container_name: voucher_service
-    image: voucher-service:latest
+    image: ${REGISTRY}/rt-voucher-service:latest
     restart: always
     networks:
       - rt-prod-networks
