@@ -42,7 +42,7 @@ services:
       - main
     labels:
       - "traefik.enable=true"
-      - "traefik.docker.network=rt-prod-networks"
+      - "traefik.docker.network=retrade-network"
       - "traefik.constraint-label=retrade-service"
       - "traefik.http.routers.main-service.rule=PathPrefix(`/api/main/v1/`)"
       - "traefik.http.middlewares.strip-main-prefix.stripprefix.prefixes=/api/main/v1"
@@ -85,7 +85,7 @@ services:
       - "traefik.http.routers.feedback-service.entrypoints=web"
       - "traefik.http.middlewares.strip-feedback-notification-prefix.stripprefix.prefixes=/api/feedback-notification/v1"
       - "traefik.http.routers.feedback-service.middlewares=strip-feedback-notification-prefix"
-      - "traefik.docker.network=rt-prod-networks"
+      - "traefik.docker.network=retrade-network"
       - "traefik.constraint-label=retrade-service"
       - "traefik.http.services.feedback-service.loadbalancer.server.port=8080"
 
@@ -132,7 +132,7 @@ services:
       - "traefik.http.middlewares.strip-storage-prefix.stripprefix.prefixes=/api/storage/v1"
       - "traefik.http.routers.storage-service.middlewares=strip-storage-prefix"
       - "traefik.http.routers.storage-service.entrypoints=web"
-      - "traefik.docker.network=rt-prod-networks"
+      - "traefik.docker.network=retrade-network"
       - "traefik.constraint-label=retrade-service"
       - "traefik.http.services.storage-service.loadbalancer.server.port=8080"
 
@@ -173,7 +173,7 @@ services:
       - "traefik.http.middlewares.strip-voucher-prefix.stripprefix.prefixes=/api/voucher/v1"
       - "traefik.http.routers.voucher-service.middlewares=strip-voucher-prefix"
       - "traefik.http.routers.voucher-service.entrypoints=web"
-      - "traefik.docker.network=rt-prod-networks"
+      - "traefik.docker.network=retrade-network"
       - "traefik.constraint-label=retrade-service"
       - "traefik.http.services.voucher-service.loadbalancer.server.port=8080"
   api-docs:
@@ -188,7 +188,7 @@ services:
       - "traefik.http.middlewares.strip-api-docs-prefix.stripprefix.prefixes=/api/docs"
       - "traefik.http.routers.api-docs.middlewares=strip-api-docs-prefix"
       - "traefik.http.routers.api-docs.entrypoints=web"
-      - "traefik.docker.network=rt-prod-networks"
+      - "traefik.docker.network=retrade-network"
       - "traefik.constraint-label=retrade-service"
       - "traefik.http.services.api-docs.loadbalancer.server.port=80"
     profiles:
