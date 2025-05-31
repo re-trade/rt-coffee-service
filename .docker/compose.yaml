@@ -1,0 +1,168 @@
+services:
+  main-service:
+    container_name: main_service
+    image: main-authentication-service:latest
+    restart: always
+    networks:
+      - rt-prod-networks
+    environment:
+      GRPC_PORT: 9080
+      REDIS_HOST: retrade-redis
+      REDIS_PORT: 6379
+      DB_HOST: retrade-database
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      RABBITMQ_HOST: retrade-rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USERNAME: ${RABBITMQ_USERNAME}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+      CONTEXT_PATH: /
+      PORT: 8080
+      JWT_ACCESS_KEY: ${JWT_ACCESS_KEY}
+      JWT_REFRESH_KEY: ${JWT_REFRESH_KEY}
+      JWT_2FA_KEY: ${JWT_2FA_KEY}
+      JWT_ACCESS_EX: 3000
+      JWT_REFRESH_EX: 8000
+      JWT_2FA_EX: 3000
+      ORIGIN_ALLOWS: ${ORIGIN_ALLOWS}
+      BASE_HOST: ${BASE_HOST}
+      FRONTEND_URL: ${FRONTEND_URL}
+      FORGOT_PASSWORD_TIMEOUT: 10
+      FORGOT_PASSWORD_CALLBACK: ${FORGOT_PASSWORD_CALLBACK}
+    profiles:
+      - backend
+      - prod
+      - main
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=rt-prod-networks"
+      - "traefik.constraint-label=retrade-service"
+      - "traefik.http.routers.main-service.rule=PathPrefix(`/api/main/v1/`)"
+      - "traefik.http.middlewares.strip-main-prefix.stripprefix.prefixes=/api/main/v1"
+      - "traefik.http.routers.main-service.middlewares=strip-main-prefix"
+      - "traefik.http.routers.main-service.entrypoints=web"
+      - "traefik.http.services.main-service.loadbalancer.server.port=8080"
+
+  feedback-notification-service:
+    container_name: feedback_notification_service
+    image: rt-feedback-notification-service:latest
+    restart: always
+    networks:
+      - rt-prod-networks
+    environment:
+      GRPC_PORT: 9080
+      REDIS_HOST: retrade-redis
+      REDIS_PORT: 6379
+      DB_HOST: retrade-database
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      RABBITMQ_HOST: retrade-rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USERNAME: ${RABBITMQ_USERNAME}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+      CONTEXT_PATH: /
+      PORT: 8080
+    profiles:
+      - backend
+      - prod
+      - feedback-notification
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.feedback-service.rule=PathPrefix(`/api/feedback-notification/v1/`)"
+      - "traefik.http.routers.feedback-service.entrypoints=web"
+      - "traefik.http.middlewares.strip-feedback-notification-prefix.stripprefix.prefixes=/api/feedback-notification/v1"
+      - "traefik.http.routers.feedback-service.middlewares=strip-feedback-notification-prefix"
+      - "traefik.docker.network=rt-prod-networks"
+      - "traefik.constraint-label=retrade-service"
+      - "traefik.http.services.feedback-service.loadbalancer.server.port=8080"
+
+  storage-service:
+    container_name: feedback_notification_service
+    image: rt-storage-service:latest
+    restart: always
+    networks:
+      - rt-prod-networks
+    environment:
+      GRPC_PORT: 9080
+      REDIS_HOST: retrade-redis
+      REDIS_PORT: 6379
+      DB_HOST: retrade-database
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      RABBITMQ_HOST: retrade-rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USERNAME: ${RABBITMQ_USERNAME}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+      CONTEXT_PATH: /
+      PORT: 8080
+      ORIGIN_ALLOWS: ${ORIGIN_ALLOWS}
+      BASE_HOST: ${BASE_HOST}
+      MAIN_SERVICE_GRPC_HOST: main-service
+      MAIN_SERVICE_GRPC_PORT: 9080
+      AWS_REGION: ${AWS_REGION}
+      AWS_ACCESS_KEY: ${AWS_ACCESS_KEY}
+      AWS_SECRET_KEY: ${AWS_SECRET_KEY}
+      AWS_ENDPOINT: ${AWS_ENDPOINT}
+      AWS_BUCKET: ${AWS_BUCKET}
+    profiles:
+      - backend
+      - prod
+      - feedback-notification
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.storage-service.rule=PathPrefix(`/api/storage/v1/`)"
+      - "traefik.http.middlewares.strip-storage-prefix.stripprefix.prefixes=/api/storage/v1"
+      - "traefik.http.routers.storage-service.middlewares=strip-storage-prefix"
+      - "traefik.http.routers.storage-service.entrypoints=web"
+      - "traefik.docker.network=rt-prod-networks"
+      - "traefik.constraint-label=retrade-service"
+      - "traefik.http.services.storage-service.loadbalancer.server.port=8080"
+
+  voucher-service:
+    container_name: voucher_service
+    image: voucher-service:latest
+    restart: always
+    networks:
+      - rt-prod-networks
+    environment:
+      GRPC_PORT: 9080
+      REDIS_HOST: retrade-redis
+      REDIS_PORT: 6379
+      DB_HOST: retrade-database
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      RABBITMQ_HOST: retrade-rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USERNAME: ${RABBITMQ_USERNAME}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+      CONTEXT_PATH: /
+      PORT: 8080
+      ORIGIN_ALLOWS: ${ORIGIN_ALLOWS}
+      BASE_HOST: ${BASE_HOST}
+      MAIN_SERVICE_GRPC_HOST: main-service
+      MAIN_SERVICE_GRPC_PORT: 9080
+    profiles:
+      - backend
+      - prod
+      - voucher
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.voucher-service.rule=PathPrefix(`/api/voucher/v1/`)"
+      - "traefik.http.middlewares.strip-voucher-prefix.stripprefix.prefixes=/api/voucher/v1"
+      - "traefik.http.routers.voucher-service.middlewares=strip-voucher-prefix"
+      - "traefik.http.routers.voucher-service.entrypoints=web"
+      - "traefik.docker.network=rt-prod-networks"
+      - "traefik.constraint-label=retrade-service"
+      - "traefik.http.services.voucher-service.loadbalancer.server.port=8080"
+networks:
+  rt-prod-networks:
+    name: rt-prod-networks
+    external: true
