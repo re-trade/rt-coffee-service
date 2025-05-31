@@ -26,11 +26,7 @@ public class SwaggerConfig {
     private final HostConfig hostConfig;
     @Bean
     public OpenAPI openAPI() {
-        List<Server> serverList = new ArrayList<>();
-        var localServer = new Server();
-        localServer.setUrl(String.format("http://localhost:%s%s", port, contextPath));
-        localServer.setDescription("Local Development Server");
-        serverList.add(localServer);
+        List<Server> serverList = getServerList();
 
         Contact contact = new Contact()
                 .name("ReTrade Development Team")
