@@ -40,11 +40,11 @@ public class OrderServiceImpl implements OrderService {
     private final OrderRepository orderRepository;
     private final OrderItemRepository orderItemRepository;
     private final OrderComboRepository orderComboRepository;
-    private final OrderDestinationRepository orderDestinationRepository;
     private final OrderStatusRepository orderStatusRepository;
     private final OrderHistoryRepository orderHistoryRepository;
     private final ProductRepository productRepository;
     private final CustomerRepository customerRepository;
+    private final CustomerContactRepository customerContactRepository;
     private final CartService cartService;
     private final VoucherGrpcClient voucherGrpcClient;
     private final AuthUtils authUtils;
@@ -56,12 +56,11 @@ public class OrderServiceImpl implements OrderService {
     @Transactional(rollbackFor = {ActionFailedException.class, Exception.class})
     public OrderResponse createOrder(CreateOrderRequest request) {
         log.info("Creating order for products: {}", request.getProductIds());
-        
-        String accountId = getCurrentAccountId();
-        CustomerEntity customer = getCustomerByAccountId(accountId);
-        
+
+        CustomerEntity customer = getCurrentCustomerAccount();
+        CustomerContactEntity contact = customerContactRepository.findById(request.getAddressId()).orElseThrow(() -> new ValidationException("Contact not found"));
         validateCreateOrderRequest(request);
-        
+        var orderDestinationEntity = wrapOrderDestination(contact);
         List<ProductEntity> products = validateAndGetProducts(request.getProductIds());
         
         Map<SellerEntity, List<ProductEntity>> productsBySeller = groupProductsBySeller(products);
@@ -73,7 +72,7 @@ public class OrderServiceImpl implements OrderService {
         BigDecimal discountTotal = BigDecimal.ZERO;
         
         if (StringUtils.hasText(request.getVoucherCode())) {
-            voucherValidation = validateVoucher(request.getVoucherCode(), accountId, subtotal, request.getProductIds());
+            voucherValidation = validateVoucher(request.getVoucherCode(), customer.getId(), subtotal, request.getProductIds());
             if (voucherValidation.getValid()) {
                 discountTotal = BigDecimal.valueOf(voucherValidation.getDiscountAmount());
             } else {
@@ -82,35 +81,33 @@ public class OrderServiceImpl implements OrderService {
         }
         
         BigDecimal grandTotal = subtotal.add(taxTotal).subtract(discountTotal).add(BigDecimal.valueOf(DEFAULT_SHIPPING_COST));
-        
-        OrderEntity order = createOrderEntity(customer, subtotal, taxTotal, discountTotal, grandTotal, request);
+
+        OrderEntity order = createOrderEntity(customer, subtotal, taxTotal, discountTotal, grandTotal, orderDestinationEntity);
         OrderEntity savedOrder = orderRepository.save(order);
-        
-        createOrderDestination(savedOrder, request);
         
         List<OrderComboEntity> orderCombos = createOrderCombos(savedOrder, productsBySeller);
         
         createOrderItems(savedOrder, products, request.getProductIds(), orderCombos);
         
         if (voucherValidation != null && voucherValidation.getValid()) {
-            applyVoucher(request.getVoucherCode(), accountId, savedOrder.getId(), grandTotal);
+            applyVoucher(request.getVoucherCode(), customer.getId(), savedOrder.getId(), grandTotal);
         }
         
-        createOrderHistory(savedOrder, "Order created", getCurrentAccountId());
+        createOrderHistory(savedOrder, "Order created", customer.getId());
         
         cartService.clearCart();
-        
+
         log.info("Order created successfully with ID: {}", savedOrder.getId());
         return mapToOrderResponse(savedOrder);
     }
     
-    private String getCurrentAccountId() {
-        return authUtils.getUserAccountFromAuthentication().getId();
-    }
-    
-    private CustomerEntity getCustomerByAccountId(String accountId) {
-        return customerRepository.findByAccountId(accountId)
-                .orElseThrow(() -> new ValidationException("Customer profile not found"));
+    private CustomerEntity getCurrentCustomerAccount() {
+        var account = authUtils.getUserAccountFromAuthentication();
+        var customerEntity = account.getCustomer();
+        if (customerEntity == null) {
+            throw new ValidationException("User is not a customer");
+        }
+        return customerEntity;
     }
     
     private void validateCreateOrderRequest(CreateOrderRequest request) {
@@ -189,7 +186,7 @@ public class OrderServiceImpl implements OrderService {
     }
 
     private OrderEntity createOrderEntity(CustomerEntity customer, BigDecimal subtotal, BigDecimal taxTotal,
-                                        BigDecimal discountTotal, BigDecimal grandTotal, CreateOrderRequest request) {
+                                        BigDecimal discountTotal, BigDecimal grandTotal, OrderDestinationEntity orderDestination) {
         return OrderEntity.builder()
                 .customer(customer)
                 .subtotal(subtotal)
@@ -197,23 +194,8 @@ public class OrderServiceImpl implements OrderService {
                 .discountTotal(discountTotal)
                 .shippingCost(DEFAULT_SHIPPING_COST)
                 .grandTotal(grandTotal)
+                .orderDestination(orderDestination)
                 .build();
-    }
-
-    private void createOrderDestination(OrderEntity order, CreateOrderRequest request) {
-        OrderDestinationEntity destination = OrderDestinationEntity.builder()
-                .order(order)
-                .customerName(request.getDeliveryAddress().getCustomerName())
-                .phone(request.getDeliveryAddress().getPhone())
-                .state(request.getDeliveryAddress().getState())
-                .country(request.getDeliveryAddress().getCountry())
-                .district(request.getDeliveryAddress().getDistrict())
-                .ward(request.getDeliveryAddress().getWard())
-                .address(request.getDeliveryAddress().getAddressLine())
-                .build();
-
-        orderDestinationRepository.save(destination);
-        order.setOrderDestination(destination);
     }
 
     private List<OrderComboEntity> createOrderCombos(OrderEntity order, Map<SellerEntity, List<ProductEntity>> productsBySeller) {
@@ -318,7 +300,7 @@ public class OrderServiceImpl implements OrderService {
     public OrderResponse updateOrderStatus(String orderId, String statusCode, String notes) {
         OrderEntity order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new ValidationException("Order not found with ID: " + orderId));
-
+        var customerEntity = order.getCustomer();
         OrderStatusEntity newStatus = orderStatusRepository.findByCode(statusCode)
                 .orElseThrow(() -> new ValidationException("Order status not found: " + statusCode));
 
@@ -328,7 +310,7 @@ public class OrderServiceImpl implements OrderService {
             orderComboRepository.save(combo);
         }
 
-        createOrderHistory(order, notes != null ? notes : "Status updated to " + newStatus.getName(), getCurrentAccountId());
+        createOrderHistory(order, notes != null ? notes : "Status updated to " + newStatus.getName(), customerEntity.getLastName());
 
         return mapToOrderResponse(order);
     }
@@ -338,7 +320,7 @@ public class OrderServiceImpl implements OrderService {
     public void cancelOrder(String orderId, String reason) {
         OrderEntity order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new ValidationException("Order not found with ID: " + orderId));
-
+        var customerEntity = order.getCustomer();
         OrderStatusEntity cancelledStatus = orderStatusRepository.findByCode("CANCELLED")
                 .orElseThrow(() -> new ValidationException("Cancelled order status not found"));
 
@@ -348,7 +330,7 @@ public class OrderServiceImpl implements OrderService {
             orderComboRepository.save(combo);
         }
 
-        createOrderHistory(order, "Order cancelled: " + (reason != null ? reason : "No reason provided"), getCurrentAccountId());
+        createOrderHistory(order, "Order cancelled: " + (reason != null ? reason : "No reason provided"), customerEntity.getLastName());
     }
 
     private OrderResponse mapToOrderResponse(OrderEntity order) {
@@ -381,7 +363,7 @@ public class OrderServiceImpl implements OrderService {
                 .country(destination.getCountry())
                 .district(destination.getDistrict())
                 .ward(destination.getWard())
-                .addressLine(destination.getAddress())
+                .addressLine(destination.getAddressLine())
                 .build();
     }
 
@@ -427,6 +409,18 @@ public class OrderServiceImpl implements OrderService {
                 .grandPrice(combo.getGrandPrice())
                 .status(combo.getOrderStatus().getName())
                 .itemIds(itemIds)
+                .build();
+    }
+
+    private OrderDestinationEntity wrapOrderDestination(CustomerContactEntity customerContactEntity) {
+        return OrderDestinationEntity.builder()
+                .customerName(customerContactEntity.getCustomerName())
+                .phone(customerContactEntity.getPhone())
+                .state(customerContactEntity.getState())
+                .country(customerContactEntity.getCountry())
+                .district(customerContactEntity.getDistrict())
+                .ward(customerContactEntity.getWard())
+                .addressLine(customerContactEntity.getAddressLine())
                 .build();
     }
 

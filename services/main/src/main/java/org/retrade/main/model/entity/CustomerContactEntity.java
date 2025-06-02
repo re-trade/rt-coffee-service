@@ -25,6 +25,8 @@ public class CustomerContactEntity extends BaseSQLEntity {
     private String district;
     @Column(name = "ward", length = 20, nullable = false)
     private String ward;
+    @Column(name = "address_line", nullable = false)
+    private String addressLine;
     @Column(name = "name", length = 50, nullable = false)
     private String name;
     @Column(name = "defaulted", nullable = false, columnDefinition = "BOOLEAN DEFAULT FALSE")

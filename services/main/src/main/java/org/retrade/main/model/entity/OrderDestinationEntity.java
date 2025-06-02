@@ -26,6 +26,6 @@ public class OrderDestinationEntity extends BaseSQLEntity {
     private String district;
     @Column(name = "ward", length = 20)
     private String ward;
-    @Column(name = "address", length = 500)
-    private String address;
+    @Column(name = "address_line", length = 500)
+    private String addressLine;
 }
