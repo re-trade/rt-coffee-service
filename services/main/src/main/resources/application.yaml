@@ -9,6 +9,9 @@ spring:
     redis:
       port: ${REDIS_PORT:6379}
       host: ${REDIS_HOST:localhost}
+    elasticsearch:
+      repositories:
+        enabled: on
   datasource:
     username: ${DB_USERNAME:postgres}
     password: ${DB_PASSWORD:12345}
@@ -41,6 +44,10 @@ spring:
           multiplier: 2.0
         acknowledge-mode: manual
     address-shuffle-mode: inorder
+  elasticsearch:
+    uris: ${ELASTICSEARCH_URL:http://localhost:9200}
+    username: ${ELASTICSEARCH_USERNAME:}
+    password: ${ELASTICSEARCH_PASSWORD:}
 server:
   port: ${PORT:8080}
   servlet:

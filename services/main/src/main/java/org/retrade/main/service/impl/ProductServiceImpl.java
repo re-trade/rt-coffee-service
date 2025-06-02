@@ -1,5 +1,6 @@
 package org.retrade.main.service.impl;
 
+import co.elastic.clients.elasticsearch._types.SortOrder;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
@@ -9,6 +10,7 @@ import org.retrade.common.model.dto.request.QueryWrapper;
 import org.retrade.common.model.dto.response.PaginationWrapper;
 import org.retrade.common.model.exception.ActionFailedException;
 import org.retrade.common.model.exception.ValidationException;
+import org.retrade.main.model.document.ProductDocument;
 import org.retrade.main.model.dto.request.CreateProductRequest;
 import org.retrade.main.model.dto.request.UpdateProductRequest;
 import org.retrade.main.model.dto.response.ProductResponse;
@@ -16,11 +18,16 @@ import org.retrade.main.model.entity.CategoryEntity;
 import org.retrade.main.model.entity.ProductEntity;
 import org.retrade.main.model.entity.SellerEntity;
 import org.retrade.main.repository.CategoryRepository;
+import org.retrade.main.repository.ProductElasticsearchRepository;
 import org.retrade.main.repository.ProductRepository;
 import org.retrade.main.repository.SellerRepository;
 import org.retrade.main.service.ProductService;
 import org.retrade.main.util.AuthUtils;
 import org.springframework.data.domain.Page;
+import org.springframework.data.elasticsearch.client.elc.NativeQuery;
+import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
+import org.springframework.data.elasticsearch.core.SearchHit;
+import org.springframework.data.elasticsearch.core.SearchHits;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,6 +38,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ProductServiceImpl implements ProductService {
     private final ProductRepository productRepository;
+    private final ProductElasticsearchRepository productSerachRepository;
+    private final ElasticsearchOperations elasticsearchOperations;
     private final SellerRepository sellerRepository;
     private final CategoryRepository categoryRepository;
     private final AuthUtils authUtils;
@@ -65,6 +74,7 @@ public class ProductServiceImpl implements ProductService {
 
         try {
             var savedProduct = productRepository.save(product);
+            saveProductDocument(savedProduct);
             return mapToProductResponse(savedProduct);
         } catch (Exception ex) {
             throw new ActionFailedException("Failed to create product", ex);
@@ -98,6 +108,7 @@ public class ProductServiceImpl implements ProductService {
         product.setTags(request.getTags());
         try {
             var updatedProduct = productRepository.save(product);
+            saveProductDocument(updatedProduct, id);
             return mapToProductResponse(updatedProduct);
         } catch (Exception ex) {
             throw new ActionFailedException("Failed to update product", ex);
@@ -116,6 +127,7 @@ public class ProductServiceImpl implements ProductService {
         }
         try {
             productRepository.delete(product);
+            productSerachRepository.deleteById(id);;
         } catch (Exception ex) {
             throw new ActionFailedException("Failed to delete product", ex);
         }
@@ -174,6 +186,47 @@ public class ProductServiceImpl implements ProductService {
                 .toList();
     }
 
+    public PaginationWrapper<List<ProductResponse>> searchProductByKeyword(QueryWrapper queryWrapper) {
+        var search = queryWrapper.search();
+        var keyword = search.get("keyword").getValue().toString();
+        if (queryWrapper.search() == null  || queryWrapper.search().isEmpty()) {
+            return productRepository.query(queryWrapper, (param) -> (root, query, criteriaBuilder) -> {
+                Predicate[] defaultPredicates = productRepository.createDefaultPredicate(criteriaBuilder, root, param);
+                List<Predicate> predicates = new ArrayList<>(Arrays.asList(defaultPredicates));
+                return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
+            }, (items) -> {
+                var list = items.map(this::mapToProductResponse).stream().toList();
+                return new PaginationWrapper.Builder<List<ProductResponse>>()
+                        .setPaginationInfo(items)
+                        .setData(list)
+                        .build();
+            });
+        }
+        var nativeQuery = NativeQuery.builder()
+                .withQuery(q -> q.multiMatch(m -> m.fields("name", "shortDescription", "description").query(keyword).fuzziness("AUTO")))
+                .withPageable(queryWrapper.pagination())
+                .withSort(s -> s.field(f -> f.field("createdAt").order(SortOrder.Desc)))
+                .build();
+        SearchHits<ProductDocument> searchHits = elasticsearchOperations.search(nativeQuery, ProductDocument.class);
+        var searchHit = searchHits.getSearchHits().stream().map(SearchHit::getId).collect(Collectors.toSet());
+        return productRepository.query(queryWrapper, (param) -> (root, query, criteriaBuilder) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            predicates.add(root.get("id").in(searchHit));
+            if (param != null && !param.isEmpty()) {
+                Predicate[] defaultPredicates = productRepository.createDefaultPredicate(criteriaBuilder, root, param);
+                predicates.addAll(Arrays.asList(defaultPredicates));
+            }
+            return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
+        }, (items) -> {
+            var list = items.map(this::mapToProductResponse).stream().toList();
+            return new PaginationWrapper.Builder<List<ProductResponse>>()
+                    .setPaginationInfo(items)
+                    .setData(list)
+                    .build();
+        });
+
+    }
+
     @Override
     public List<ProductResponse> getProductsByCategory(String categoryName) {
         List<ProductEntity> products = productRepository.findByCategoryName(categoryName);
@@ -202,7 +255,8 @@ public class ProductServiceImpl implements ProductService {
         var product = getProductEntityById(id);
         product.setVerified(true);
         try {
-            productRepository.save(product);
+            var result = productRepository.save(product);
+            saveProductDocument(result, result.getId());
         } catch (Exception ex) {
             throw new ActionFailedException("Failed to verify product", ex);
         }
@@ -293,5 +347,47 @@ public class ProductServiceImpl implements ProductService {
                     .build();
         });
 
+    }
+
+    private void saveProductDocument(ProductEntity productEntity, String id) {
+        var productDoc = productSerachRepository.findById(id).orElseThrow(() -> new ValidationException("Product not found with id: " + id));
+        productDoc.setName(productEntity.getName());
+        productDoc.setSellerId(productEntity.getSeller().getId());
+        productDoc.setShortDescription(productEntity.getShortDescription());
+        productDoc.setDescription(productEntity.getDescription());
+        productDoc.setBrand(productEntity.getBrand());
+        productDoc.setDiscount(productEntity.getDiscount());
+        productDoc.setModel(productEntity.getModel());
+        productDoc.setCurrentPrice(productEntity.getCurrentPrice());
+        productDoc.setCategories(productEntity.getCategories().stream().map(item -> ProductDocument.CategoryInfo.builder()
+                .id(item.getId())
+                .name(item.getName())
+                .type(item.getType())
+                .build()).collect(Collectors.toSet()));
+        productDoc.setUpdatedAt(productEntity.getUpdatedDate() != null ? productEntity.getUpdatedDate().toLocalDateTime() : null);
+        productSerachRepository.save(productDoc);
+    }
+
+    private void saveProductDocument(ProductEntity productEntity) {
+        var product = ProductDocument.builder()
+                .id(productEntity.getId())
+                .name(productEntity.getName())
+                .sellerId(productEntity.getSeller().getId())
+                .shortDescription(productEntity.getShortDescription())
+                .description(productEntity.getDescription())
+                .brand(productEntity.getBrand())
+                .discount(productEntity.getDiscount())
+                .model(productEntity.getModel())
+                .currentPrice(productEntity.getCurrentPrice())
+                .categories(productEntity.getCategories().stream().map(item -> ProductDocument.CategoryInfo.builder()
+                        .id(item.getId())
+                        .name(item.getName())
+                        .type(item.getType())
+                        .build()).collect(Collectors.toSet()))
+                .verified(productEntity.getVerified())
+                .createdAt(productEntity.getCreatedDate() != null ? productEntity.getCreatedDate().toLocalDateTime() : null)
+                .updatedAt(productEntity.getUpdatedDate() != null ? productEntity.getUpdatedDate().toLocalDateTime() : null)
+                .build();
+        productSerachRepository.save(product);
     }
 }
