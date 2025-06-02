@@ -4,8 +4,10 @@
 This is the main backend service for the **Re Trade (RT)** monorepo project. It provides essential APIs and functionality to support the ecosystem of RT, including services for user management, products, payments, and more.  
 
 ## Contributors  
-- [@AnataAria](https://github.com/AnataAria)  
-- [@haiha0402](https://github.com/haiha0402)  
+- [@AnataAria](https://github.com/AnataAria)
+- [@haiha0402](https://github.com/haiha0402)
+- [@tohka-vo-tri](https://github.com/tohka-vo-tri)
+- [@Shuichiiv](https://github.com/Shuichiiv)
 
 ## Features  
 - User authentication and authorization  
@@ -14,11 +16,10 @@ This is the main backend service for the **Re Trade (RT)** monorepo project. It 
 - Integration with external services (e.g., Consul, MongoDB)  
 
 ## Requirements  
-Before starting development, ensure you have the following installed and running:  
-- [Consul](https://www.consul.io/) (Service discovery and configuration)  
+Before starting development, ensure you have the following installed and running:
 - [MongoDB](https://www.mongodb.com/) (Database use for manage account)  
 - [Postgres](https://www.postgresql.org) (Database use for others)
-- [Java](https://www.oracle.com/java/technologies/downloads) (Runtime environment, Requite jdk 21 > x > 17)   
+- [Java](https://www.oracle.com/java/technologies/downloads) (Runtime environment, Requite jdk 24 above)   
 - [Email Server](https://www.baeldung.com/spring-email)
 - [Docker Server](https://www.docker.com)
 ## Development Setup  
