@@ -4,7 +4,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.retrade.proto.product.ProductInfo;
 import org.retrade.voucher.model.constant.VoucherTypeEnum;
 
 import java.math.BigDecimal;
@@ -29,7 +28,7 @@ public class ProductAwareVoucherResponse {
     private List<String> productRestrictions;
     private List<String> categoryRestrictions;
     private List<String> sellerRestrictions;
-    private List<ProductInfo> applicableProducts;
+    private List<ProductInfoResponse> applicableProducts;
     private Boolean isProductSpecific;
     private Boolean isCategorySpecific;
     private Boolean isSellerSpecific;

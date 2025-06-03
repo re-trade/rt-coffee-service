@@ -3,13 +3,9 @@ package org.retrade.voucher.controller;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.retrade.common.model.dto.response.ResponseObject;
-import org.retrade.voucher.model.dto.request.ApplyVoucherRequest;
 import org.retrade.voucher.model.dto.request.ClaimVoucherRequest;
-import org.retrade.voucher.model.dto.request.ValidateVoucherRequest;
-import org.retrade.voucher.model.dto.response.VoucherClaimResponse;
-import org.retrade.voucher.model.dto.response.VoucherValidationResponse;
+import org.retrade.voucher.model.dto.response.VoucherClaimSimpleResponse;
 import org.retrade.voucher.service.VoucherClaimService;
-import org.retrade.voucher.service.VoucherValidationService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -20,13 +16,12 @@ import java.util.List;
 @RequiredArgsConstructor
 public class VoucherCustomerController {
     private final VoucherClaimService voucherClaimService;
-    private final VoucherValidationService voucherValidationService;
 
     @PostMapping("claim")
-    public ResponseEntity<ResponseObject<VoucherClaimResponse>> claimVoucher(
+    public ResponseEntity<ResponseObject<VoucherClaimSimpleResponse>> claimVoucher(
             @Valid @RequestBody ClaimVoucherRequest request) {
-        VoucherClaimResponse response = voucherClaimService.claimVoucher(request);
-        return ResponseEntity.ok(new ResponseObject.Builder<VoucherClaimResponse>()
+        VoucherClaimSimpleResponse response = voucherClaimService.claimVoucherSimple(request);
+        return ResponseEntity.ok(new ResponseObject.Builder<VoucherClaimSimpleResponse>()
                 .success(true)
                 .code("VOUCHER_CLAIMED")
                 .messages("Voucher claimed successfully")
@@ -35,10 +30,10 @@ public class VoucherCustomerController {
     }
 
     @GetMapping("user/{accountId}")
-    public ResponseEntity<ResponseObject<List<VoucherClaimResponse>>> getUserVouchers(
+    public ResponseEntity<ResponseObject<List<VoucherClaimSimpleResponse>>> getUserVouchers(
             @PathVariable String accountId) {
-        List<VoucherClaimResponse> responses = voucherClaimService.getUserVouchers(accountId);
-        return ResponseEntity.ok(new ResponseObject.Builder<List<VoucherClaimResponse>>()
+        List<VoucherClaimSimpleResponse> responses = voucherClaimService.getUserVouchersSimple(accountId);
+        return ResponseEntity.ok(new ResponseObject.Builder<List<VoucherClaimSimpleResponse>>()
                 .success(true)
                 .code("USER_VOUCHERS_FOUND")
                 .content(responses)
@@ -46,37 +41,14 @@ public class VoucherCustomerController {
     }
 
     @GetMapping("user/{accountId}/active")
-    public ResponseEntity<ResponseObject<List<VoucherClaimResponse>>> getUserActiveVouchers(
+    public ResponseEntity<ResponseObject<List<VoucherClaimSimpleResponse>>> getUserActiveVouchers(
             @PathVariable String accountId) {
-        List<VoucherClaimResponse> responses = voucherClaimService.getUserActiveVouchers(accountId);
-        return ResponseEntity.ok(new ResponseObject.Builder<List<VoucherClaimResponse>>()
+        List<VoucherClaimSimpleResponse> responses = voucherClaimService.getUserActiveVouchersSimple(accountId);
+        return ResponseEntity.ok(new ResponseObject.Builder<List<VoucherClaimSimpleResponse>>()
                 .success(true)
                 .code("USER_ACTIVE_VOUCHERS_FOUND")
                 .content(responses)
                 .build());
     }
 
-    @PostMapping("validate")
-    public ResponseEntity<ResponseObject<VoucherValidationResponse>> validateVoucher(
-            @Valid @RequestBody ValidateVoucherRequest request) {
-        VoucherValidationResponse response = voucherValidationService.validateVoucher(request);
-        return ResponseEntity.ok(new ResponseObject.Builder<VoucherValidationResponse>()
-                .success(response.isValid())
-                .code(response.isValid() ? "VOUCHER_VALID" : "VOUCHER_INVALID")
-                .messages(response.getMessage())
-                .content(response)
-                .build());
-    }
-
-    @PostMapping("apply")
-    public ResponseEntity<ResponseObject<VoucherValidationResponse>> applyVoucher(
-            @Valid @RequestBody ApplyVoucherRequest request) {
-        VoucherValidationResponse response = voucherValidationService.applyVoucher(request);
-        return ResponseEntity.ok(new ResponseObject.Builder<VoucherValidationResponse>()
-                .success(response.isValid())
-                .code(response.isValid() ? "VOUCHER_APPLIED" : "VOUCHER_APPLICATION_FAILED")
-                .messages(response.getMessage())
-                .content(response)
-                .build());
-    }
 }

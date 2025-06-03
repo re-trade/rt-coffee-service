@@ -6,6 +6,7 @@ import org.retrade.common.model.exception.ValidationException;
 import org.retrade.voucher.model.constant.VoucherStatusEnum;
 import org.retrade.voucher.model.dto.request.ClaimVoucherRequest;
 import org.retrade.voucher.model.dto.response.VoucherClaimResponse;
+import org.retrade.voucher.model.dto.response.VoucherClaimSimpleResponse;
 import org.retrade.voucher.model.entity.VoucherEntity;
 import org.retrade.voucher.model.entity.VoucherUsageEntity;
 import org.retrade.voucher.model.entity.VoucherVaultEntity;
@@ -103,6 +104,50 @@ public class VoucherClaimServiceImpl implements VoucherClaimService {
         return BigDecimal.valueOf(voucher.getDiscount());
     }
     
+    @Override
+    public VoucherClaimSimpleResponse claimVoucherSimple(ClaimVoucherRequest request) {
+        VoucherEntity voucher = voucherService.getVoucherEntityByCode(request.getCode());
+        if (!voucher.getActivated()) {
+            throw new ValidationException("Voucher is not active");
+        }
+        if (voucher.getExpiredDate().isBefore(LocalDateTime.now())) {
+            throw new ValidationException("Voucher has expired");
+        }
+        if (voucher.getMaxUses() != null && voucher.getMaxUses() > 0) {
+            throw new ValidationException("Voucher has reached maximum uses");
+        }
+        voucherVaultRepository.findByAccountIdAndVoucher(request.getAccountId(), voucher)
+                .ifPresent(existingVault -> {
+                    throw new ValidationException("You have already claimed this voucher");
+                });
+        VoucherVaultEntity voucherVault = new VoucherVaultEntity();
+        voucherVault.setAccountId(request.getAccountId());
+        voucherVault.setVoucher(voucher);
+        voucherVault.setStatus(VoucherStatusEnum.ACTIVE.name());
+        voucherVault.setClaimedDate(Timestamp.valueOf(LocalDateTime.now()));
+        voucherVault.setExpiredDate(Timestamp.valueOf(voucher.getExpiredDate()));
+        VoucherVaultEntity savedVault = voucherVaultRepository.save(voucherVault);
+
+        return mapToVoucherClaimSimpleResponse(savedVault);
+    }
+
+    @Override
+    public List<VoucherClaimSimpleResponse> getUserVouchersSimple(String accountId) {
+        List<VoucherVaultEntity> userVouchers = voucherVaultRepository.findByAccountId(accountId);
+        return userVouchers.stream()
+                .map(this::mapToVoucherClaimSimpleResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<VoucherClaimSimpleResponse> getUserActiveVouchersSimple(String accountId) {
+        List<VoucherVaultEntity> activeVouchers = voucherVaultRepository.findByAccountIdAndStatus(
+                accountId, VoucherStatusEnum.ACTIVE.name());
+        return activeVouchers.stream()
+                .map(this::mapToVoucherClaimSimpleResponse)
+                .collect(Collectors.toList());
+    }
+
     private VoucherClaimResponse mapToVoucherClaimResponse(VoucherVaultEntity entity) {
         VoucherEntity voucher = entity.getVoucher();
         return VoucherClaimResponse.builder()
@@ -113,6 +158,21 @@ public class VoucherClaimServiceImpl implements VoucherClaimService {
                 .discount(voucher.getDiscount())
                 .expiryDate(voucher.getExpiredDate())
                 .status(entity.getStatus())
+                .build();
+    }
+
+    private VoucherClaimSimpleResponse mapToVoucherClaimSimpleResponse(VoucherVaultEntity entity) {
+        VoucherEntity voucher = entity.getVoucher();
+        return VoucherClaimSimpleResponse.builder()
+                .id(entity.getId())
+                .code(voucher.getCode())
+                .type(voucher.getType())
+                .discount(voucher.getDiscount())
+                .expiryDate(voucher.getExpiredDate())
+                .minSpend(voucher.getMinSpend())
+                .status(entity.getStatus())
+                .title(voucher.getName())
+                .description(voucher.getDescription())
                 .build();
     }
 }
