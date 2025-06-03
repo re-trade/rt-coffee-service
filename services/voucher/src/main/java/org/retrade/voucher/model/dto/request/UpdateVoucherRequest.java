@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.retrade.voucher.model.constant.VoucherTypeEnum;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -29,7 +30,7 @@ public class UpdateVoucherRequest {
     private Integer maxUsesPerUser;
     
     @Min(value = 0, message = "Minimum spend must be greater than or equal to 0")
-    private Integer minSpend;
+    private BigDecimal minSpend;
     
-    private List<String> productRestrictions; // List of product IDs this voucher applies to
+    private List<String> productRestrictions;
 }

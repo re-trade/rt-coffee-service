@@ -15,4 +15,5 @@ public interface OrderComboRepository extends BaseJpaRepository<OrderComboEntity
     List<OrderComboEntity> findByOrderDestination(OrderDestinationEntity orderDestination);
     List<OrderComboEntity> findByOrderStatus(OrderStatusEntity orderStatus);
     List<OrderComboEntity> findBySellerAndOrderStatus(SellerEntity seller, OrderStatusEntity orderStatus);
+    List<OrderComboEntity> findByOrderItems_Order_Id(String orderId);
 }

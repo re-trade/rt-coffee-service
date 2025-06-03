@@ -87,7 +87,7 @@ public class OrderServiceImpl implements OrderService {
         
         List<OrderComboEntity> orderCombos = createOrderCombos(savedOrder, productsBySeller);
         
-        createOrderItems(savedOrder, products, request.getProductIds(), orderCombos);
+        createOrderItems(savedOrder, products, orderCombos);
         
         if (voucherValidation != null && voucherValidation.getValid()) {
             applyVoucher(request.getVoucherCode(), customer.getId(), savedOrder.getId(), grandTotal);
@@ -100,158 +100,6 @@ public class OrderServiceImpl implements OrderService {
         log.info("Order created successfully with ID: {}", savedOrder.getId());
         return mapToOrderResponse(savedOrder);
     }
-    
-    private CustomerEntity getCurrentCustomerAccount() {
-        var account = authUtils.getUserAccountFromAuthentication();
-        var customerEntity = account.getCustomer();
-        if (customerEntity == null) {
-            throw new ValidationException("User is not a customer");
-        }
-        return customerEntity;
-    }
-    
-    private void validateCreateOrderRequest(CreateOrderRequest request) {
-        if (request.getProductIds().isEmpty()) {
-            throw new ValidationException("Product list cannot be empty");
-        }
-        
-        if (request.getProductIds().size() > 100) {
-            throw new ValidationException("Cannot order more than 100 different products at once");
-        }
-    }
-    
-    private List<ProductEntity> validateAndGetProducts(List<String> productIds) {
-        List<ProductEntity> products = new ArrayList<>();
-        List<String> notFoundProducts = new ArrayList<>();
-        
-        for (String productId : productIds) {
-            Optional<ProductEntity> productOpt = productRepository.findById(productId);
-            if (productOpt.isPresent()) {
-                ProductEntity product = productOpt.get();
-                if (!product.getVerified()) {
-                    throw new ValidationException("Product " + productId + " is not verified and cannot be ordered");
-                }
-                products.add(product);
-            } else {
-                notFoundProducts.add(productId);
-            }
-        }
-        
-        if (!notFoundProducts.isEmpty()) {
-            throw new ValidationException("Products not found: " + String.join(", ", notFoundProducts));
-        }
-        
-        return products;
-    }
-    
-    private Map<SellerEntity, List<ProductEntity>> groupProductsBySeller(List<ProductEntity> products) {
-        return products.stream()
-                .collect(Collectors.groupingBy(ProductEntity::getSeller));
-    }
-    
-    private BigDecimal calculateSubtotal(List<ProductEntity> products, List<String> productIds) {
-        Map<String, Long> productQuantities = productIds.stream()
-                .collect(Collectors.groupingBy(id -> id, Collectors.counting()));
-        
-        return products.stream()
-                .map(product -> {
-                    Long quantity = productQuantities.get(product.getId());
-                    return product.getCurrentPrice().multiply(BigDecimal.valueOf(quantity));
-                })
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-    }
-    
-    private BigDecimal calculateTax(BigDecimal subtotal) {
-        return subtotal.multiply(TAX_RATE).setScale(2, RoundingMode.HALF_UP);
-    }
-    
-    private ValidateVoucherResponse validateVoucher(String voucherCode, String accountId, BigDecimal orderTotal, List<String> productIds) {
-        try {
-            return voucherGrpcClient.validateVoucher(voucherCode, accountId, orderTotal, productIds);
-        } catch (Exception e) {
-            log.error("Error validating voucher: {}", e.getMessage(), e);
-            throw new ActionFailedException("Failed to validate voucher", e);
-        }
-    }
-    
-    private void applyVoucher(String voucherCode, String accountId, String orderId, BigDecimal orderTotal) {
-        try {
-            ApplyVoucherResponse response = voucherGrpcClient.applyVoucher(voucherCode, accountId, orderId, orderTotal);
-            if (!response.getSuccess()) {
-                log.warn("Failed to apply voucher {}: {}", voucherCode, response.getMessage());
-            }
-        } catch (Exception e) {
-            log.error("Error applying voucher: {}", e.getMessage(), e);
-        }
-    }
-
-    private OrderEntity createOrderEntity(CustomerEntity customer, BigDecimal subtotal, BigDecimal taxTotal,
-                                        BigDecimal discountTotal, BigDecimal grandTotal, OrderDestinationEntity orderDestination) {
-        return OrderEntity.builder()
-                .customer(customer)
-                .subtotal(subtotal)
-                .taxTotal(taxTotal)
-                .discountTotal(discountTotal)
-                .shippingCost(DEFAULT_SHIPPING_COST)
-                .grandTotal(grandTotal)
-                .orderDestination(orderDestination)
-                .build();
-    }
-
-    private List<OrderComboEntity> createOrderCombos(OrderEntity order, Map<SellerEntity, List<ProductEntity>> productsBySeller) {
-        OrderStatusEntity pendingStatus = orderStatusRepository.findByCode("PENDING")
-                .orElseThrow(() -> new ValidationException("Pending order status not found"));
-
-        List<OrderComboEntity> orderCombos = new ArrayList<>();
-
-        for (Map.Entry<SellerEntity, List<ProductEntity>> entry : productsBySeller.entrySet()) {
-            SellerEntity seller = entry.getKey();
-            List<ProductEntity> sellerProducts = entry.getValue();
-
-            BigDecimal sellerTotal = sellerProducts.stream()
-                    .map(ProductEntity::getCurrentPrice)
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-            OrderComboEntity combo = OrderComboEntity.builder()
-                    .seller(seller)
-                    .grandPrice(sellerTotal)
-                    .orderDestination(order.getOrderDestination())
-                    .orderStatus(pendingStatus)
-                    .build();
-
-            OrderComboEntity savedCombo = orderComboRepository.save(combo);
-            orderCombos.add(savedCombo);
-        }
-
-        return orderCombos;
-    }
-
-    private void createOrderItems(OrderEntity order, List<ProductEntity> products, List<String> productIds,
-                                List<OrderComboEntity> orderCombos) {
-        Map<String, Long> productQuantities = productIds.stream()
-                .collect(Collectors.groupingBy(id -> id, Collectors.counting()));
-
-        Map<SellerEntity, OrderComboEntity> sellerComboMap = orderCombos.stream()
-                .collect(Collectors.toMap(OrderComboEntity::getSeller, combo -> combo));
-
-        for (ProductEntity product : products) {
-            OrderComboEntity combo = sellerComboMap.get(product.getSeller());
-
-            OrderItemEntity orderItem = OrderItemEntity.builder()
-                    .order(order)
-                    .product(product)
-                    .orderCombo(combo)
-                    .productName(product.getName())
-                    .shortDescription(product.getShortDescription())
-                    .backgroundUrl(product.getThumbnail())
-                    .basePrice(product.getCurrentPrice())
-                    .unit("pcs")
-                    .build();
-
-            orderItemRepository.save(orderItem);
-        }
-    }
-
     private void createOrderHistory(OrderEntity order, String notes, String createdBy) {
         OrderHistoryEntity history = OrderHistoryEntity.builder()
                 .order(order)
@@ -331,6 +179,154 @@ public class OrderServiceImpl implements OrderService {
         }
 
         createOrderHistory(order, "Order cancelled: " + (reason != null ? reason : "No reason provided"), customerEntity.getLastName());
+    }
+
+    private CustomerEntity getCurrentCustomerAccount() {
+        var account = authUtils.getUserAccountFromAuthentication();
+        var customerEntity = account.getCustomer();
+        if (customerEntity == null) {
+            throw new ValidationException("User is not a customer");
+        }
+        return customerEntity;
+    }
+
+    private void validateCreateOrderRequest(CreateOrderRequest request) {
+        if (request.getProductIds().isEmpty()) {
+            throw new ValidationException("Product list cannot be empty");
+        }
+
+        if (request.getProductIds().size() > 100) {
+            throw new ValidationException("Cannot order more than 100 different products at once");
+        }
+    }
+
+    private List<ProductEntity> validateAndGetProducts(List<String> productIds) {
+        List<ProductEntity> products = new ArrayList<>();
+        List<String> notFoundProducts = new ArrayList<>();
+
+        for (String productId : productIds) {
+            Optional<ProductEntity> productOpt = productRepository.findById(productId);
+            if (productOpt.isPresent()) {
+                ProductEntity product = productOpt.get();
+                if (!product.getVerified()) {
+                    throw new ValidationException("Product " + productId + " is not verified and cannot be ordered");
+                }
+                products.add(product);
+            } else {
+                notFoundProducts.add(productId);
+            }
+        }
+
+        if (!notFoundProducts.isEmpty()) {
+            throw new ValidationException("Products not found: " + String.join(", ", notFoundProducts));
+        }
+
+        return products;
+    }
+
+    private Map<SellerEntity, List<ProductEntity>> groupProductsBySeller(List<ProductEntity> products) {
+        return products.stream()
+                .collect(Collectors.groupingBy(ProductEntity::getSeller));
+    }
+
+    private BigDecimal calculateSubtotal(List<ProductEntity> products, List<String> productIds) {
+        Map<String, Long> productQuantities = productIds.stream()
+                .collect(Collectors.groupingBy(id -> id, Collectors.counting()));
+
+        return products.stream()
+                .map(product -> {
+                    Long quantity = productQuantities.get(product.getId());
+                    return product.getCurrentPrice().multiply(BigDecimal.valueOf(quantity));
+                })
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    private BigDecimal calculateTax(BigDecimal subtotal) {
+        return subtotal.multiply(TAX_RATE).setScale(2, RoundingMode.HALF_UP);
+    }
+
+    private ValidateVoucherResponse validateVoucher(String voucherCode, String accountId, BigDecimal orderTotal, List<String> productIds) {
+        try {
+            return voucherGrpcClient.validateVoucher(voucherCode, accountId, orderTotal, productIds);
+        } catch (Exception e) {
+            log.error("Error validating voucher: {}", e.getMessage(), e);
+            throw new ActionFailedException("Failed to validate voucher", e);
+        }
+    }
+
+    private void applyVoucher(String voucherCode, String accountId, String orderId, BigDecimal orderTotal) {
+        try {
+            ApplyVoucherResponse response = voucherGrpcClient.applyVoucher(voucherCode, accountId, orderId, orderTotal);
+            if (!response.getSuccess()) {
+                log.warn("Failed to apply voucher {}: {}", voucherCode, response.getMessage());
+            }
+        } catch (Exception e) {
+            log.error("Error applying voucher: {}", e.getMessage(), e);
+        }
+    }
+
+    private OrderEntity createOrderEntity(CustomerEntity customer, BigDecimal subtotal, BigDecimal taxTotal,
+                                          BigDecimal discountTotal, BigDecimal grandTotal, OrderDestinationEntity orderDestination) {
+        return OrderEntity.builder()
+                .customer(customer)
+                .subtotal(subtotal)
+                .taxTotal(taxTotal)
+                .discountTotal(discountTotal)
+                .shippingCost(DEFAULT_SHIPPING_COST)
+                .grandTotal(grandTotal)
+                .orderDestination(orderDestination)
+                .build();
+    }
+
+    private List<OrderComboEntity> createOrderCombos(OrderEntity order, Map<SellerEntity, List<ProductEntity>> productsBySeller) {
+        OrderStatusEntity pendingStatus = orderStatusRepository.findByCode("PENDING")
+                .orElseThrow(() -> new ValidationException("Pending order status not found"));
+
+        List<OrderComboEntity> orderCombos = new ArrayList<>();
+
+        for (Map.Entry<SellerEntity, List<ProductEntity>> entry : productsBySeller.entrySet()) {
+            SellerEntity seller = entry.getKey();
+            List<ProductEntity> sellerProducts = entry.getValue();
+
+            BigDecimal sellerTotal = sellerProducts.stream()
+                    .map(ProductEntity::getCurrentPrice)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            OrderComboEntity combo = OrderComboEntity.builder()
+                    .seller(seller)
+                    .grandPrice(sellerTotal)
+                    .orderDestination(order.getOrderDestination())
+                    .orderStatus(pendingStatus)
+                    .build();
+
+            OrderComboEntity savedCombo = orderComboRepository.save(combo);
+            orderCombos.add(savedCombo);
+        }
+
+        return orderCombos;
+    }
+
+    private void createOrderItems(OrderEntity order, List<ProductEntity> products,
+                                  List<OrderComboEntity> orderCombos) {
+        Map<SellerEntity, OrderComboEntity> sellerComboMap = orderCombos.stream()
+                .collect(Collectors.toMap(OrderComboEntity::getSeller, combo -> combo));
+
+        for (ProductEntity product : products) {
+            OrderComboEntity combo = sellerComboMap.get(product.getSeller());
+
+            OrderItemEntity orderItem = OrderItemEntity.builder()
+                    .order(order)
+                    .product(product)
+                    .orderCombo(combo)
+                    .productName(product.getName())
+                    .shortDescription(product.getShortDescription())
+                    .backgroundUrl(product.getThumbnail())
+                    .basePrice(product.getCurrentPrice())
+                    .unit("pcs")
+                    .build();
+
+            orderItemRepository.save(orderItem);
+        }
     }
 
     private OrderResponse mapToOrderResponse(OrderEntity order) {

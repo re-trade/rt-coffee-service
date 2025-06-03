@@ -22,7 +22,6 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -37,14 +36,11 @@ public class VoucherValidationServiceImpl implements VoucherValidationService {
     public VoucherValidationResponse validateVoucher(ValidateVoucherRequest request) {
         try {
             VoucherEntity voucher = voucherService.getVoucherEntityByCode(request.getCode());
-            if (!voucher.getActived()) {
+            if (!voucher.getActivated()) {
                 return createInvalidResponse("Voucher is not active", voucher);
             }
-            if (voucher.getExpiryDate().isBefore(LocalDateTime.now())) {
+            if (voucher.getExpiredDate().isBefore(LocalDateTime.now())) {
                 return createInvalidResponse("Voucher has expired", voucher);
-            }
-            if (voucher.getMaxUses() != null && voucher.getMaxUses() > 0 && voucher.getCurrentUses() >= voucher.getMaxUses()) {
-                return createInvalidResponse("Voucher has reached maximum uses", voucher);
             }
             Optional<VoucherVaultEntity> voucherVaultOpt = voucherVaultRepository.findByAccountIdAndVoucher(
                     request.getAccountId(), voucher);
@@ -62,8 +58,9 @@ public class VoucherValidationServiceImpl implements VoucherValidationService {
                     userUsageCount >= voucher.getMaxUsesPerUser()) {
                 return createInvalidResponse("You have reached maximum uses for this voucher", voucher);
             }
-            if (voucher.getMinSpend() != null && voucher.getMinSpend() > 0 && 
-                    request.getOrderTotal().compareTo(BigDecimal.valueOf(voucher.getMinSpend())) < 0) {
+            if (voucher.getMinSpend() != null
+                    && voucher.getMinSpend().compareTo(BigDecimal.ZERO) > 0
+                    && request.getOrderTotal().compareTo(voucher.getMinSpend()) < 0) {
                 return createInvalidResponse(
                         "Order total does not meet minimum spend requirement of " + voucher.getMinSpend(), voucher);
             }
@@ -71,7 +68,7 @@ public class VoucherValidationServiceImpl implements VoucherValidationService {
             if (!restrictions.isEmpty()) {
                 List<String> restrictedProductIds = restrictions.stream()
                         .map(VoucherRestrictionEntity::getProductId)
-                        .collect(Collectors.toList());
+                        .toList();
                 if (request.getProductIds() != null && !request.getProductIds().isEmpty()) {
                     boolean hasMatchingProduct = request.getProductIds().stream()
                             .anyMatch(restrictedProductIds::contains);

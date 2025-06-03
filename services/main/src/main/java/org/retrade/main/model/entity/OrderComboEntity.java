@@ -6,6 +6,7 @@ import lombok.*;
 import org.retrade.common.model.entity.BaseSQLEntity;
 
 import java.math.BigDecimal;
+import java.util.Set;
 
 @Getter
 @Setter
@@ -25,4 +26,6 @@ public class OrderComboEntity extends BaseSQLEntity {
     @ManyToOne(targetEntity = OrderStatusEntity.class, fetch = FetchType.EAGER, optional = false)
     @JoinColumn(name = "order_status_id", nullable = false)
     private OrderStatusEntity orderStatus;
+    @OneToMany(fetch = FetchType.EAGER, mappedBy = "orderCombo")
+    private Set<OrderItemEntity> orderItems;
 }
