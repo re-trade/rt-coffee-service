@@ -11,5 +11,5 @@ import java.util.Optional;
 public interface VoucherRepository extends BaseJpaRepository<VoucherEntity, String> {
     Optional<VoucherEntity> findByCode(String code);
     
-    List<VoucherEntity> findByActived(Boolean active);
+    List<VoucherEntity> findByActivated(Boolean active);
 }

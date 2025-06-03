@@ -15,6 +15,7 @@ import org.retrade.voucher.service.VoucherClaimService;
 import org.retrade.voucher.service.VoucherService;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -31,13 +32,13 @@ public class VoucherClaimServiceImpl implements VoucherClaimService {
     @Transactional
     public VoucherClaimResponse claimVoucher(ClaimVoucherRequest request) {
         VoucherEntity voucher = voucherService.getVoucherEntityByCode(request.getCode());
-        if (!voucher.getActived()) {
+        if (!voucher.getActivated()) {
             throw new ValidationException("Voucher is not active");
         }
-        if (voucher.getExpiryDate().isBefore(LocalDateTime.now())) {
+        if (voucher.getExpiredDate().isBefore(LocalDateTime.now())) {
             throw new ValidationException("Voucher has expired");
         }
-        if (voucher.getMaxUses() != null && voucher.getMaxUses() > 0 && voucher.getCurrentUses() >= voucher.getMaxUses()) {
+        if (voucher.getMaxUses() != null && voucher.getMaxUses() > 0) {
             throw new ValidationException("Voucher has reached maximum uses");
         }
         voucherVaultRepository.findByAccountIdAndVoucher(request.getAccountId(), voucher)
@@ -49,7 +50,7 @@ public class VoucherClaimServiceImpl implements VoucherClaimService {
         voucherVault.setVoucher(voucher);
         voucherVault.setStatus(VoucherStatusEnum.ACTIVE.name());
         voucherVault.setClaimedDate(Timestamp.valueOf(LocalDateTime.now()));
-        voucherVault.setExpiredDate(Timestamp.valueOf(voucher.getExpiryDate()));
+        voucherVault.setExpiredDate(Timestamp.valueOf(voucher.getExpiredDate()));
         VoucherVaultEntity savedVault = voucherVaultRepository.save(voucherVault);
         
         return mapToVoucherClaimResponse(savedVault);
@@ -85,22 +86,21 @@ public class VoucherClaimServiceImpl implements VoucherClaimService {
         voucherVault.setUsedDate(Timestamp.valueOf(LocalDateTime.now()));
         voucherVaultRepository.save(voucherVault);
         VoucherEntity voucher = voucherVault.getVoucher();
-        voucher.setCurrentUses(voucher.getCurrentUses() + 1);
 
         VoucherUsageEntity voucherUsage = new VoucherUsageEntity();
         voucherUsage.setVoucher(voucher);
         voucherUsage.setVoucherVault(voucherVault);
         voucherUsage.setOrderId(orderId);
         voucherUsage.setUserId(voucherVault.getAccountId());
-        voucherUsage.setUsageDate(Timestamp.valueOf(LocalDateTime.now()));
+        voucherUsage.setUsageDate(LocalDateTime.now());
         voucherUsage.setDiscountApplied(calculateDiscount(voucher));
         voucherUsage.setType(voucher.getType());
         
         voucherUsageRepository.save(voucherUsage);
     }
     
-    private java.math.BigDecimal calculateDiscount(VoucherEntity voucher) {
-        return java.math.BigDecimal.valueOf(voucher.getDiscount());
+    private BigDecimal calculateDiscount(VoucherEntity voucher) {
+        return BigDecimal.valueOf(voucher.getDiscount());
     }
     
     private VoucherClaimResponse mapToVoucherClaimResponse(VoucherVaultEntity entity) {
@@ -111,7 +111,7 @@ public class VoucherClaimServiceImpl implements VoucherClaimService {
                 .code(voucher.getCode())
                 .type(voucher.getType())
                 .discount(voucher.getDiscount())
-                .expiryDate(voucher.getExpiryDate())
+                .expiryDate(voucher.getExpiredDate())
                 .status(entity.getStatus())
                 .build();
     }

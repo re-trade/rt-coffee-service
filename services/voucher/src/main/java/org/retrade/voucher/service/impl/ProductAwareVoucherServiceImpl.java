@@ -24,6 +24,7 @@ import org.retrade.voucher.service.VoucherService;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -125,7 +126,7 @@ public class ProductAwareVoucherServiceImpl implements ProductAwareVoucherServic
 
         return applicableVouchers.stream()
                 .distinct()
-                .filter(VoucherEntity::getActived)
+                .filter(VoucherEntity::getActivated)
                 .map(this::mapToProductAwareVoucherResponse)
                 .collect(Collectors.toList());
     }
@@ -137,7 +138,7 @@ public class ProductAwareVoucherServiceImpl implements ProductAwareVoucherServic
         
         return categoryRestrictions.stream()
                 .map(VoucherCategoryRestrictionEntity::getVoucher)
-                .filter(VoucherEntity::getActived)
+                .filter(VoucherEntity::getActivated)
                 .map(this::mapToProductAwareVoucherResponse)
                 .collect(Collectors.toList());
     }
@@ -149,7 +150,7 @@ public class ProductAwareVoucherServiceImpl implements ProductAwareVoucherServic
         
         return sellerRestrictions.stream()
                 .map(VoucherSellerRestrictionEntity::getVoucher)
-                .filter(VoucherEntity::getActived)
+                .filter(VoucherEntity::getActivated)
                 .map(this::mapToProductAwareVoucherResponse)
                 .collect(Collectors.toList());
     }
@@ -223,17 +224,16 @@ public class ProductAwareVoucherServiceImpl implements ProductAwareVoucherServic
         return getVoucherEntity(request.getCode(), request.getType(), request.getDiscount(), request.getStartDate(), request.getExpiryDate(), request.getActive(), request.getMaxUses(), request.getMaxUsesPerUser(), request.getMinSpend(), request);
     }
 
-    static VoucherEntity getVoucherEntity(String code, VoucherTypeEnum type, Double discount, LocalDateTime startDate, LocalDateTime expiryDate, Boolean active, Integer maxUses, Integer maxUsesPerUser, Integer minSpend, CreateProductAwareVoucherRequest request) {
+    static VoucherEntity getVoucherEntity(String code, VoucherTypeEnum type, Double discount, LocalDateTime startDate, LocalDateTime expiryDate, Boolean active, Integer maxUses, Integer maxUsesPerUser, BigDecimal minSpend, CreateProductAwareVoucherRequest request) {
         VoucherEntity voucherEntity = new VoucherEntity();
         voucherEntity.setCode(code);
         voucherEntity.setType(type.name());
         voucherEntity.setDiscount(discount);
         voucherEntity.setStartDate(startDate);
-        voucherEntity.setExpiryDate(expiryDate);
-        voucherEntity.setActived(active);
+        voucherEntity.setExpiredDate(expiryDate);
+        voucherEntity.setActivated(active);
         voucherEntity.setMaxUses(maxUses);
         voucherEntity.setMaxUsesPerUser(maxUsesPerUser);
-        voucherEntity.setCurrentUses(0);
         voucherEntity.setMinSpend(minSpend);
         return voucherEntity;
     }
@@ -276,11 +276,10 @@ public class ProductAwareVoucherServiceImpl implements ProductAwareVoucherServic
                 .type(org.retrade.voucher.model.constant.VoucherTypeEnum.valueOf(voucher.getType()))
                 .discount(voucher.getDiscount())
                 .startDate(voucher.getStartDate())
-                .expiryDate(voucher.getExpiryDate())
-                .active(voucher.getActived())
+                .expiryDate(voucher.getExpiredDate())
+                .active(voucher.getActivated())
                 .maxUses(voucher.getMaxUses())
                 .maxUsesPerUser(voucher.getMaxUsesPerUser())
-                .currentUses(voucher.getCurrentUses())
                 .minSpend(voucher.getMinSpend())
                 .productRestrictions(productRestrictions)
                 .categoryRestrictions(categoryRestrictions)

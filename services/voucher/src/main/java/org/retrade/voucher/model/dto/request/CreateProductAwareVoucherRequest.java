@@ -9,6 +9,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.retrade.voucher.model.constant.VoucherTypeEnum;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -43,17 +44,13 @@ public class CreateProductAwareVoucherRequest {
     private Integer maxUsesPerUser;
     
     @Min(value = 0, message = "Minimum spend must be greater than or equal to 0")
-    private Integer minSpend;
-    
-    // Product restrictions
-    private List<String> productRestrictions; // List of specific product IDs
-    
-    // Category restrictions
-    private List<String> categoryRestrictions; // List of product categories
-    
-    // Seller restrictions
-    private List<String> sellerRestrictions; // List of seller IDs
-    
-    // Validation flags
-    private Boolean validateProducts = true; // Whether to validate product existence
+    private BigDecimal minSpend;
+
+    private List<String> productRestrictions;
+
+    private List<String> categoryRestrictions;
+
+    private List<String> sellerRestrictions;
+
+    private Boolean validateProducts = true;
 }

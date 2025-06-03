@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 import org.retrade.proto.product.ProductInfo;
 import org.retrade.voucher.model.constant.VoucherTypeEnum;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -24,8 +25,7 @@ public class ProductAwareVoucherResponse {
     private Boolean active;
     private Integer maxUses;
     private Integer maxUsesPerUser;
-    private Integer currentUses;
-    private Integer minSpend;
+    private BigDecimal minSpend;
     private List<String> productRestrictions;
     private List<String> categoryRestrictions;
     private List<String> sellerRestrictions;
