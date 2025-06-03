@@ -8,7 +8,7 @@ import lombok.Setter;
 import org.retrade.common.model.entity.BaseSQLEntity;
 
 import java.math.BigDecimal;
-import java.sql.Timestamp;
+import java.time.LocalDateTime;
 
 @Getter
 @Setter
@@ -27,9 +27,11 @@ public class VoucherUsageEntity extends BaseSQLEntity {
     @Column(name = "user_id", nullable = false)
     private String userId;
     @Column(name = "usage_date", nullable = false)
-    private Timestamp usageDate;
+    private LocalDateTime usageDate;
     @Column(name = "discount_applied", nullable = false)
     private BigDecimal discountApplied;
     @Column(name = "type", nullable = false)
     private String type;
+    @Column(name = "failure_reason", length = 255)
+    private String failureReason;
 }

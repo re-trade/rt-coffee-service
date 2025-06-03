@@ -26,5 +26,5 @@ public class ValidateVoucherRequest {
     @Min(value = 0, message = "Order total must be greater than or equal to 0")
     private BigDecimal orderTotal;
     
-    private List<String> productIds; // List of product IDs in the order
+    private List<String> productIds;
 }

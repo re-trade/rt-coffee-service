@@ -17,7 +17,7 @@ message TokenRequest {
 }
 
 message UserTokenInfo {
-    string acount_id = 1;
+    string account_id = 1;
     repeated string roles = 2;
     string username = 3;
     bool is_active = 4;

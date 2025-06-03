@@ -72,7 +72,6 @@
 
 	<modules>
 		<module>main</module>
-		<module>account</module>
 		<module>gateway</module>
 		<module>feedback-notification</module>
         <module>voucher</module>

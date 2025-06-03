@@ -228,7 +228,7 @@ public class VoucherGrpcServiceImpl extends GrpcVoucherServiceGrpc.GrpcVoucherSe
                 .active(proto.getActive())
                 .maxUses(proto.getMaxUses())
                 .maxUsesPerUser(proto.getMaxUsesPerUser())
-                .minSpend(proto.getMinSpend())
+                .minSpend(new BigDecimal(proto.getMinSpend()))
                 .productRestrictions(new ArrayList<>(proto.getProductRestrictionsList()))
                 .build();
     }
@@ -244,8 +244,7 @@ public class VoucherGrpcServiceImpl extends GrpcVoucherServiceGrpc.GrpcVoucherSe
                 .setActive(dto.getActive())
                 .setMaxUses(dto.getMaxUses())
                 .setMaxUsesPerUser(dto.getMaxUsesPerUser())
-                .setCurrentUses(dto.getCurrentUses())
-                .setMinSpend(dto.getMinSpend())
+                .setMinSpend(dto.getMinSpend().toEngineeringString())
                 .addAllProductRestrictions(dto.getProductRestrictions())
                 .build();
     }

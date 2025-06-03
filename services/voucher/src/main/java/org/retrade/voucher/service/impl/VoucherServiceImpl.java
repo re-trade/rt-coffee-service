@@ -68,11 +68,11 @@ public class VoucherServiceImpl implements VoucherService {
         }
 
         if (request.getExpiryDate() != null) {
-            voucherEntity.setExpiryDate(request.getExpiryDate());
+            voucherEntity.setExpiredDate(request.getExpiryDate());
         }
 
         if (request.getActive() != null) {
-            voucherEntity.setActived(request.getActive());
+            voucherEntity.setActivated(request.getActive());
         }
 
         if (request.getMaxUses() != null) {
@@ -121,7 +121,7 @@ public class VoucherServiceImpl implements VoucherService {
 
     @Override
     public List<VoucherResponse> getActiveVouchers() {
-        List<VoucherEntity> activeVouchers = voucherRepository.findByActived(true);
+        List<VoucherEntity> activeVouchers = voucherRepository.findByActivated(true);
         return activeVouchers.stream()
                 .map(voucher -> mapToVoucherResponse(voucher, getProductRestrictions(voucher)))
                 .collect(Collectors.toList());
@@ -167,11 +167,10 @@ public class VoucherServiceImpl implements VoucherService {
                 .type(org.retrade.voucher.model.constant.VoucherTypeEnum.valueOf(entity.getType()))
                 .discount(entity.getDiscount())
                 .startDate(entity.getStartDate())
-                .expiryDate(entity.getExpiryDate())
-                .active(entity.getActived())
+                .expiryDate(entity.getExpiredDate())
+                .active(entity.getActivated())
                 .maxUses(entity.getMaxUses())
                 .maxUsesPerUser(entity.getMaxUsesPerUser())
-                .currentUses(entity.getCurrentUses())
                 .minSpend(entity.getMinSpend())
                 .productRestrictions(productRestrictions)
                 .build();
@@ -194,8 +193,8 @@ public class VoucherServiceImpl implements VoucherService {
         voucherEntity.setType(request.getType().name());
         voucherEntity.setDiscount(request.getDiscount());
         voucherEntity.setStartDate(request.getStartDate());
-        voucherEntity.setExpiryDate(request.getExpiryDate());
-        voucherEntity.setActived(request.getActive());
+        voucherEntity.setExpiredDate(request.getExpiryDate());
+        voucherEntity.setActivated(request.getActive());
         voucherEntity.setMaxUses(request.getMaxUses());
         voucherEntity.setMaxUsesPerUser(request.getMaxUsesPerUser());
         voucherEntity.setMinSpend(request.getMinSpend());

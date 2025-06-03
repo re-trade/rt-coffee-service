@@ -4,26 +4,21 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.retrade.voucher.model.constant.VoucherTypeEnum;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class VoucherResponse {
+public class VoucherSimpleResponse {
     private String id;
     private String code;
-    private VoucherTypeEnum type;
+    private String type;
     private Double discount;
-    private LocalDateTime startDate;
     private LocalDateTime expiryDate;
-    private Boolean active;
-    private Integer maxUses;
-    private Integer maxUsesPerUser;
     private BigDecimal minSpend;
-    private List<String> productRestrictions;
+    private String title;
+    private String description;
 }

@@ -119,3 +119,15 @@ logging:
     org.springframework.amqp: DEBUG
     org.springframework.messaging: DEBUG
     org.springframework.retry: DEBUG
+
+payment:
+  payos:
+    client-id: ${PAYOS_CLIENT_ID:}
+    api-key: ${PAYOS_API_KEY:}
+    checksum-key: ${PAYOS_CHECKSUM_KEY:}
+  vnp:
+    pay-url: ${VNP_PAYURL:https://sandbox.vnpayment.vn/paymentv2/vpcpay.html}
+    tmn-code: ${VNP_TMN_CODE:}
+    hash-secret: ${VNP_HASH_SECRET:}
+    api-url: ${VNP_API_URL:https://sandbox.vnpayment.vn/merchant_webapi/api/transaction}
+  callback: ${PAYMENT_CALLBACK:http://localhost:3000/checkout}

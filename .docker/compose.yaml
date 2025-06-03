@@ -168,6 +168,14 @@ services:
       SWAGGER_CONTEXT_PATH: /api/voucher/v1
       MAIN_SERVICE_GRPC_HOST: main-service
       MAIN_SERVICE_GRPC_PORT: 9080
+      PAYOS_CLIENT_ID: ${PAYOS_CLIENT_ID}
+      PAYOS_API_KEY: ${PAYOS_API_KEY}
+      PAYOS_CHECKSUM_KEY: ${PAYOS_CHECKSUM_KEY}
+      VNP_PAYURL: ${VNP_PAYURL}
+      VNP_TMN_CODE: ${VNP_TMN_CODE}
+      VNP_HASH_SECRET: ${VNP_HASH_SECRET}
+      VNP_API_URL: ${VNP_API_URL}
+      PAYMENT_CALLBACK: ${PAYMENT_CALLBACK}
       TZ: Asia/Ho_Chi_Minh
     profiles:
       - backend

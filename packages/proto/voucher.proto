@@ -28,9 +28,8 @@ message VoucherDetails {
   bool active = 7;
   int32 max_uses = 8;
   int32 max_uses_per_user = 9;
-  int32 current_uses = 10;
-  int32 min_spend = 11;
-  repeated string product_restrictions = 12;
+  string min_spend = 10;
+  repeated string product_restrictions = 11;
 }
 
 message VoucherClaimProto {
@@ -52,7 +51,7 @@ message CreateVoucherRequest {
   bool active = 6;
   int32 max_uses = 7;
   int32 max_uses_per_user = 8;
-  int32 min_spend = 9;
+  int64 min_spend = 9;
   repeated string product_restrictions = 10;
 }
 

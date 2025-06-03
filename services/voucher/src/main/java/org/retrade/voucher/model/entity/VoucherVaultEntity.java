@@ -28,6 +28,4 @@ public class VoucherVaultEntity extends BaseSQLEntity {
     private Timestamp usedDate;
     @Column(name = "expired_date", nullable = false)
     private Timestamp expiredDate;
-    @Column(name = "redemption_quota")
-    private Integer redemptionQuota;
 }
