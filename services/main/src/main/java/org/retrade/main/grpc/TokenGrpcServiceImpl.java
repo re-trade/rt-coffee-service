@@ -45,7 +45,7 @@ public class TokenGrpcServiceImpl extends GrpcTokenServiceGrpc.GrpcTokenServiceI
         VerifyTokenResponse tokenRpcResponse = VerifyTokenResponse.newBuilder()
                 .setIsValid(true)
                 .setUserInfo(UserTokenInfo.newBuilder()
-                        .setAccountId(account.get().getId())
+                        .setAcountId(account.get().getId())
                         .addAllRoles(Objects.requireNonNullElse(result.getRoles(), Collections.emptyList()))
                         .setUsername(result.getUsername())
                         .setIsActive(account.get().isEnabled())
