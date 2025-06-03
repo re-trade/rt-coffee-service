@@ -39,6 +39,7 @@ services:
       ELASTICSEARCH_URL: http://retrade-elasticsearch:9200
       ELASTICSEARCH_USERNAME: ${ELASTICSEARCH_USERNAME:-}
       ELASTICSEARCH_PASSWORD: ${ELASTICSEARCH_PASSWORD:-}
+      TZ: Asia/Ho_Chi_Minh
     profiles:
       - backend
       - prod
@@ -78,6 +79,7 @@ services:
       FRONTEND_URL: ${FRONTEND_URL}
       SWAGGER_CONTEXT_PATH: /api/feedback-notification/v1
       PORT: 8080
+      TZ: Asia/Ho_Chi_Minh
     profiles:
       - backend
       - prod
@@ -124,7 +126,7 @@ services:
       AWS_SECRET_KEY: ${AWS_SECRET_KEY}
       AWS_ENDPOINT: ${AWS_ENDPOINT}
       AWS_BUCKET: ${AWS_BUCKET}
-
+      TZ: Asia/Ho_Chi_Minh
     profiles:
       - backend
       - prod
@@ -166,6 +168,7 @@ services:
       SWAGGER_CONTEXT_PATH: /api/voucher/v1
       MAIN_SERVICE_GRPC_HOST: main-service
       MAIN_SERVICE_GRPC_PORT: 9080
+      TZ: Asia/Ho_Chi_Minh
     profiles:
       - backend
       - prod
