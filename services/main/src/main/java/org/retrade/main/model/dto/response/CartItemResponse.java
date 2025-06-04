@@ -17,9 +17,6 @@ public class CartItemResponse {
     private String productName;
     private String productThumbnail;
     private String productBrand;
-    private String sellerName;
-    private Integer quantity;
-    private BigDecimal unitPrice;
     private BigDecimal totalPrice;
     private LocalDateTime addedAt;
     private Boolean productAvailable;

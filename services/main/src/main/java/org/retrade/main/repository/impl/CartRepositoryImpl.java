@@ -43,11 +43,11 @@ public class CartRepositoryImpl implements CartRepository {
     @Override
     public CartEntity save(CartEntity cart) {
         try {
-            String cartKey = getCartKey(cart.getUserId());
+            String cartKey = getCartKey(cart.getCustomerId());
             String cartJson = objectMapper.writeValueAsString(cart);
             
             redisTemplate.opsForValue().set(cartKey, cartJson);
-            setExpiration(cart.getUserId(), cartConfig.getTtlDays() * 24 * 60 * 60);
+            setExpiration(cart.getCustomerId(), cartConfig.getTtlDays() * 24 * 60 * 60);
             
             return cart;
         } catch (JsonProcessingException e) {

@@ -8,7 +8,7 @@ import org.retrade.main.model.dto.response.CartSummaryResponse;
 public interface CartService {
     CartResponse addToCart(AddToCartRequest request);
     
-    CartResponse updateCartItem(String productId, UpdateCartItemRequest request);
+    CartResponse updateCartItem(String productId);
     
     CartResponse removeFromCart(String productId);
     

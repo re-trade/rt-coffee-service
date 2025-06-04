@@ -6,22 +6,18 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class CartEntity implements Serializable {
-    private String userId;
-    
+    private String customerId;
     @Builder.Default
-    private List<CartItemEntity> items = new ArrayList<>();
-    
-    private Integer totalItems;
-    private BigDecimal totalAmount;
+    private Map<String, Set<CartItemEntity>> shopItems = new HashMap<>();
     private LocalDateTime lastUpdated;
 }
