@@ -65,6 +65,7 @@ public class RegisterServiceImpl implements RegisterService {
                 .address(request.getAddress())
                 .phone(request.getPhone())
                 .avatarUrl(request.getAvatarUrl())
+                .gender(request.getGender())
                 .account(customerAccount)
                 .build();
         customerAccount.setCustomer(customerProfile);

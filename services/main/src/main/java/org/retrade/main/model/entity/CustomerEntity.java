@@ -23,6 +23,8 @@ public class CustomerEntity extends BaseSQLEntity {
     private String address;
     @Column(name = "avatar_url", columnDefinition = "TEXT")
     private String avatarUrl;
+    @Column(name = "gender", columnDefinition = "SMALLINT DEFAULT 1", nullable = false)
+    private Integer gender;
     @OneToOne(fetch = FetchType.EAGER, optional = false, targetEntity = AccountEntity.class)
     @JoinColumn(name = "account_id", nullable = false, updatable = false)
     private AccountEntity account;

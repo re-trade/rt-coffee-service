@@ -1,16 +1,14 @@
 package org.retrade.main.model.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import org.retrade.common.model.entity.BaseSQLEntity;
 
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 @Entity(name = "customer_contacts")
 public class CustomerContactEntity extends BaseSQLEntity {
     @Column(name = "customer_name", length = 50, nullable = false)
