@@ -12,34 +12,43 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class CustomerAccountRegisterRequest {
-    @NotEmpty
-    @NotNull
+
+    @NotEmpty(message = "Username must not be empty")
+    @NotNull(message = "Username is required")
     private String username;
-    @NotEmpty
-    @NotNull
+
+    @NotEmpty(message = "Password must not be empty")
+    @NotNull(message = "Password is required")
     private String password;
-    @NotEmpty
-    @NotNull
+
+    @NotEmpty(message = "Re-entered password must not be empty")
+    @NotNull(message = "Re-entered password is required")
     private String rePassword;
-    @NotEmpty
-    @NotNull
+
+    @NotEmpty(message = "Email must not be empty")
+    @NotNull(message = "Email is required")
     private String email;
-    @NotEmpty
-    @NotNull
+
+    @NotEmpty(message = "First name must not be empty")
+    @NotNull(message = "First name is required")
     private String firstName;
-    @NotEmpty
-    @NotNull
+
+    @NotEmpty(message = "Last name must not be empty")
+    @NotNull(message = "Last name is required")
     private String lastName;
-    @NotEmpty
-    @NotNull
+
+    @NotEmpty(message = "Phone number must not be empty")
+    @NotNull(message = "Phone number is required")
     private String phone;
-    @NotNull
-    @NotEmpty
+
+    @NotNull(message = "Gender is required")
     private Integer gender;
-    @NotEmpty
-    @NotNull
+
+    @NotEmpty(message = "Address must not be empty")
+    @NotNull(message = "Address is required")
     private String address;
-    @NotEmpty
-    @NotNull
+
+    @NotEmpty(message = "Avatar URL must not be empty")
+    @NotNull(message = "Avatar URL is required")
     private String avatarUrl;
 }

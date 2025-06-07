@@ -18,11 +18,11 @@ import java.util.List;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("contacts")
+@PreAuthorize("hasRole('ROLE_CUSTOMER')")
 public class CustomerAddressController {
     private final CustomerService customerService;
 
     @GetMapping
-    @PreAuthorize("hasRole('ROLE_CUSTOMER')")
     public ResponseEntity<ResponseObject<List<CustomerContactResponse>>> getCustomerContacts(
             @PageableDefault Pageable pageable,
             @RequestParam(required = false) String q) {
@@ -41,7 +41,6 @@ public class CustomerAddressController {
 
 
     @GetMapping("{id}")
-    @PreAuthorize("hasRole('ROLE_CUSTOMER')")
     public ResponseEntity<ResponseObject<CustomerContactResponse>> getCustomerContact(@PathVariable String id) {
         var result = customerService.getCustomerContactById(id);
         return ResponseEntity.ok(new ResponseObject.Builder<CustomerContactResponse>()
@@ -53,7 +52,6 @@ public class CustomerAddressController {
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('ROLE_CUSTOMER')")
     public ResponseEntity<ResponseObject<CustomerContactResponse>> createCustomerContact(@Valid @RequestBody CustomerContactRequest request) {
         var result = customerService.createCustomerContact(request);
         return ResponseEntity.ok(new ResponseObject.Builder<CustomerContactResponse>()
@@ -65,7 +63,6 @@ public class CustomerAddressController {
     }
 
     @PutMapping("{id}")
-    @PreAuthorize("hasRole('ROLE_CUSTOMER')")
     public ResponseEntity<ResponseObject<CustomerContactResponse>> updateCustomerContact(@PathVariable String id, @Valid @RequestBody CustomerContactRequest request) {
         var result = customerService.updateCustomerContact(id, request);
         return ResponseEntity.ok(new ResponseObject.Builder<CustomerContactResponse>()
