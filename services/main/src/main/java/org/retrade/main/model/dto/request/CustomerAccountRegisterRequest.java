@@ -33,6 +33,9 @@ public class CustomerAccountRegisterRequest {
     @NotEmpty
     @NotNull
     private String phone;
+    @NotNull
+    @NotEmpty
+    private Integer gender;
     @NotEmpty
     @NotNull
     private String address;

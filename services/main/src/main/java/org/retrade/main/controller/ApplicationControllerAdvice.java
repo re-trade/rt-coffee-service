@@ -13,12 +13,15 @@ import org.retrade.common.model.exception.BaseException;
 import org.retrade.common.model.exception.ValidationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.*;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 @RestControllerAdvice
 @Slf4j
@@ -32,15 +35,20 @@ public class ApplicationControllerAdvice {
         log.error(exception.getMessage());
         return ResponseEntity.status(HttpStatus.OK).body(exception.getErrors());
     }
-    @ExceptionHandler(AccessDeniedException.class)
-    public ResponseEntity<ResponseObject<String>> accessDeniedException(AccessDeniedException exception) {
-        var responseError = new ResponseObject.Builder<String>()
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ResponseObject<String>> handleValidationException(MethodArgumentNotValidException exception) {
+        List<String> messages = exception.getBindingResult()
+                .getFieldErrors()
+                .stream()
+                .map(error -> error.getField() + ": " + error.getDefaultMessage())
+                .collect(Collectors.toList());
+        ResponseObject<String> responseError = new ResponseObject.Builder<String>()
                 .success(false)
-                .messages(exception.getMessage())
-                .code("AUTH_FAILED")
+                .messages(messages)
+                .code("VALIDATION_ERROR")
                 .content(null)
                 .build();
-        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(responseError);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(responseError);
     }
     @ExceptionHandler({
             InvalidKeyException.class,
