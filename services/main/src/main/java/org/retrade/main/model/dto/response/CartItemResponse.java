@@ -1,5 +1,6 @@
 package org.retrade.main.model.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -18,6 +19,7 @@ public class CartItemResponse {
     private String productThumbnail;
     private String productBrand;
     private BigDecimal totalPrice;
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime addedAt;
     private Boolean productAvailable;
 }

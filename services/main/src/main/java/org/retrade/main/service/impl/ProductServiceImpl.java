@@ -185,10 +185,10 @@ public class ProductServiceImpl implements ProductService {
                 .map(this::mapToProductResponse)
                 .toList();
     }
-
+    @Override
     public PaginationWrapper<List<ProductResponse>> searchProductByKeyword(QueryWrapper queryWrapper) {
         var search = queryWrapper.search();
-        var keyword = search.get("keyword").getValue().toString();
+        QueryFieldWrapper keyword = search.remove("keyword");
         if (queryWrapper.search() == null  || queryWrapper.search().isEmpty()) {
             return productRepository.query(queryWrapper, (param) -> (root, query, criteriaBuilder) -> {
                 Predicate[] defaultPredicates = productRepository.createDefaultPredicate(criteriaBuilder, root, param);
@@ -203,7 +203,7 @@ public class ProductServiceImpl implements ProductService {
             });
         }
         var nativeQuery = NativeQuery.builder()
-                .withQuery(q -> q.multiMatch(m -> m.fields("name", "shortDescription", "description").query(keyword).fuzziness("AUTO")))
+                .withQuery(q -> q.multiMatch(m -> m.fields("name", "shortDescription", "description").query(keyword.getValue().toString()).fuzziness("AUTO")))
                 .withPageable(queryWrapper.pagination())
                 .withSort(s -> s.field(f -> f.field("createdAt").order(SortOrder.Desc)))
                 .build();
@@ -364,7 +364,7 @@ public class ProductServiceImpl implements ProductService {
                 .name(item.getName())
                 .type(item.getType())
                 .build()).collect(Collectors.toSet()));
-        productDoc.setUpdatedAt(productEntity.getUpdatedDate() != null ? productEntity.getUpdatedDate().toLocalDateTime() : null);
+        productDoc.setUpdatedAt(productEntity.getUpdatedDate() != null ? productEntity.getUpdatedDate() : null);
         productSerachRepository.save(productDoc);
     }
 
@@ -385,8 +385,8 @@ public class ProductServiceImpl implements ProductService {
                         .type(item.getType())
                         .build()).collect(Collectors.toSet()))
                 .verified(productEntity.getVerified())
-                .createdAt(productEntity.getCreatedDate() != null ? productEntity.getCreatedDate().toLocalDateTime() : null)
-                .updatedAt(productEntity.getUpdatedDate() != null ? productEntity.getUpdatedDate().toLocalDateTime() : null)
+                .createdAt(productEntity.getCreatedDate() != null ? productEntity.getCreatedDate() : null)
+                .updatedAt(productEntity.getUpdatedDate() != null ? productEntity.getUpdatedDate() : null)
                 .build();
         productSerachRepository.save(product);
     }
