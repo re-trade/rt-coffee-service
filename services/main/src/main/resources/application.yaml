@@ -22,7 +22,7 @@ spring:
       schema-locations: classpath:schema.sql
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: none
     show-sql: true
     properties:
       hibernate:
@@ -76,6 +76,9 @@ security:
   forgot-password:
     timeout: ${FORGOT_PASSWORD_TIMEOUT:10}
     callbackUrl: ${FORGOT_PASSWORD_CALLBACK:http://localhost:3000/forgot-password}
+
+  aes:
+    key: ${AES_KEY:sus}
 
 management:
   endpoints:
@@ -135,3 +138,10 @@ payment:
     hash-secret: ${VNP_HASH_SECRET:}
     api-url: ${VNP_API_URL:https://sandbox.vnpayment.vn/merchant_webapi/api/transaction}
   callback: ${PAYMENT_CALLBACK:http://localhost:3000/checkout}
+
+
+minio:
+  url: ${MINIO_URL:http://localhost:9000}
+  access-key: ${MINIO_ACCESS_KEY:}
+  secret-key: ${MINIO_SECRET_KEY:}
+  bucket-name: ${MINIO_BUCKET_NAME:retrade}

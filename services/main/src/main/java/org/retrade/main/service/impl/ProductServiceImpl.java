@@ -38,7 +38,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ProductServiceImpl implements ProductService {
     private final ProductRepository productRepository;
-    private final ProductElasticsearchRepository productSerachRepository;
+    private final ProductElasticsearchRepository productSearchRepository;
     private final ElasticsearchOperations elasticsearchOperations;
     private final SellerRepository sellerRepository;
     private final CategoryRepository categoryRepository;
@@ -127,7 +127,7 @@ public class ProductServiceImpl implements ProductService {
         }
         try {
             productRepository.delete(product);
-            productSerachRepository.deleteById(id);;
+            productSearchRepository.deleteById(id);;
         } catch (Exception ex) {
             throw new ActionFailedException("Failed to delete product", ex);
         }
@@ -350,7 +350,7 @@ public class ProductServiceImpl implements ProductService {
     }
 
     private void saveProductDocument(ProductEntity productEntity, String id) {
-        var productDoc = productSerachRepository.findById(id).orElseThrow(() -> new ValidationException("Product not found with id: " + id));
+        var productDoc = productSearchRepository.findById(id).orElseThrow(() -> new ValidationException("Product not found with id: " + id));
         productDoc.setName(productEntity.getName());
         productDoc.setSellerId(productEntity.getSeller().getId());
         productDoc.setShortDescription(productEntity.getShortDescription());
@@ -365,7 +365,7 @@ public class ProductServiceImpl implements ProductService {
                 .type(item.getType())
                 .build()).collect(Collectors.toSet()));
         productDoc.setUpdatedAt(productEntity.getUpdatedDate() != null ? productEntity.getUpdatedDate() : null);
-        productSerachRepository.save(productDoc);
+        productSearchRepository.save(productDoc);
     }
 
     private void saveProductDocument(ProductEntity productEntity) {
@@ -388,6 +388,6 @@ public class ProductServiceImpl implements ProductService {
                 .createdAt(productEntity.getCreatedDate() != null ? productEntity.getCreatedDate() : null)
                 .updatedAt(productEntity.getUpdatedDate() != null ? productEntity.getUpdatedDate() : null)
                 .build();
-        productSerachRepository.save(product);
+        productSearchRepository.save(product);
     }
 }

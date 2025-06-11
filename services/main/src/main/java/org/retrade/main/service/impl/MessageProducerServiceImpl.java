@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.retrade.common.model.message.MessageObject;
 import org.retrade.main.config.RabbitMQConfig;
+import org.retrade.main.model.message.CCCDVerificationMessage;
 import org.retrade.main.model.message.EmailNotificationMessage;
 import org.retrade.main.model.message.UserRegistrationMessage;
 import org.retrade.main.service.MessageProducerService;
@@ -60,5 +61,26 @@ public class MessageProducerServiceImpl implements MessageProducerService {
                 messageWrapper
         );
         log.info("User registration message sent: {}", message.getMessageId());
+    }
+
+    @Override
+    public void sendCCCDForVerified(CCCDVerificationMessage message) {
+        if (message.getMessageId() == null) {
+            message.setMessageId(UUID.randomUUID().toString());
+        }
+        var messageWrapper = new MessageObject.Builder<CCCDVerificationMessage>()
+                .withPayload(message)
+                .withMessageId(message.getMessageId())
+                .withSource("main-service")
+                .withType("cccd-verified")
+                .withTimestamp(LocalDateTime.now())
+                .build();
+        log.info("Sending seller verified message: {}", message.getMessageId());
+        rabbitTemplate.convertAndSend(
+                RabbitMQConfig.ExchangeNameEnum.IDENTITY_EXCHANGE.getName(),
+                RabbitMQConfig.RoutingKeyEnum.IDENTITY_VERIFICATION_ROUTING_KEY.getName(),
+                messageWrapper
+        );
+        log.info("Seller verified message sent: {}", message.getMessageId());
     }
 }
