@@ -2,6 +2,7 @@ package org.retrade.main.model.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.ColumnDefault;
 import org.retrade.common.model.entity.BaseSQLEntity;
 
 import java.util.Set;
@@ -23,7 +24,8 @@ public class CustomerEntity extends BaseSQLEntity {
     private String address;
     @Column(name = "avatar_url", columnDefinition = "TEXT")
     private String avatarUrl;
-    @Column(name = "gender", columnDefinition = "SMALLINT DEFAULT 1", nullable = false)
+    @ColumnDefault(value = "1")
+    @Column(name = "gender", nullable = false)
     private Integer gender;
     @OneToOne(fetch = FetchType.EAGER, optional = false, targetEntity = AccountEntity.class)
     @JoinColumn(name = "account_id", nullable = false, updatable = false)

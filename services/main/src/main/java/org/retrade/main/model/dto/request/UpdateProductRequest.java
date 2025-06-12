@@ -35,7 +35,7 @@ public class UpdateProductRequest {
     private String brand;
 
     @Size(max = 50, message = "Discount must not exceed 50 characters")
-    private String discount;
+    private Double discount;
 
     @Size(max = 128, message = "Model must not exceed 128 characters")
     private String model;

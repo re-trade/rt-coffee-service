@@ -42,7 +42,7 @@ public class ProductDocument {
     private String brand;
 
     @Field(type = FieldType.Keyword)
-    private String discount;
+    private Double discount;
 
     @Field(type = FieldType.Text, analyzer = "keyword")
     private String model;
