@@ -18,17 +18,17 @@ public class ProductEntity extends BaseSQLEntity {
     @ManyToOne(targetEntity = SellerEntity.class, fetch = FetchType.EAGER, optional = false)
     @JoinColumn(name = "seller_id", nullable = false)
     private SellerEntity seller;
-    @Column(name = "short_description", columnDefinition = "TEXT")
+    @Column(name = "short_description", nullable = false, columnDefinition = "TEXT")
     private String shortDescription;
-    @Column(name = "description", columnDefinition = "TEXT")
+    @Column(name = "description", nullable = false, columnDefinition = "TEXT")
     private String description;
     @Column(name = "thumbnail", length = 256)
     private String thumbnail;
     private Set<String> productImages;
     @Column(name = "brand", length = 128, nullable = false)
     private String brand;
-    @Column(name = "discount", nullable = false)
-    private String discount;
+    @Column(name = "discount", nullable = false, columnDefinition = "NUMERIC(5, 2) DEFAULT 0.00 NOT NULL")
+    private Double discount;
     @Column(name = "model", nullable = false, length = 128)
     private String model;
     @Column(name = "current_price", nullable = false)

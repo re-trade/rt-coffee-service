@@ -14,7 +14,7 @@ message ProductInfo {
   string thumbnail = 7;
   repeated string product_images = 8;
   string brand = 9;
-  string discount = 10;
+  double discount = 10;
   string model = 11;
   double current_price = 12;
   repeated string categories = 13;

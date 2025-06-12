@@ -24,7 +24,7 @@ public class ProductResponse {
     private String thumbnail;
     private Set<String> productImages;
     private String brand;
-    private String discount;
+    private Double discount;
     private String model;
     private BigDecimal currentPrice;
     private Set<String> categories;

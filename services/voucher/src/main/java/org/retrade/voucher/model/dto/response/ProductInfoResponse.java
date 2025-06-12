@@ -23,7 +23,7 @@ public class ProductInfoResponse {
     private String thumbnail;
     private List<String> productImages;
     private String brand;
-    private String discount;
+    private Double discount;
     private String model;
     private BigDecimal currentPrice;
     private List<String> categories;
