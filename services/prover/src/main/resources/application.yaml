@@ -18,13 +18,22 @@ spring:
     address-shuffle-mode: inorder
 logging:
   level:
+    com.rabbitmq: DEBUG
+    org.springframework.amqp.rabbit: DEBUG
+    org.springframework.amqp.rabbit.listener: DEBUG
     org:
-      springframework: INFO
       retrade: DEBUG
+
+fpt:
+  base-url: ${FPT_BASE_URL:https://api.fpt.ai/vision/idr/vnm/}
+  api-key: ${FPT_API_KEY:}
+
+
 minio:
   url: ${MINIO_URL:http://localhost:9000}
   access-key: ${MINIO_ACCESS_KEY:}
   secret-key: ${MINIO_SECRET_KEY:}
   bucket-name: ${MINIO_BUCKET_NAME:retrade}
 
-
+server:
+  port: 8087
