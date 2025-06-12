@@ -76,6 +76,7 @@
 		<module>feedback-notification</module>
         <module>voucher</module>
         <module>storage</module>
+		<module>prover</module>
     </modules>
 
 	<build>
