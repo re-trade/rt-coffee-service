@@ -37,3 +37,8 @@ minio:
 
 server:
   port: 8087
+
+
+security:
+  aes:
+    key: ${AES_KEY:sus}

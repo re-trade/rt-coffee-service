@@ -8,7 +8,7 @@ import org.retrade.prover.model.dto.FptAiData;
 import org.retrade.prover.model.dto.IdCardInfo;
 import org.retrade.prover.model.dto.IdentityVerificationResult;
 import org.retrade.prover.service.FPTAIService;
-import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.FileSystemResource;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
@@ -16,6 +16,7 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
+import java.io.File;
 import java.io.IOException;
 
 @Service
@@ -25,10 +26,11 @@ public class FPTAIServiceImpl implements FPTAIService {
     private final ObjectMapper objectMapper;
     private final FPTApiConfig config;
     @Override
-    public IdentityVerificationResult scanCCCD(byte[] frontImage, byte[] backImage) {
+    public IdentityVerificationResult scanCCCD(File frontImageFile, File backImageFile) {
         IdentityVerificationResult result = new IdentityVerificationResult();
         result.setVerificationSuccessful(true);
-        IdCardInfo frontInfo = processImageForIdRecognition(frontImage, "front.jpg", "FRONT");
+
+        IdCardInfo frontInfo = processImageForIdRecognition(frontImageFile, "FRONT");
         if (frontInfo != null) {
             result.setFrontSide(frontInfo);
         } else {
@@ -36,7 +38,8 @@ public class FPTAIServiceImpl implements FPTAIService {
             result.setErrorMessage("Failed to process front image.");
             return result;
         }
-        IdCardInfo backInfo = processImageForIdRecognition(backImage, "back.jpg", "BACK");
+
+        IdCardInfo backInfo = processImageForIdRecognition(backImageFile, "BACK");
         if (backInfo != null) {
             result.setBackSide(backInfo);
         } else {
@@ -48,21 +51,14 @@ public class FPTAIServiceImpl implements FPTAIService {
         return result;
     }
 
-    private IdCardInfo processImageForIdRecognition(byte[] imageData, String filename, String cardSide) {
+
+    private IdCardInfo processImageForIdRecognition(File imageFile, String cardSide) {
         HttpHeaders headers = new HttpHeaders();
         headers.add("api_key", config.getApiKey());
         headers.setContentType(MediaType.MULTIPART_FORM_DATA);
-
         MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
-        body.add("image", new ByteArrayResource(imageData) {
-            @Override
-            public String getFilename() {
-                return filename;
-            }
-        });
-
+        body.add("image", new FileSystemResource(imageFile));
         HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
-
         try {
             ResponseEntity<String> response = restTemplate.exchange(
                     config.getBaseUrl(),
@@ -75,7 +71,7 @@ public class FPTAIServiceImpl implements FPTAIService {
                 String rawJson = response.getBody();
                 FptAiApiResponse apiResponse = objectMapper.readValue(rawJson, FptAiApiResponse.class);
 
-                if (apiResponse.getErrorCode() == 0) { // FPT.AI returns errorCode 0 for success
+                if (apiResponse.getErrorCode() == 0) {
                     return mapFptAiDataToIdCardInfo(apiResponse.getData(), cardSide, rawJson);
                 } else {
                     System.err.println("FPT.AI API Error for " + cardSide + ": " + apiResponse.getErrorMessage());
