@@ -35,6 +35,15 @@ services:
       - backend
       - build
       - storage
+  prover-services:
+    image: ${REGISTRY}/rt-prover-service:latest
+    build:
+      context: ..
+      dockerfile: services/prover/Dockerfile
+    profiles:
+      - backend
+      - build
+      - prover
   gateway-services:
     image: ${REGISTRY}/rt-gateway-service:latest
     build:

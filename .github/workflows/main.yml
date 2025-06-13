@@ -11,7 +11,7 @@ jobs:
       packages: write
     strategy:
       matrix:
-        service: [main, feedback-notification, voucher, storage]
+        service: [main, feedback-notification, voucher, storage, prover]
     env:
       REGISTRY: ghcr.io/${{ github.repository }}
     steps:
