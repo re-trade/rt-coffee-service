@@ -53,7 +53,7 @@ public class CCCDProverConsumer {
                     .withTimestamp(LocalDateTime.now())
                     .build();
             rabbitTemplate.convertAndSend(RabbitMQConfig.ExchangeNameEnum.IDENTITY_EXCHANGE.getName(),
-                    RabbitMQConfig.RoutingKeyEnum.IDENTITY_VERIFICATION_ROUTING_KEY.getName(),
+                    RabbitMQConfig.RoutingKeyEnum.IDENTITY_VERIFIED_ROUTING_KEY.getName(),
                     messageWrapper);
         } catch (Exception ex) {
             log.error(ex.getMessage(), ex);

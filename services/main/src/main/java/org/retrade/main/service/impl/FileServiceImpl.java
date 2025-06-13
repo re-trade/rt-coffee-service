@@ -28,7 +28,7 @@ public class FileServiceImpl implements FileService {
         try {
             String fileName = UUID.randomUUID() + "-" + file.getOriginalFilename();
 
-            SecretKey secretKey = AESEncryptUtil.getKeyFromBytes(AES_KEY.getBytes());
+            SecretKey secretKey = AESEncryptUtil.getKeyFromString(AES_KEY);
             InputStream encryptedStream = AESEncryptUtil.encryptStream(file.getInputStream(), secretKey);
 
             minioClient.putObject(

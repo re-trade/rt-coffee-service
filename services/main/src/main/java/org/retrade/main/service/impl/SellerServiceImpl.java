@@ -1,6 +1,7 @@
 package org.retrade.main.service.impl;
 
 import lombok.RequiredArgsConstructor;
+import org.jetbrains.annotations.NotNull;
 import org.retrade.common.model.exception.ActionFailedException;
 import org.retrade.common.model.exception.ValidationException;
 import org.retrade.main.model.dto.request.SellerRegisterRequest;
@@ -9,6 +10,7 @@ import org.retrade.main.model.dto.response.SellerBaseResponse;
 import org.retrade.main.model.dto.response.SellerRegisterResponse;
 import org.retrade.main.model.entity.SellerEntity;
 import org.retrade.main.model.message.CCCDVerificationMessage;
+import org.retrade.main.model.message.CCCDVerificationResultMessage;
 import org.retrade.main.repository.SellerRepository;
 import org.retrade.main.service.MessageProducerService;
 import org.retrade.main.service.SellerService;
@@ -23,7 +25,7 @@ public class SellerServiceImpl implements SellerService {
     private final AuthUtils authUtils;
 
     @Override
-    public SellerRegisterResponse createSeller(SellerRegisterRequest request, String front, String back) {
+    public SellerRegisterResponse createSeller(SellerRegisterRequest request) {
         var accountEntity = authUtils.getUserAccountFromAuthentication();
         if (accountEntity.getCustomer() == null) {
             throw new ValidationException("Account must be a customer to create a seller");
@@ -42,11 +44,22 @@ public class SellerServiceImpl implements SellerService {
                 .background(request.getBackground())
                 .phoneNumber(request.getPhoneNumber())
                 .identityNumber(request.getIdentityNumber())
-                .frontSideIdentityCard(front)
-                .backSideIdentityCard(back)
+                .frontSideIdentityCard("example")
+                .backSideIdentityCard("example")
                 .verified(false)
                 .account(accountEntity)
                 .build();
+        try {
+            var result = sellerRepository.save(sellerEntity);
+            return wrapSellerRegisterResponse(result);
+        } catch (Exception ex) {
+            throw new ActionFailedException("Failed to create seller", ex);
+        }
+    }
+
+    @Override
+    public SellerRegisterResponse cccdSubmit(String front, String back) {
+        var sellerEntity = getSellerEntity(front, back);
         try {
             var result = sellerRepository.save(sellerEntity);
             var messageWrapper = CCCDVerificationMessage.builder()
@@ -54,12 +67,27 @@ public class SellerServiceImpl implements SellerService {
                     .identityNumber(result.getIdentityNumber())
                     .backUrl(sellerEntity.getBackSideIdentityCard())
                     .frontUrl(sellerEntity.getFrontSideIdentityCard())
-                            .build();
+                    .build();
             messageProducerService.sendCCCDForVerified(messageWrapper);
             return wrapSellerRegisterResponse(result);
         } catch (Exception ex) {
             throw new ActionFailedException("Failed to create seller", ex);
         }
+    }
+
+    @NotNull
+    private SellerEntity getSellerEntity(String front, String back) {
+        var accountEntity = authUtils.getUserAccountFromAuthentication();
+        if (accountEntity.getCustomer() == null) {
+            throw new ValidationException("Account must be a customer to create a seller");
+        }
+        if (accountEntity.getSeller() == null) {
+            throw new ValidationException("Seller is not exist");
+        }
+        var sellerEntity = accountEntity.getSeller();
+        sellerEntity.setFrontSideIdentityCard(front);
+        sellerEntity.setBackSideIdentityCard(back);
+        return sellerEntity;
     }
 
     @Override
@@ -89,6 +117,9 @@ public class SellerServiceImpl implements SellerService {
             throw new ActionFailedException("Failed to create seller", ex);
         }
     }
+
+    @Override
+    public void updateVerifiedSeller(CCCDVerificationResultMessage message) {}
 
     private SellerBaseResponse wrapSellerBaseResponse(SellerEntity sellerEntity) {
         return SellerBaseResponse.builder()

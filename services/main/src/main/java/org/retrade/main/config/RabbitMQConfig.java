@@ -37,6 +37,7 @@ public class RabbitMQConfig {
         USER_REGISTRATION_RETRY_QUEUE("user.registration.dlx.queue"),
         DEAD_LETTER_QUEUE("dead.letter.queue"),
         IDENTITY_VERIFICATION_QUEUE("identity.verification.queue"),
+        IDENTITY_VERIFIED_RESULT_QUEUE("identity.verified.result.queue"),
         IDENTITY_RETRY_QUEUE("identity.dlx.queue");
         private final String name;
         QueueNameEnum(String name) {
@@ -52,6 +53,7 @@ public class RabbitMQConfig {
         USER_REGISTRATION_RETRY_ROUTING_KEY("user.registration.retry"),
         DEAD_LETTER_ROUTING_KEY("dead.letter"),
         IDENTITY_VERIFICATION_ROUTING_KEY("identity.verification"),
+        IDENTITY_VERIFIED_ROUTING_KEY("identity.verified"),
         IDENTITY_RETRY_ROUTING_KEY("identity.retry");
         private final String name;
         RoutingKeyEnum(String name) {
@@ -134,6 +136,8 @@ public class RabbitMQConfig {
                 .withArgument("x-dead-letter-routing-key", RoutingKeyEnum.IDENTITY_VERIFICATION_ROUTING_KEY.name)
                 .build();
 
+        Queue identityVerifiedResultQueue = QueueBuilder.durable(QueueNameEnum.IDENTITY_VERIFIED_RESULT_QUEUE.name).build();
+
 
         Queue deadLetterQueue = QueueBuilder.durable(QueueNameEnum.DEAD_LETTER_QUEUE.name).build();
 
@@ -165,6 +169,12 @@ public class RabbitMQConfig {
                 .to(identityRetryExchange)
                 .with(RoutingKeyEnum.IDENTITY_RETRY_ROUTING_KEY.name);
 
+        Binding identityVerifiedBinding = BindingBuilder
+                .bind(identityVerifiedResultQueue)
+                .to(identityExchange)
+                .with(RoutingKeyEnum.IDENTITY_VERIFIED_ROUTING_KEY.name);
+
+
         return new Declarables(
                 notificationExchange,
                 registrationExchange,
@@ -185,7 +195,9 @@ public class RabbitMQConfig {
                 identityVerificationQueue,
                 identityRetryQueue,
                 identityBinding,
-                identityRetryBinding
+                identityRetryBinding,
+                identityVerifiedResultQueue,
+                identityVerifiedBinding
         );
     }
 }

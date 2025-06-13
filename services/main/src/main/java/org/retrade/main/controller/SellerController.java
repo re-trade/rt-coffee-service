@@ -18,15 +18,11 @@ import org.springframework.web.multipart.MultipartFile;
 public class SellerController {
     private final SellerService sellerService;
     private final FileService fileService;
-    @PostMapping(path = "register", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(path = "register")
     public ResponseEntity<ResponseObject<SellerRegisterResponse>> registerAsASeller(
-            @Valid @ModelAttribute SellerRegisterRequest sellerRegisterRequest,
-        @RequestPart MultipartFile backSideIdentityCard,
-        @RequestPart MultipartFile frontSideIdentityCard
+            @Valid @RequestBody SellerRegisterRequest sellerRegisterRequest
     ) {
-        var front = fileService.uploadEncrypted(frontSideIdentityCard);
-        var back = fileService.uploadEncrypted(backSideIdentityCard);
-        var result = sellerService.createSeller(sellerRegisterRequest, front, back);
+        var result = sellerService.createSeller(sellerRegisterRequest);
         return ResponseEntity.ok(new ResponseObject.Builder<SellerRegisterResponse>()
                 .success(true)
                 .code("SUCCESS")
@@ -35,4 +31,19 @@ public class SellerController {
                 .build());
     }
 
+    @PutMapping(path = "identity/submit", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ResponseObject<SellerRegisterResponse>> registerAsASeller(
+            @RequestPart MultipartFile backSideIdentityCard,
+            @RequestPart MultipartFile frontSideIdentityCard
+    ) {
+        var front = fileService.uploadEncrypted(frontSideIdentityCard);
+        var back = fileService.uploadEncrypted(backSideIdentityCard);
+        var result = sellerService.cccdSubmit(front, back);
+        return ResponseEntity.ok(new ResponseObject.Builder<SellerRegisterResponse>()
+                .success(true)
+                .code("SUCCESS")
+                .content(result)
+                .messages("CCCD Seller Submit Successfully")
+                .build());
+    }
 }

@@ -32,7 +32,7 @@ public class FileEncryptServiceImpl implements FileEncryptService {
                             .bucket(bucketName)
                             .object(fileName)
                     .build());
-            SecretKey secretKey = AESEncryptUtil.getKeyFromBytes(AES_KEY.getBytes());
+            SecretKey secretKey = AESEncryptUtil.getKeyFromString(AES_KEY);
             InputStream decryptedStream = AESEncryptUtil.decryptStream(encryptedStream, secretKey);
             File tempFile = File.createTempFile("decrypted-", "-" + fileName);
             tempFile.deleteOnExit();
