@@ -41,7 +41,7 @@
 	<artifactId>serve-monorepo</artifactId>
 	<version>0.0.0</version>
 	<name>serve-monorepo</name>
-	<description>Backend monorepo for Vietnam Sea</description>
+	<description>Backend monorepo for Re Trade</description>
 
     <packaging>pom</packaging>
 

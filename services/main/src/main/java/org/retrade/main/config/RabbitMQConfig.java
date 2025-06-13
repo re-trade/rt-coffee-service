@@ -37,8 +37,9 @@ public class RabbitMQConfig {
         USER_REGISTRATION_RETRY_QUEUE("user.registration.dlx.queue"),
         DEAD_LETTER_QUEUE("dead.letter.queue"),
         IDENTITY_VERIFICATION_QUEUE("identity.verification.queue"),
+        IDENTITY_RETRY_QUEUE("identity.dlx.queue"),
         IDENTITY_VERIFIED_RESULT_QUEUE("identity.verified.result.queue"),
-        IDENTITY_RETRY_QUEUE("identity.dlx.queue");
+        IDENTITY_VERIFIED_RETRY_QUEUE("identity.verified.retry.queue");
         private final String name;
         QueueNameEnum(String name) {
             this.name = name;
@@ -136,8 +137,17 @@ public class RabbitMQConfig {
                 .withArgument("x-dead-letter-routing-key", RoutingKeyEnum.IDENTITY_VERIFICATION_ROUTING_KEY.name)
                 .build();
 
-        Queue identityVerifiedResultQueue = QueueBuilder.durable(QueueNameEnum.IDENTITY_VERIFIED_RESULT_QUEUE.name).build();
+        Queue identityVerifiedResultQueue = QueueBuilder.durable(QueueNameEnum.IDENTITY_VERIFIED_RESULT_QUEUE.name)
+                .withArgument("x-dead-letter-exchange", ExchangeNameEnum.IDENTITY_RETRY_EXCHANGE.name)
+                .withArgument("x-dead-letter-routing-key", RoutingKeyEnum.IDENTITY_RETRY_ROUTING_KEY.name)
+                .build();
 
+        Queue identityVerifiedRetryQueue = QueueBuilder
+                .durable(QueueNameEnum.IDENTITY_VERIFIED_RETRY_QUEUE.name)
+                .withArgument("x-message-ttl", 30000)
+                .withArgument("x-dead-letter-exchange", ExchangeNameEnum.IDENTITY_EXCHANGE.name)
+                .withArgument("x-dead-letter-routing-key", RoutingKeyEnum.IDENTITY_VERIFIED_ROUTING_KEY.name)
+                .build();
 
         Queue deadLetterQueue = QueueBuilder.durable(QueueNameEnum.DEAD_LETTER_QUEUE.name).build();
 
@@ -174,6 +184,11 @@ public class RabbitMQConfig {
                 .to(identityExchange)
                 .with(RoutingKeyEnum.IDENTITY_VERIFIED_ROUTING_KEY.name);
 
+        Binding identityVerifiedRetryBinding = BindingBuilder
+                .bind(identityVerifiedRetryQueue)
+                .to(identityRetryExchange)
+                .with(RoutingKeyEnum.IDENTITY_RETRY_ROUTING_KEY.name);
+
 
         return new Declarables(
                 notificationExchange,
@@ -197,7 +212,9 @@ public class RabbitMQConfig {
                 identityBinding,
                 identityRetryBinding,
                 identityVerifiedResultQueue,
-                identityVerifiedBinding
+                identityVerifiedBinding,
+                identityVerifiedRetryQueue,
+                identityVerifiedRetryBinding
         );
     }
 }

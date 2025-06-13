@@ -3,6 +3,7 @@ package org.retrade.main.model.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import org.retrade.common.model.entity.BaseSQLEntity;
+import org.retrade.main.model.constant.IdentityVerifiedStatusEnum;
 
 @Getter
 @Setter
@@ -37,6 +38,9 @@ public class SellerEntity extends BaseSQLEntity {
     private String identityNumber;
     @Column(name = "verified", nullable = false)
     private Boolean verified;
+    @Enumerated(EnumType.ORDINAL)
+    @Column(name = "identity_verified", nullable = false, columnDefinition = "SMALLINT DEFAULT 0")
+    private IdentityVerifiedStatusEnum identityVerified;
     @OneToOne(fetch = FetchType.EAGER, optional = false, targetEntity = AccountEntity.class)
     @JoinColumn(name = "account_id", nullable = false)
     private AccountEntity account;

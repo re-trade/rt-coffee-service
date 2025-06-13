@@ -55,6 +55,8 @@ public class CCCDProverConsumer {
             rabbitTemplate.convertAndSend(RabbitMQConfig.ExchangeNameEnum.IDENTITY_EXCHANGE.getName(),
                     RabbitMQConfig.RoutingKeyEnum.IDENTITY_VERIFIED_ROUTING_KEY.getName(),
                     messageWrapper);
+            channel.basicAck(deliveryTag, false);
+            log.info("Consumed verification result");
         } catch (Exception ex) {
             log.error(ex.getMessage(), ex);
             channel.basicNack(deliveryTag, false, false);

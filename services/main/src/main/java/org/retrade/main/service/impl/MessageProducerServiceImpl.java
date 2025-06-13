@@ -8,6 +8,7 @@ import org.retrade.main.model.message.CCCDVerificationMessage;
 import org.retrade.main.model.message.EmailNotificationMessage;
 import org.retrade.main.model.message.UserRegistrationMessage;
 import org.retrade.main.service.MessageProducerService;
+import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Service;
 
@@ -82,5 +83,11 @@ public class MessageProducerServiceImpl implements MessageProducerService {
                 messageWrapper
         );
         log.info("Seller verified message sent: {}", message.getMessageId());
+    }
+
+    @Override
+    public void sendMessageToDeadQueue(Message rawMessage) {
+        log.info("Sending message to dead queue: {}", rawMessage.getMessageProperties().getConsumerQueue());
+        rabbitTemplate.send(RabbitMQConfig.ExchangeNameEnum.NOTIFICATION_EXCHANGE.getName(), RabbitMQConfig.RoutingKeyEnum.DEAD_LETTER_ROUTING_KEY.getName(), rawMessage);
     }
 }

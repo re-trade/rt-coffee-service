@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 import org.retrade.common.model.exception.ActionFailedException;
 import org.retrade.common.model.exception.ValidationException;
+import org.retrade.main.model.constant.IdentityVerifiedStatusEnum;
 import org.retrade.main.model.dto.request.SellerRegisterRequest;
 import org.retrade.main.model.dto.request.SellerUpdateRequest;
 import org.retrade.main.model.dto.response.SellerBaseResponse;
@@ -11,11 +12,14 @@ import org.retrade.main.model.dto.response.SellerRegisterResponse;
 import org.retrade.main.model.entity.SellerEntity;
 import org.retrade.main.model.message.CCCDVerificationMessage;
 import org.retrade.main.model.message.CCCDVerificationResultMessage;
+import org.retrade.main.model.other.SellerWrapperBase;
 import org.retrade.main.repository.SellerRepository;
 import org.retrade.main.service.MessageProducerService;
 import org.retrade.main.service.SellerService;
 import org.retrade.main.util.AuthUtils;
 import org.springframework.stereotype.Service;
+
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -60,6 +64,10 @@ public class SellerServiceImpl implements SellerService {
     @Override
     public SellerRegisterResponse cccdSubmit(String front, String back) {
         var sellerEntity = getSellerEntity(front, back);
+        if (sellerEntity.getIdentityVerified() == IdentityVerifiedStatusEnum.VERIFIED) {
+            throw new ValidationException("Seller already verified");
+        }
+        sellerEntity.setIdentityVerified(IdentityVerifiedStatusEnum.WAITING);
         try {
             var result = sellerRepository.save(sellerEntity);
             var messageWrapper = CCCDVerificationMessage.builder()
@@ -108,6 +116,7 @@ public class SellerServiceImpl implements SellerService {
                 .background(request.getBackground())
                 .phoneNumber(request.getPhoneNumber())
                 .verified(false)
+                .identityVerified(IdentityVerifiedStatusEnum.VERIFIED)
                 .account(accountEntity)
                 .build();
         try {
@@ -119,7 +128,27 @@ public class SellerServiceImpl implements SellerService {
     }
 
     @Override
-    public void updateVerifiedSeller(CCCDVerificationResultMessage message) {}
+    public void updateVerifiedSeller(CCCDVerificationResultMessage message) {
+        var seller = sellerRepository.findById(message.getSellerId()).orElseThrow(() -> new ValidationException("No such seller existed seller"));
+        if (message.getAccepted()) {
+            seller.setIdentityVerified(IdentityVerifiedStatusEnum.VERIFIED);
+        }
+        try {
+            sellerRepository.save(seller);
+        } catch (Exception ex) {
+            throw new ActionFailedException("Failed to update", ex);
+        }
+    }
+
+    @Override
+    public Optional<SellerWrapperBase> getSellerBaseInfoById(String sellerId) {
+        var sellerResult = sellerRepository.findById(sellerId);
+        if (sellerResult.isEmpty()) {
+            return Optional.empty();
+        }
+        var account = sellerResult.get().getAccount();
+        return Optional.of(new SellerWrapperBase(sellerId, account.getEmail(), account.getUsername()));
+    }
 
     private SellerBaseResponse wrapSellerBaseResponse(SellerEntity sellerEntity) {
         return SellerBaseResponse.builder()
