@@ -22,7 +22,7 @@ public class RoleInitializer implements CommandLineRunner {
 
                 RoleEntity.builder()
                         .name("Role Customer")
-                        .code("ROLE_CUSTOMER")
+                        .code("ROLE_SELLER")
                         .build(),
 
                 RoleEntity.builder()

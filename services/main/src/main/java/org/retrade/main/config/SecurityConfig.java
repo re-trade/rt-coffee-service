@@ -1,7 +1,7 @@
 package org.retrade.main.config;
 
 import lombok.RequiredArgsConstructor;
-import org.retrade.main.security.CookieValidationFiltter;
+import org.retrade.main.security.CookieValidationFilter;
 import org.retrade.main.security.CustomAuthenticationEntryPoint;
 import org.retrade.main.security.JwtAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
@@ -22,7 +22,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
     private final CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
-    private final CookieValidationFiltter cookieValidationFiltter;
+    private final CookieValidationFilter cookieValidationFilter;
     private final CorsConfig corsConfig;
     @Bean
     SecurityFilterChain authenticationFilterChain (HttpSecurity http) throws Exception {
@@ -42,7 +42,7 @@ public class SecurityConfig {
                 })
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .addFilterBefore(this.jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-                .addFilterBefore(this.cookieValidationFiltter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(this.cookieValidationFilter, UsernamePasswordAuthenticationFilter.class);
         ;
         return http.build();
     }

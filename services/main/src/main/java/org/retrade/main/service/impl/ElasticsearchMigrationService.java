@@ -17,6 +17,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
@@ -224,12 +226,17 @@ public class ElasticsearchMigrationService {
 
     private boolean shouldUpdateDocument(ProductEntity product, ProductDocument document) {
         if (product.getUpdatedDate() != null && document.getUpdatedAt() != null) {
-            return product.getUpdatedDate().toLocalDateTime().isAfter(document.getUpdatedAt());
+            LocalDateTime productUpdatedDateTime =
+                    product.getUpdatedDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
+            LocalDateTime documentUpdatedDateTime =
+                    document.getUpdatedAt().toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
+            return productUpdatedDateTime.isAfter(documentUpdatedDateTime);
         }
         return !product.getName().equals(document.getName()) ||
                 !product.getCurrentPrice().equals(document.getCurrentPrice()) ||
                 !product.getVerified().equals(document.getVerified());
     }
+
 
     private List<ProductDocument> convertToProductDocuments(List<ProductEntity> products) {
         return products.stream()
@@ -256,8 +263,8 @@ public class ElasticsearchMigrationService {
                                 .build())
                         .collect(Collectors.toSet()))
                 .verified(product.getVerified())
-                .createdAt(product.getCreatedDate() != null ? product.getCreatedDate().toLocalDateTime() : null)
-                .updatedAt(product.getUpdatedDate() != null ? product.getUpdatedDate().toLocalDateTime() : null)
+                .createdAt(product.getCreatedDate() != null ? product.getCreatedDate() : null)
+                .updatedAt(product.getUpdatedDate() != null ? product.getUpdatedDate() : null)
                 .build();
     }
 }

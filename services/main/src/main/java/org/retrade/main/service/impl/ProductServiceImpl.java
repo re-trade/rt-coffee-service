@@ -38,7 +38,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ProductServiceImpl implements ProductService {
     private final ProductRepository productRepository;
-    private final ProductElasticsearchRepository productSerachRepository;
+    private final ProductElasticsearchRepository productSearchRepository;
     private final ElasticsearchOperations elasticsearchOperations;
     private final SellerRepository sellerRepository;
     private final CategoryRepository categoryRepository;
@@ -127,7 +127,7 @@ public class ProductServiceImpl implements ProductService {
         }
         try {
             productRepository.delete(product);
-            productSerachRepository.deleteById(id);;
+            productSearchRepository.deleteById(id);;
         } catch (Exception ex) {
             throw new ActionFailedException("Failed to delete product", ex);
         }
@@ -185,10 +185,10 @@ public class ProductServiceImpl implements ProductService {
                 .map(this::mapToProductResponse)
                 .toList();
     }
-
+    @Override
     public PaginationWrapper<List<ProductResponse>> searchProductByKeyword(QueryWrapper queryWrapper) {
         var search = queryWrapper.search();
-        var keyword = search.get("keyword").getValue().toString();
+        QueryFieldWrapper keyword = search.remove("keyword");
         if (queryWrapper.search() == null  || queryWrapper.search().isEmpty()) {
             return productRepository.query(queryWrapper, (param) -> (root, query, criteriaBuilder) -> {
                 Predicate[] defaultPredicates = productRepository.createDefaultPredicate(criteriaBuilder, root, param);
@@ -203,7 +203,7 @@ public class ProductServiceImpl implements ProductService {
             });
         }
         var nativeQuery = NativeQuery.builder()
-                .withQuery(q -> q.multiMatch(m -> m.fields("name", "shortDescription", "description").query(keyword).fuzziness("AUTO")))
+                .withQuery(q -> q.multiMatch(m -> m.fields("name", "shortDescription", "description").query(keyword.getValue().toString()).fuzziness("AUTO")))
                 .withPageable(queryWrapper.pagination())
                 .withSort(s -> s.field(f -> f.field("createdAt").order(SortOrder.Desc)))
                 .build();
@@ -350,7 +350,7 @@ public class ProductServiceImpl implements ProductService {
     }
 
     private void saveProductDocument(ProductEntity productEntity, String id) {
-        var productDoc = productSerachRepository.findById(id).orElseThrow(() -> new ValidationException("Product not found with id: " + id));
+        var productDoc = productSearchRepository.findById(id).orElseThrow(() -> new ValidationException("Product not found with id: " + id));
         productDoc.setName(productEntity.getName());
         productDoc.setSellerId(productEntity.getSeller().getId());
         productDoc.setShortDescription(productEntity.getShortDescription());
@@ -364,8 +364,8 @@ public class ProductServiceImpl implements ProductService {
                 .name(item.getName())
                 .type(item.getType())
                 .build()).collect(Collectors.toSet()));
-        productDoc.setUpdatedAt(productEntity.getUpdatedDate() != null ? productEntity.getUpdatedDate().toLocalDateTime() : null);
-        productSerachRepository.save(productDoc);
+        productDoc.setUpdatedAt(productEntity.getUpdatedDate() != null ? productEntity.getUpdatedDate() : null);
+        productSearchRepository.save(productDoc);
     }
 
     private void saveProductDocument(ProductEntity productEntity) {
@@ -385,9 +385,9 @@ public class ProductServiceImpl implements ProductService {
                         .type(item.getType())
                         .build()).collect(Collectors.toSet()))
                 .verified(productEntity.getVerified())
-                .createdAt(productEntity.getCreatedDate() != null ? productEntity.getCreatedDate().toLocalDateTime() : null)
-                .updatedAt(productEntity.getUpdatedDate() != null ? productEntity.getUpdatedDate().toLocalDateTime() : null)
+                .createdAt(productEntity.getCreatedDate() != null ? productEntity.getCreatedDate() : null)
+                .updatedAt(productEntity.getUpdatedDate() != null ? productEntity.getUpdatedDate() : null)
                 .build();
-        productSerachRepository.save(product);
+        productSearchRepository.save(product);
     }
 }

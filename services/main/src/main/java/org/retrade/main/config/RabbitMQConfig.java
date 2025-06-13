@@ -20,8 +20,9 @@ public class RabbitMQConfig {
         NOTIFICATION_EXCHANGE("notification.exchange"),
         NOTIFICATION_RETRY_EXCHANGE("notification.dlx.exchange"),
         REGISTRATION_EXCHANGE("registration.exchange"),
-        REGISTRATION_RETRY_EXCHANGE("registration.dlx.exchange");
-
+        REGISTRATION_RETRY_EXCHANGE("registration.dlx.exchange"),
+        IDENTITY_EXCHANGE("identity.exchange"),
+        IDENTITY_RETRY_EXCHANGE("identity.dlx.exchange");
         private final String name;
         ExchangeNameEnum(String name) {
             this.name = name;
@@ -34,7 +35,11 @@ public class RabbitMQConfig {
         EMAIL_RETRY_QUEUE("email.dlx.queue"),
         USER_REGISTRATION_QUEUE("user.registration.queue"),
         USER_REGISTRATION_RETRY_QUEUE("user.registration.dlx.queue"),
-        DEAD_LETTER_QUEUE("dead.letter.queue");
+        DEAD_LETTER_QUEUE("dead.letter.queue"),
+        IDENTITY_VERIFICATION_QUEUE("identity.verification.queue"),
+        IDENTITY_RETRY_QUEUE("identity.dlx.queue"),
+        IDENTITY_VERIFIED_RESULT_QUEUE("identity.verified.result.queue"),
+        IDENTITY_VERIFIED_RETRY_QUEUE("identity.verified.retry.queue");
         private final String name;
         QueueNameEnum(String name) {
             this.name = name;
@@ -47,7 +52,10 @@ public class RabbitMQConfig {
         EMAIL_RETRY_ROUTING_KEY("email.retry"),
         USER_REGISTRATION_ROUTING_KEY("user.registration"),
         USER_REGISTRATION_RETRY_ROUTING_KEY("user.registration.retry"),
-        DEAD_LETTER_ROUTING_KEY("dead.letter");
+        DEAD_LETTER_ROUTING_KEY("dead.letter"),
+        IDENTITY_VERIFICATION_ROUTING_KEY("identity.verification"),
+        IDENTITY_VERIFIED_ROUTING_KEY("identity.verified"),
+        IDENTITY_RETRY_ROUTING_KEY("identity.retry");
         private final String name;
         RoutingKeyEnum(String name) {
             this.name = name;
@@ -92,6 +100,9 @@ public class RabbitMQConfig {
         DirectExchange registrationExchange = new DirectExchange(ExchangeNameEnum.REGISTRATION_EXCHANGE.name);
         DirectExchange notificationRetryExchange = new DirectExchange(ExchangeNameEnum.NOTIFICATION_RETRY_EXCHANGE.name);
         DirectExchange registrationRetryExchange = new DirectExchange(ExchangeNameEnum.REGISTRATION_RETRY_EXCHANGE.name);
+        DirectExchange identityExchange = new DirectExchange(ExchangeNameEnum.IDENTITY_EXCHANGE.name);
+        DirectExchange identityRetryExchange = new DirectExchange(ExchangeNameEnum.IDENTITY_RETRY_EXCHANGE.name);
+
 
         Queue emailNotificationQueue = QueueBuilder.durable(QueueNameEnum.EMAIL_NOTIFICATION_QUEUE.name)
                 .withArgument("x-dead-letter-exchange", ExchangeNameEnum.NOTIFICATION_RETRY_EXCHANGE.name)
@@ -113,6 +124,29 @@ public class RabbitMQConfig {
                 .withArgument("x-message-ttl", 30000)
                 .withArgument("x-dead-letter-exchange", ExchangeNameEnum.REGISTRATION_EXCHANGE.name)
                 .withArgument("x-dead-letter-routing-key", RoutingKeyEnum.USER_REGISTRATION_ROUTING_KEY.name)
+                .build();
+
+        Queue identityVerificationQueue = QueueBuilder.durable(QueueNameEnum.IDENTITY_VERIFICATION_QUEUE.name)
+                .withArgument("x-dead-letter-exchange", ExchangeNameEnum.IDENTITY_RETRY_EXCHANGE.name)
+                .withArgument("x-dead-letter-routing-key", RoutingKeyEnum.IDENTITY_RETRY_ROUTING_KEY.name)
+                .build();
+
+        Queue identityRetryQueue = QueueBuilder.durable(QueueNameEnum.IDENTITY_RETRY_QUEUE.name)
+                .withArgument("x-message-ttl", 30000)
+                .withArgument("x-dead-letter-exchange", ExchangeNameEnum.IDENTITY_EXCHANGE.name)
+                .withArgument("x-dead-letter-routing-key", RoutingKeyEnum.IDENTITY_VERIFICATION_ROUTING_KEY.name)
+                .build();
+
+        Queue identityVerifiedResultQueue = QueueBuilder.durable(QueueNameEnum.IDENTITY_VERIFIED_RESULT_QUEUE.name)
+                .withArgument("x-dead-letter-exchange", ExchangeNameEnum.IDENTITY_RETRY_EXCHANGE.name)
+                .withArgument("x-dead-letter-routing-key", RoutingKeyEnum.IDENTITY_RETRY_ROUTING_KEY.name)
+                .build();
+
+        Queue identityVerifiedRetryQueue = QueueBuilder
+                .durable(QueueNameEnum.IDENTITY_VERIFIED_RETRY_QUEUE.name)
+                .withArgument("x-message-ttl", 30000)
+                .withArgument("x-dead-letter-exchange", ExchangeNameEnum.IDENTITY_EXCHANGE.name)
+                .withArgument("x-dead-letter-routing-key", RoutingKeyEnum.IDENTITY_VERIFIED_ROUTING_KEY.name)
                 .build();
 
         Queue deadLetterQueue = QueueBuilder.durable(QueueNameEnum.DEAD_LETTER_QUEUE.name).build();
@@ -137,6 +171,25 @@ public class RabbitMQConfig {
                 .to(notificationRetryExchange)
                 .with(RoutingKeyEnum.DEAD_LETTER_ROUTING_KEY.name);
 
+        Binding identityBinding = BindingBuilder.bind(identityVerificationQueue)
+                .to(identityExchange)
+                .with(RoutingKeyEnum.IDENTITY_VERIFICATION_ROUTING_KEY.name);
+
+        Binding identityRetryBinding = BindingBuilder.bind(identityRetryQueue)
+                .to(identityRetryExchange)
+                .with(RoutingKeyEnum.IDENTITY_RETRY_ROUTING_KEY.name);
+
+        Binding identityVerifiedBinding = BindingBuilder
+                .bind(identityVerifiedResultQueue)
+                .to(identityExchange)
+                .with(RoutingKeyEnum.IDENTITY_VERIFIED_ROUTING_KEY.name);
+
+        Binding identityVerifiedRetryBinding = BindingBuilder
+                .bind(identityVerifiedRetryQueue)
+                .to(identityRetryExchange)
+                .with(RoutingKeyEnum.IDENTITY_RETRY_ROUTING_KEY.name);
+
+
         return new Declarables(
                 notificationExchange,
                 registrationExchange,
@@ -151,7 +204,17 @@ public class RabbitMQConfig {
                 emailRetryBinding,
                 registrationBinding,
                 registrationRetryBinding,
-                deadLetterBinding
+                deadLetterBinding,
+                identityExchange,
+                identityRetryExchange,
+                identityVerificationQueue,
+                identityRetryQueue,
+                identityBinding,
+                identityRetryBinding,
+                identityVerifiedResultQueue,
+                identityVerifiedBinding,
+                identityVerifiedRetryQueue,
+                identityVerifiedRetryBinding
         );
     }
 }

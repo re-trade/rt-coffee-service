@@ -40,6 +40,7 @@ services:
       ELASTICSEARCH_USERNAME: ${ELASTICSEARCH_USERNAME:-}
       ELASTICSEARCH_PASSWORD: ${ELASTICSEARCH_PASSWORD:-}
       TZ: Asia/Ho_Chi_Minh
+      AES_KEY: ${AES_KEY}
     profiles:
       - backend
       - prod
@@ -190,6 +191,31 @@ services:
       - "traefik.docker.network=retrade-network"
       - "traefik.constraint-label=retrade-service"
       - "traefik.http.services.voucher-service.loadbalancer.server.port=8080"
+
+  prover-service:
+    container_name: prover_service
+    image: ${REGISTRY}/rt-prover-service:latest
+    restart: always
+    networks:
+      - retrade-network
+    environment:
+      RABBITMQ_HOST: retrade-rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USERNAME: ${RABBITMQ_USERNAME}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+      FPT_BASE_URL: ${FPT_BASE_URL}
+      FPT_API_KEY: ${FPT_API_KEY}
+      MINIO_URL: http://retrade-minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
+      MINIO_BUCKET_NAME: ${MINIO_BUCKET_NAME}
+      AES_KEY: ${AES_KEY}
+      TZ: Asia/Ho_Chi_Minh
+    profiles:
+      - backend
+      - prod
+      - prover
+
   api-docs:
     container_name: api_docs
     image: ${REGISTRY}/rt-api-docs:latest

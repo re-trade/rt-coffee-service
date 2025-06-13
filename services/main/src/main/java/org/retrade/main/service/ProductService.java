@@ -27,6 +27,8 @@ public interface ProductService {
 
     List<ProductResponse> searchProductsByName(String name);
 
+    PaginationWrapper<List<ProductResponse>> searchProductByKeyword(QueryWrapper queryWrapper);
+
     List<ProductResponse> getProductsByCategory(String categoryName);
 
     PaginationWrapper<List<ProductResponse>> getProductsByCategory(String categoryName, QueryWrapper queryWrapper);

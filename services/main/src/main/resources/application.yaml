@@ -16,6 +16,14 @@ spring:
     username: ${DB_USERNAME:postgres}
     password: ${DB_PASSWORD:12345}
     url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      idle-timeout: 30000
+      max-lifetime: 60000
+      connection-timeout: 30000
+      pool-name: rt-main-pool
   sql:
     init:
       mode: always
@@ -77,6 +85,9 @@ security:
     timeout: ${FORGOT_PASSWORD_TIMEOUT:10}
     callbackUrl: ${FORGOT_PASSWORD_CALLBACK:http://localhost:3000/forgot-password}
 
+  aes:
+    key: ${AES_KEY:sus}
+
 management:
   endpoints:
     web:
@@ -135,3 +146,10 @@ payment:
     hash-secret: ${VNP_HASH_SECRET:}
     api-url: ${VNP_API_URL:https://sandbox.vnpayment.vn/merchant_webapi/api/transaction}
   callback: ${PAYMENT_CALLBACK:http://localhost:3000/checkout}
+
+
+minio:
+  url: ${MINIO_URL:http://localhost:9000}
+  access-key: ${MINIO_ACCESS_KEY:}
+  secret-key: ${MINIO_SECRET_KEY:}
+  bucket-name: ${MINIO_BUCKET_NAME:retrade}

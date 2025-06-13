@@ -157,12 +157,17 @@ public class ProductController {
 
     @GetMapping("search")
     public ResponseEntity<ResponseObject<List<ProductResponse>>> searchProductsByName(
-            @RequestParam String name) {
-        var result = productService.searchProductsByName(name);
+            @PageableDefault Pageable pageable, @RequestParam(required = false, name = "q") String search
+    ) {
+        var queryWrapper = QueryWrapper.builder()
+                .search(search)
+                .pageable(pageable)
+                .build();
+        var result = productService.searchProductByKeyword(queryWrapper);
         return ResponseEntity.ok(new ResponseObject.Builder<List<ProductResponse>>()
                 .success(true)
                 .code("SUCCESS")
-                .content(result)
+                .unwrapPaginationWrapper(result)
                 .messages("Products found successfully")
                 .build());
     }

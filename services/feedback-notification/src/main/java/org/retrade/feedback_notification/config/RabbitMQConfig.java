@@ -1,6 +1,6 @@
 package org.retrade.feedback_notification.config;
 
-import org.springframework.amqp.core.*;
+import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.rabbit.annotation.EnableRabbit;
 import org.springframework.amqp.rabbit.config.RetryInterceptorBuilder;
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
@@ -64,74 +64,5 @@ public class RabbitMQConfig {
         factory.setAcknowledgeMode(AcknowledgeMode.MANUAL);
         factory.setAdviceChain(retryInterceptor);
         return factory;
-    }
-
-    @Bean
-    public Declarables rabbitDeclarables() {
-        DirectExchange notificationExchange = new DirectExchange(NOTIFICATION_EXCHANGE);
-        DirectExchange registrationExchange = new DirectExchange(REGISTRATION_EXCHANGE);
-        DirectExchange notificationRetryExchange = new DirectExchange(NOTIFICATION_RETRY_EXCHANGE);
-        DirectExchange registrationRetryExchange = new DirectExchange(REGISTRATION_RETRY_EXCHANGE);
-
-        Queue emailNotificationQueue = QueueBuilder.durable(EMAIL_NOTIFICATION_QUEUE)
-                .withArgument("x-dead-letter-exchange", NOTIFICATION_RETRY_EXCHANGE)
-                .withArgument("x-dead-letter-routing-key", EMAIL_RETRY_ROUTING_KEY)
-                .build();
-
-        Queue emailRetryQueue = QueueBuilder.durable(EMAIL_RETRY_QUEUE)
-                .withArgument("x-message-ttl", 30000)
-                .withArgument("x-dead-letter-exchange", NOTIFICATION_EXCHANGE)
-                .withArgument("x-dead-letter-routing-key", EMAIL_NOTIFICATION_ROUTING_KEY)
-                .build();
-
-        Queue userRegistrationQueue = QueueBuilder.durable(USER_REGISTRATION_QUEUE)
-                .withArgument("x-dead-letter-exchange", REGISTRATION_RETRY_EXCHANGE)
-                .withArgument("x-dead-letter-routing-key", USER_REGISTRATION_RETRY_ROUTING_KEY)
-                .build();
-
-        Queue userRegistrationRetryQueue = QueueBuilder.durable(USER_REGISTRATION_RETRY_QUEUE)
-                .withArgument("x-message-ttl", 30000)
-                .withArgument("x-dead-letter-exchange", REGISTRATION_EXCHANGE)
-                .withArgument("x-dead-letter-routing-key", USER_REGISTRATION_ROUTING_KEY)
-                .build();
-
-        Queue deadLetterQueue = QueueBuilder.durable(DEAD_LETTER_QUEUE).build();
-
-        Binding emailBinding = BindingBuilder.bind(emailNotificationQueue)
-                .to(notificationExchange)
-                .with(EMAIL_NOTIFICATION_ROUTING_KEY);
-
-        Binding emailRetryBinding = BindingBuilder.bind(emailRetryQueue)
-                .to(notificationRetryExchange)
-                .with(EMAIL_RETRY_ROUTING_KEY);
-
-        Binding registrationBinding = BindingBuilder.bind(userRegistrationQueue)
-                .to(registrationExchange)
-                .with(USER_REGISTRATION_ROUTING_KEY);
-
-        Binding registrationRetryBinding = BindingBuilder.bind(userRegistrationRetryQueue)
-                .to(registrationRetryExchange)
-                .with(USER_REGISTRATION_RETRY_ROUTING_KEY);
-
-        Binding deadLetterBinding = BindingBuilder.bind(deadLetterQueue)
-                .to(notificationRetryExchange)
-                .with(DEAD_LETTER_ROUTING_KEY);
-
-        return new Declarables(
-                notificationExchange,
-                registrationExchange,
-                notificationRetryExchange,
-                registrationRetryExchange,
-                emailNotificationQueue,
-                emailRetryQueue,
-                userRegistrationQueue,
-                userRegistrationRetryQueue,
-                deadLetterQueue,
-                emailBinding,
-                emailRetryBinding,
-                registrationBinding,
-                registrationRetryBinding,
-                deadLetterBinding
-        );
     }
 }
