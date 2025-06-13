@@ -1,6 +1,9 @@
 spring:
   application:
     name: Prover Service
+  grpc:
+    server:
+      enabled: false
   rabbitmq:
     host: ${RABBITMQ_HOST:localhost}
     port: ${RABBITMQ_PORT:5672}
