@@ -41,6 +41,10 @@ services:
       ELASTICSEARCH_PASSWORD: ${ELASTICSEARCH_PASSWORD:-}
       TZ: Asia/Ho_Chi_Minh
       AES_KEY: ${AES_KEY}
+      MINIO_URL: http://retrade-minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
+      MINIO_BUCKET_NAME: ${MINIO_BUCKET_NAME}
     profiles:
       - backend
       - prod
