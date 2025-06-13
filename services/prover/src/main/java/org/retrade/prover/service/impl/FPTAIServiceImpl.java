@@ -18,6 +18,7 @@ import org.springframework.web.client.RestTemplate;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -29,7 +30,6 @@ public class FPTAIServiceImpl implements FPTAIService {
     public IdentityVerificationResult scanCCCD(File frontImageFile, File backImageFile) {
         IdentityVerificationResult result = new IdentityVerificationResult();
         result.setVerificationSuccessful(true);
-
         IdCardInfo frontInfo = processImageForIdRecognition(frontImageFile, "FRONT");
         if (frontInfo != null) {
             result.setFrontSide(frontInfo);
@@ -38,7 +38,6 @@ public class FPTAIServiceImpl implements FPTAIService {
             result.setErrorMessage("Failed to process front image.");
             return result;
         }
-
         IdCardInfo backInfo = processImageForIdRecognition(backImageFile, "BACK");
         if (backInfo != null) {
             result.setBackSide(backInfo);
@@ -47,7 +46,6 @@ public class FPTAIServiceImpl implements FPTAIService {
             result.setErrorMessage("Failed to process back image.");
             return result;
         }
-
         return result;
     }
 
@@ -72,7 +70,7 @@ public class FPTAIServiceImpl implements FPTAIService {
                 FptAiApiResponse apiResponse = objectMapper.readValue(rawJson, FptAiApiResponse.class);
 
                 if (apiResponse.getErrorCode() == 0) {
-                    return mapFptAiDataToIdCardInfo(apiResponse.getData(), cardSide, rawJson);
+                    return mapFptAiDataToIdCardInfo(apiResponse.getData(), rawJson);
                 } else {
                     System.err.println("FPT.AI API Error for " + cardSide + ": " + apiResponse.getErrorMessage());
                     return null;
@@ -93,24 +91,35 @@ public class FPTAIServiceImpl implements FPTAIService {
         }
     }
 
-    private IdCardInfo mapFptAiDataToIdCardInfo(FptAiData fptAiData, String cardSide, String rawApiResponse) {
-        if (fptAiData == null) {
+    private IdCardInfo mapFptAiDataToIdCardInfo(List<FptAiData> fptAiData, String rawApiResponse) {
+        if (fptAiData == null || fptAiData.isEmpty()) {
             return null;
         }
-
         IdCardInfo idCardInfo = new IdCardInfo();
-        idCardInfo.setSide(cardSide);
+        var detail = fptAiData.getFirst();
         idCardInfo.setRawApiResponse(rawApiResponse);
-        idCardInfo.setIdNumber(fptAiData.getId());
-        idCardInfo.setFullName(fptAiData.getName());
-        idCardInfo.setDateOfBirth(fptAiData.getDob());
-        idCardInfo.setGender(fptAiData.getSex());
-        idCardInfo.setPlaceOfOrigin(fptAiData.getPlaceOfOrigin());
-        idCardInfo.setPlaceOfResidence(fptAiData.getPlaceOfResidence());
-        idCardInfo.setDateOfIssue(fptAiData.getDoi());
-        idCardInfo.setPlaceOfIssue(fptAiData.getPoi());
-        idCardInfo.setDocumentType(fptAiData.getType());
-        idCardInfo.setDateOfExpiry(fptAiData.getDoe());
+        idCardInfo.setDateOfIssue(detail.getIssueDate());
+        idCardInfo.setPlaceOfIssue("N/A");
+        idCardInfo.setDocumentType(detail.getType());
+        idCardInfo.setDateOfExpiry(detail.getDoe());
+        if (detail.getMrzDetail() != null && "chip_back".equals(detail.getType())) {
+            var mrzDetail = detail.getMrzDetail();
+            idCardInfo.setSide("BACK");
+            idCardInfo.setIdNumber(mrzDetail.getId());
+            idCardInfo.setFullName(mrzDetail.getName());
+            idCardInfo.setDateOfBirth(mrzDetail.getDob());
+            idCardInfo.setGender(mrzDetail.getSex());
+            idCardInfo.setPlaceOfOrigin("N/A");
+            idCardInfo.setPlaceOfResidence(mrzDetail.getNationality());
+        } else {
+            idCardInfo.setSide("FRONT");
+            idCardInfo.setIdNumber(detail.getId());
+            idCardInfo.setFullName(detail.getName());
+            idCardInfo.setDateOfBirth(detail.getDob());
+            idCardInfo.setGender(detail.getSex());
+            idCardInfo.setPlaceOfOrigin(detail.getHome());
+            idCardInfo.setPlaceOfResidence(detail.getAddress());
+        }
 
         return idCardInfo;
     }

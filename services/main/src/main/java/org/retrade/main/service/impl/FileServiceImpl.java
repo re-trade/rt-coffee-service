@@ -35,7 +35,7 @@ public class FileServiceImpl implements FileService {
                     PutObjectArgs.builder()
                             .bucket(BUCKET_NAME)
                             .object(fileName)
-                            .stream(encryptedStream, file.getSize(), -1)
+                            .stream(encryptedStream, -1, 5 * 1024 * 1024)
                             .contentType(file.getContentType())
                             .build()
             );

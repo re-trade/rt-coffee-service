@@ -18,7 +18,7 @@ public class CCCDProverServiceImpl implements CCCDProverService {
     public CCCDValidateWrapper processVerification(CCCDVerificationMessage message) {
         var backFile = fileEncryptService.downloadEncryptedFileWithUrl(message.getBackUrl());
         var frontFile = fileEncryptService.downloadEncryptedFileWithUrl(message.getFrontUrl());
-        var fptResult = fptaiService.scanCCCD(backFile, frontFile);
+        var fptResult = fptaiService.scanCCCD(frontFile, backFile);
         if (!fptResult.isVerificationSuccessful()) {
             return CCCDValidateWrapper.builder()
                     .valid(false)
