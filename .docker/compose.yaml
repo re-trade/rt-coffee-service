@@ -40,6 +40,7 @@ services:
       ELASTICSEARCH_USERNAME: ${ELASTICSEARCH_USERNAME:-}
       ELASTICSEARCH_PASSWORD: ${ELASTICSEARCH_PASSWORD:-}
       TZ: Asia/Ho_Chi_Minh
+      AES_KEY: ${AES_KEY}
     profiles:
       - backend
       - prod
@@ -208,6 +209,7 @@ services:
       MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
       MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
       MINIO_BUCKET_NAME: ${MINIO_BUCKET_NAME}
+      AES_KEY: ${AES_KEY}
       TZ: Asia/Ho_Chi_Minh
     profiles:
       - backend
