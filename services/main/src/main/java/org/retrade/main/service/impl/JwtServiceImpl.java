@@ -149,9 +149,9 @@ public class JwtServiceImpl implements JwtService {
                     .build()
                     .parseClaimsJws(token);
         } catch (Exception ex) {
-            return true;
+            return false;
         }
-        return false;
+        return true;
     }
     
     private Date getExpiryDate(JwtTokenType tokenType, Date currentDate) {
