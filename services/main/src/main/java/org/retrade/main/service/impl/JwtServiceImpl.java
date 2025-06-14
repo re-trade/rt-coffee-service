@@ -135,7 +135,7 @@ public class JwtServiceImpl implements JwtService {
         cookie.setHttpOnly(true);
         cookie.setSecure(true);
         cookie.setAttribute("SameSite", "None");
-        if (!hostConfig.getBaseHost().isEmpty()) {
+        if (!hostConfig.getBaseHost().isEmpty() && !hostConfig.getDevelopMode()) {
             cookie.setDomain(hostConfig.getBaseHost());
         }
         response.addCookie(cookie);

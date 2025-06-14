@@ -81,6 +81,7 @@ security:
     base-host: ${BASE_HOST:}
     front-end: ${FRONTEND_URL}
     swagger-context-path: ${SWAGGER_CONTEXT_PATH:/api/v1}
+    develop-mode: ${DEVELOP_MODE:true}
   forgot-password:
     timeout: ${FORGOT_PASSWORD_TIMEOUT:10}
     callbackUrl: ${FORGOT_PASSWORD_CALLBACK:http://localhost:3000/forgot-password}

@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.retrade.main.security.CookieValidationFilter;
 import org.retrade.main.security.CustomAuthenticationEntryPoint;
 import org.retrade.main.security.JwtAuthenticationFilter;
+import org.retrade.main.security.JwtCookieAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -23,6 +24,7 @@ public class SecurityConfig {
     private final CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final CookieValidationFilter cookieValidationFilter;
+    private final JwtCookieAuthenticationFilter jwtCookieAuthenticationFilter;
     private final CorsConfig corsConfig;
     @Bean
     SecurityFilterChain authenticationFilterChain (HttpSecurity http) throws Exception {
@@ -41,9 +43,9 @@ public class SecurityConfig {
                     exception.authenticationEntryPoint(customAuthenticationEntryPoint);
                 })
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .addFilterBefore(this.jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-                .addFilterBefore(this.cookieValidationFilter, UsernamePasswordAuthenticationFilter.class);
-        ;
+                .addFilterBefore(this.cookieValidationFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterAfter(this.jwtAuthenticationFilter, CookieValidationFilter.class)
+                .addFilterAfter(this.jwtCookieAuthenticationFilter, JwtAuthenticationFilter.class);
         return http.build();
     }
 }
