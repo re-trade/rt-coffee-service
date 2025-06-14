@@ -9,10 +9,10 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.retrade.main.model.constant.JwtTokenType;
 import org.retrade.main.service.JwtService;
+import org.retrade.main.service.impl.UserDetailServiceImpl;
 import org.retrade.main.util.CookieUtils;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -23,7 +23,7 @@ import java.util.EnumMap;
 @Component
 @RequiredArgsConstructor
 public class JwtCookieAuthenticationFilter extends OncePerRequestFilter {
-    private final UserDetailsService userDetailService;
+    private final UserDetailServiceImpl userDetailService;
     private final JwtService jwtService;
     @Override
     protected void doFilterInternal(@Nonnull HttpServletRequest request, @Nonnull HttpServletResponse response,@Nonnull FilterChain filterChain) throws ServletException, IOException {

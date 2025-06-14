@@ -110,7 +110,7 @@ public class JwtServiceImpl implements JwtService {
         cookie.setSecure(true);
         cookie.setMaxAge((int) (jwtEx));
         cookie.setAttribute("SameSite", "None");
-        if (!hostConfig.getBaseHost().isEmpty()) {
+        if (!hostConfig.getBaseHost().isEmpty() && !hostConfig.getDevelopMode()) {
             cookie.setDomain(hostConfig.getBaseHost());
         }
         return cookie;
