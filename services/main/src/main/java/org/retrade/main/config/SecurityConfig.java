@@ -31,7 +31,7 @@ public class SecurityConfig {
         http.csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configurationSource(corsConfig.corsConfigurationSource()))
                 .authorizeHttpRequests((auth) -> {
-                   auth.requestMatchers("/auth/**", "/api-docs/**", "/swagger-ui/**",
+                   auth.requestMatchers("/auth/**", "/api-docs/**", "/swagger-ui/**","/actuator/health",
                            "/registers/**",
                            "/passwords/**",
                            "/pings/**")
