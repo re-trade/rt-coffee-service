@@ -50,6 +50,7 @@ public class SellerServiceImpl implements SellerService {
                 .identityNumber(request.getIdentityNumber())
                 .frontSideIdentityCard("example")
                 .backSideIdentityCard("example")
+                .identityVerified(IdentityVerifiedStatusEnum.INIT)
                 .verified(false)
                 .account(accountEntity)
                 .build();
