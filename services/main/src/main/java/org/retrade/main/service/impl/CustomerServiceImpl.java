@@ -205,6 +205,8 @@ public class CustomerServiceImpl implements CustomerService {
                 .avatarUrl(customer.getAvatarUrl())
                 .username(customer.getAccount().getUsername())
                 .email(customer.getAccount().getEmail())
+                .gender(customer.getGender())
+                .lastUpdate(customer.getUpdatedDate().toLocalDateTime())
                 .build();
     }
 
