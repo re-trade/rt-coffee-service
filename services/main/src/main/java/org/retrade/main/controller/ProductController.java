@@ -10,6 +10,7 @@ import org.retrade.common.model.dto.request.QueryWrapper;
 import org.retrade.common.model.dto.response.ResponseObject;
 import org.retrade.main.model.dto.request.CreateProductRequest;
 import org.retrade.main.model.dto.request.UpdateProductRequest;
+import org.retrade.main.model.dto.response.FiledAdvanceSearch;
 import org.retrade.main.model.dto.response.ProductResponse;
 import org.retrade.main.service.ProductService;
 import org.springframework.data.domain.Pageable;
@@ -19,6 +20,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Set;
 
 @RestController
 @RequestMapping("products")
@@ -169,6 +171,37 @@ public class ProductController {
                 .code("SUCCESS")
                 .unwrapPaginationWrapper(result)
                 .messages("Products found successfully")
+                .build());
+    }
+
+    @GetMapping("searchTest")
+    public ResponseEntity<ResponseObject<Set<String>>> getProductCategoriesByProductName(
+          @RequestParam(required = false, name = "q") String search
+    ) {
+        var queryWrapper = QueryWrapper.builder()
+                .search(search)
+                .build();
+        var result = productService.getCategoriesForFilter(queryWrapper);
+        return ResponseEntity.ok(new ResponseObject.Builder<Set<String>>()
+                .success(true)
+                .code("SUCCESS")
+                .content(result)
+                .messages("Products found successfully")
+                .build());
+    }
+    @GetMapping("filter")
+    public ResponseEntity<ResponseObject<FiledAdvanceSearch>> getProductFilter(
+            @RequestParam(required = false, name = "q") String search
+    ) {
+        var queryWrapper = QueryWrapper.builder()
+                .search(search)
+                .build();
+        var result = productService.filedAdvanceSearch(queryWrapper);
+        return ResponseEntity.ok(new ResponseObject.Builder<FiledAdvanceSearch>()
+                .success(true)
+                .code("SUCCESS")
+                .content(result)
+                .messages("Filter product found successfully")
                 .build());
     }
 
