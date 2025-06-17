@@ -15,13 +15,13 @@ public class CustomerContactEntity extends BaseSQLEntity {
     private String customerName;
     @Column(name = "phone", length = 12, nullable = false)
     private String phone;
-    @Column(name = "state", length = 20, nullable = false)
+    @Column(name = "state", length = 50, nullable = false)
     private String state;
     @Column(name = "country", length = 20, nullable = false)
     private String country;
-    @Column(name = "district", length = 20, nullable = false)
+    @Column(name = "district", length = 50, nullable = false)
     private String district;
-    @Column(name = "ward", length = 20, nullable = false)
+    @Column(name = "ward", length = 50, nullable = false)
     private String ward;
     @Column(name = "address_line", nullable = false)
     private String addressLine;
