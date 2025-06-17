@@ -5,6 +5,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.retrade.main.model.dto.request.AuthenticationRequest;
 import org.retrade.main.model.dto.request.ForgotPasswordRequest;
+import org.retrade.main.model.dto.request.ResetPasswordRequest;
 import org.retrade.main.model.dto.response.AuthResponse;
 
 import java.awt.image.BufferedImage;
@@ -27,6 +28,8 @@ public interface AuthService {
     void forgotPasswordConfirm(ForgotPasswordRequest request);
 
     AuthResponse googleOAuth2Callback(String code, Consumer<List<Cookie>> callback);
+
+    void resetPassword(ResetPasswordRequest request);
 
     void logout(HttpServletRequest request, HttpServletResponse response);
 }
