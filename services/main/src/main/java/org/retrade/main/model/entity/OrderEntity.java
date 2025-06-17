@@ -14,7 +14,8 @@ import java.util.Set;
 @Builder
 @Entity(name = "orders")
 public class OrderEntity extends BaseSQLEntity {
-    @OneToOne(fetch = FetchType.EAGER, optional = false, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    @OneToOne(fetch = FetchType.EAGER, optional = true, cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REMOVE})
+    @JoinColumn(name = "order_destination_id", nullable = true)
     private OrderDestinationEntity orderDestination;
     @Column(name = "tax_total", nullable = false)
     private BigDecimal taxTotal;

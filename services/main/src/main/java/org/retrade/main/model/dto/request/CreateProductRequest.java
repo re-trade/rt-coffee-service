@@ -1,9 +1,6 @@
 package org.retrade.main.model.dto.request;
 
-import jakarta.validation.constraints.DecimalMin;
-import jakarta.validation.constraints.NotEmpty;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -40,7 +37,8 @@ public class CreateProductRequest {
     @Size(max = 128, message = "Brand must not exceed 128 characters")
     private String brand;
 
-    @Size(max = 50, message = "Discount must not exceed 50 characters")
+    @DecimalMin(value = "0.0", inclusive = true, message = "Discount must be at least 0")
+    @DecimalMax(value = "100.0", inclusive = true, message = "Discount must not exceed 100")
     private Double discount;
 
     @NotEmpty(message = "Model is required")

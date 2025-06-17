@@ -4,4 +4,5 @@ public enum IdentityVerifiedStatusEnum {
     WAITING,
     VERIFIED,
     FAILED,
+    INIT
 }

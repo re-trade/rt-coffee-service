@@ -11,8 +11,7 @@ import org.retrade.common.model.entity.BaseSQLEntity;
 @Builder
 @Entity(name = "order_destinations")
 public class OrderDestinationEntity extends BaseSQLEntity {
-    @OneToOne(targetEntity = OrderEntity.class, optional = false, fetch = FetchType.LAZY)
-    @JoinColumn(name = "order_id", nullable = false)
+    @OneToOne(targetEntity = OrderEntity.class, fetch = FetchType.LAZY, mappedBy = "orderDestination")
     private OrderEntity order;
     @Column(name = "customer_name", length = 255, nullable = false)
     private String customerName;
