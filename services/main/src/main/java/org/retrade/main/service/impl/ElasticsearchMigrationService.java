@@ -199,11 +199,11 @@ public class ElasticsearchMigrationService {
                     try {
                         ProductDocument existingDoc = productElasticsearchRepository.findById(product.getId()).orElse(null);
                         if (existingDoc == null) {
-                            ProductDocument newDoc = convertToProductDocument(product);
+                            ProductDocument newDoc = ProductDocument.wrapEntityToDocument(product);
                             productElasticsearchRepository.save(newDoc);
                             totalUpdated++;
                         } else if (shouldUpdateDocument(product, existingDoc)) {
-                            ProductDocument updatedDoc = convertToProductDocument(product);
+                            ProductDocument updatedDoc = ProductDocument.wrapEntityToDocument(product);
                             productElasticsearchRepository.save(updatedDoc);
                             totalUpdated++;
                         }
@@ -240,31 +240,7 @@ public class ElasticsearchMigrationService {
 
     private List<ProductDocument> convertToProductDocuments(List<ProductEntity> products) {
         return products.stream()
-                .map(this::convertToProductDocument)
+                .map(ProductDocument::wrapEntityToDocument)
                 .collect(Collectors.toList());
-    }
-
-    private ProductDocument convertToProductDocument(ProductEntity product) {
-        return ProductDocument.builder()
-                .id(product.getId())
-                .name(product.getName())
-                .sellerId(product.getSeller().getId())
-                .shortDescription(product.getShortDescription())
-                .description(product.getDescription())
-                .brand(product.getBrand())
-                .discount(product.getDiscount())
-                .model(product.getModel())
-                .currentPrice(product.getCurrentPrice())
-                .categories(product.getCategories().stream()
-                        .map(item -> ProductDocument.CategoryInfo.builder()
-                                .id(item.getId())
-                                .name(item.getName())
-                                .type(item.getType())
-                                .build())
-                        .collect(Collectors.toSet()))
-                .verified(product.getVerified())
-                .createdAt(product.getCreatedDate() != null ? product.getCreatedDate() : null)
-                .updatedAt(product.getUpdatedDate() != null ? product.getUpdatedDate() : null)
-                .build();
     }
 }
