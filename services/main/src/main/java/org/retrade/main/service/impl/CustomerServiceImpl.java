@@ -55,7 +55,7 @@ public class CustomerServiceImpl implements CustomerService {
         var account = authUtils.getUserAccountFromAuthentication();
         var customer = customerRepository.findByAccount(account)
                 .orElseThrow(() -> new ValidationException("Customer profile not found"));
-
+        customer.setGender(request.getGender());
         customer.setFirstName(request.getFirstName());
         customer.setLastName(request.getLastName());
         customer.setPhone(request.getPhone());

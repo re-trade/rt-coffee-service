@@ -186,6 +186,8 @@ public class AccountServiceImpl implements AccountService {
                 .locked(account.isLocked())
                 .using2FA(account.isUsing2FA())
                 .joinInDate(account.getJoinInDate())
+                .changedUsername(account.isChangedUsername())
+                .lastLogin(account.getLastLogin())
                 .roles(AuthUtils.convertAccountToRole(account));
         return builder.build();
     }
