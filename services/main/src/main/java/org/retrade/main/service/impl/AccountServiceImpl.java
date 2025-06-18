@@ -139,7 +139,7 @@ public class AccountServiceImpl implements AccountService {
     public AccountResponse updateEmail(UpdateEmailRequest request) {
         var email = request.getNewEmail();
         var emailValidator = EmailValidator.getInstance();
-        if (emailValidator.isValid(email)) {
+        if (!emailValidator.isValid(email)) {
             throw new ValidationException("Email input is not valid");
         }
         var account = authUtils.getUserAccountFromAuthentication();
