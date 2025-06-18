@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.retrade.common.model.dto.request.QueryWrapper;
 import org.retrade.common.model.dto.response.ResponseObject;
 import org.retrade.main.model.dto.request.UpdateCustomerProfileRequest;
+import org.retrade.main.model.dto.request.UpdatePhoneRequest;
 import org.retrade.main.model.dto.response.CustomerResponse;
 import org.retrade.main.service.CustomerService;
 import org.springframework.data.domain.Pageable;
@@ -64,6 +65,18 @@ public class CustomerController {
                 .success(true)
                 .code("SUCCESS")
                 .messages("Customer avatar updated successfully")
+                .build());
+    }
+
+    @PreAuthorize("hasRole('ROLE_CUSTOMER')")
+    @PatchMapping("phone")
+    public ResponseEntity<ResponseObject<CustomerResponse>> updatePhone(@Valid @RequestBody UpdatePhoneRequest request) {
+        var response = customerService.updateCustomerPhonenumber(request);
+        return ResponseEntity.ok(new ResponseObject.Builder<CustomerResponse>()
+                .success(true)
+                .code("SUCCESS")
+                .content(response)
+                .messages("Account password reset successfully")
                 .build());
     }
 

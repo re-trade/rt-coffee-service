@@ -3,12 +3,16 @@ package org.retrade.main.controller;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.retrade.common.model.dto.request.QueryWrapper;
 import org.retrade.common.model.dto.response.PaginationWrapper;
 import org.retrade.common.model.dto.response.ResponseObject;
+import org.retrade.main.model.dto.request.UpdateEmailRequest;
 import org.retrade.main.model.dto.request.UpdatePasswordRequest;
+import org.retrade.main.model.dto.request.UpdateUsernameRequest;
 import org.retrade.main.model.dto.response.AccountResponse;
 import org.retrade.main.service.AccountService;
 import org.springframework.data.domain.Pageable;
@@ -20,7 +24,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/accounts")
+@RequestMapping("accounts")
 @RequiredArgsConstructor
 @Tag(name = "Account Management", description = "User account management and profile endpoints")
 public class AccountController {
@@ -53,11 +57,10 @@ public class AccountController {
                 .build());
     }
 
-    @PutMapping("{id}/password")
+    @PutMapping("password")
     public ResponseEntity<ResponseObject<Void>> updatePassword(
-            @PathVariable String id,
             @Valid @RequestBody UpdatePasswordRequest request) {
-        accountService.updatePassword(id, request);
+        accountService.updatePassword(request);
         return ResponseEntity.ok(new ResponseObject.Builder<Void>()
                 .success(true)
                 .code("SUCCESS")
@@ -72,6 +75,31 @@ public class AccountController {
                         .success(true)
                         .code("SUCCESS")
                         .messages("Account password reset successfully")
+                .build());
+    }
+
+    @PatchMapping("email")
+    public ResponseEntity<ResponseObject<AccountResponse>> updateEmail(@Valid @RequestBody UpdateEmailRequest request) {
+        var response = accountService.updateEmail(request);
+        return ResponseEntity.ok(new ResponseObject.Builder<AccountResponse>()
+                .success(true)
+                .code("SUCCESS")
+                .content(response)
+                .messages("Account username change successful. Please check your email for the new username.")
+                .build());
+    }
+
+    @PatchMapping("username")
+    public ResponseEntity<ResponseObject<AccountResponse>> updateUsername(
+            @Valid @RequestBody UpdateUsernameRequest updateUsernameRequest,
+            HttpServletRequest request,
+            HttpServletResponse response) {
+        var result = accountService.updateUsername(updateUsernameRequest,request, response);
+        return ResponseEntity.ok(new ResponseObject.Builder<AccountResponse>()
+                .success(true)
+                .code("SUCCESS")
+                .content(result)
+                .messages("Account password reset successfully")
                 .build());
     }
 
