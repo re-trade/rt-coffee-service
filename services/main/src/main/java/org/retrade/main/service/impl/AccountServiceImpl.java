@@ -1,16 +1,22 @@
 package org.retrade.main.service.impl;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.validator.routines.EmailValidator;
 import org.retrade.common.model.dto.request.QueryWrapper;
 import org.retrade.common.model.dto.response.PaginationWrapper;
 import org.retrade.common.model.exception.ActionFailedException;
 import org.retrade.common.model.exception.ValidationException;
+import org.retrade.main.model.dto.request.UpdateEmailRequest;
 import org.retrade.main.model.dto.request.UpdatePasswordRequest;
+import org.retrade.main.model.dto.request.UpdateUsernameRequest;
 import org.retrade.main.model.dto.response.AccountResponse;
 import org.retrade.main.model.entity.AccountEntity;
 import org.retrade.main.model.message.EmailNotificationMessage;
 import org.retrade.main.repository.AccountRepository;
 import org.retrade.main.service.AccountService;
+import org.retrade.main.service.JwtService;
 import org.retrade.main.service.MessageProducerService;
 import org.retrade.main.util.AuthUtils;
 import org.retrade.main.util.TokenUtils;
@@ -26,6 +32,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class AccountServiceImpl implements AccountService {
     private final MessageProducerService messageProducerService;
+    private final JwtService jwtService;
     private final AccountRepository accountRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuthUtils authUtils;
@@ -49,13 +56,8 @@ public class AccountServiceImpl implements AccountService {
 
     @Override
     @Transactional(rollbackFor = {ActionFailedException.class, Exception.class})
-    public void updatePassword(String id, UpdatePasswordRequest request) {
-        AccountEntity currentAccount = authUtils.getUserAccountFromAuthentication();
-        AccountEntity account = accountRepository.findById(id)
-                .orElseThrow(() -> new ValidationException("Account not found with id: " + id));
-        if (!currentAccount.getId().equals(id) && !AuthUtils.convertAccountToRole(currentAccount).contains("ROLE_ADMIN")) {
-            throw new ValidationException("Access denied: You can only update your own account");
-        }
+    public void updatePassword(UpdatePasswordRequest request) {
+        var account = authUtils.getUserAccountFromAuthentication();
         if (!passwordEncoder.matches(request.getCurrentPassword(), account.getHashPassword())) {
             throw new ValidationException("Current password is incorrect");
         }
@@ -63,7 +65,11 @@ public class AccountServiceImpl implements AccountService {
             throw new ValidationException("New password and confirm password do not match");
         }
         account.setHashPassword(passwordEncoder.encode(request.getNewPassword()));
-        accountRepository.save(account);
+        try {
+            accountRepository.save(account);
+        } catch (Exception e) {
+            throw new ActionFailedException("Error while updating password", e);
+        }
     }
 
     @Override
@@ -121,6 +127,54 @@ public class AccountServiceImpl implements AccountService {
                 .setTotalPages(accountPage.getTotalPages())
                 .setTotalElements((int) accountPage.getTotalElements())
                 .build();
+    }
+
+    @Override
+    @Transactional(rollbackFor = {ActionFailedException.class, Exception.class})
+    public AccountResponse updateEmail(UpdateEmailRequest request) {
+        var email = request.getNewEmail();
+        var emailValidator = EmailValidator.getInstance();
+        if (emailValidator.isValid(email)) {
+            throw new ValidationException("Email input is not valid");
+        }
+        var account = authUtils.getUserAccountFromAuthentication();
+        if (!passwordEncoder.matches(request.getPasswordConfirm(), account.getHashPassword())) {
+            throw new ValidationException("Password does not match");
+        }
+        account.setEmail(email);
+        try {
+            var result = accountRepository.save(account);
+            return mapToAccountResponse(result);
+        } catch (Exception e) {
+            throw new ActionFailedException("Error while updating email", e);
+        }
+    }
+    @Transactional(rollbackFor = {ActionFailedException.class, Exception.class})
+    @Override
+    public AccountResponse updateUsername(UpdateUsernameRequest updateRequest, HttpServletRequest request, HttpServletResponse response) {
+        var username = updateRequest.username();
+        if (username.length() < 3 || username.length() > 32) {
+            throw new ValidationException("Username must be between 3 and 32 characters");
+        }
+        if (accountRepository.existsByUsername(username)) {
+            throw new ValidationException("Username already exists");
+        }
+        var account = authUtils.getUserAccountFromAuthentication();
+        if (account.isChangedUsername()) {
+            throw new ValidationException("User can only change username once per ever");
+        }
+        if (!passwordEncoder.matches(updateRequest.passwordConfirm(), account.getHashPassword())) {
+            throw new ValidationException("Password does not match");
+        }
+        account.setUsername(username);
+        account.setChangedUsername(true);
+        try {
+            var result = accountRepository.save(account);
+            jwtService.removeAuthToken(request, response);
+            return mapToAccountResponse(result);
+        } catch (Exception e) {
+            throw new ActionFailedException("Error while updating email", e);
+        }
     }
 
     private AccountResponse mapToAccountResponse(AccountEntity account) {
