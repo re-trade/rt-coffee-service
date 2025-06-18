@@ -16,6 +16,8 @@ import java.util.List;
 public interface AccountService {
     AccountResponse getMe();
 
+    boolean checkUsernameExisted(String username);
+
     AccountResponse getAccountById(String id);
 
     void updatePassword(UpdatePasswordRequest request);

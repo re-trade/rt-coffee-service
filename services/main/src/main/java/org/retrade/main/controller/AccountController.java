@@ -1,6 +1,11 @@
 package org.retrade.main.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
@@ -22,6 +27,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("accounts")
@@ -53,6 +59,62 @@ public class AccountController {
                 .success(true)
                 .code("SUCCESS")
                 .content(response)
+                .messages("Account retrieved successfully")
+                .build());
+    }
+
+    @Operation(
+            summary = "Check if username exists",
+            description = "Checks whether a given username already exists in the system",
+            tags = {"Account"}
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Username check completed successfully",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ResponseObject.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "username_exists",
+                                            summary = "Username exists",
+                                            value = """
+                        {
+                            "success": true,
+                            "code": "SUCCESS",
+                            "content": {
+                                "existed": true
+                            },
+                            "messages": "Account retrieved successfully"
+                        }
+                        """
+                                    ),
+                                    @ExampleObject(
+                                            name = "username_not_exists",
+                                            summary = "Username doesn't exist",
+                                            value = """
+                        {
+                            "success": true,
+                            "code": "SUCCESS",
+                            "content": {
+                                "existed": false
+                            },
+                            "messages": "Account retrieved successfully"
+                        }
+                        """
+                                    )
+                            }
+                    )
+            )
+    })
+    @GetMapping("check-username")
+    public ResponseEntity<ResponseObject<Map<String, Boolean>>> checkUsernameExisted(@RequestParam String username) {
+        var response = accountService.checkUsernameExisted(username);
+        return ResponseEntity.ok(new ResponseObject.Builder<Map<String, Boolean>>()
+                .success(true)
+                .code("SUCCESS")
+                .content(Map.of("existed", response))
                 .messages("Account retrieved successfully")
                 .build());
     }

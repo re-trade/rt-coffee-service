@@ -44,6 +44,11 @@ public class AccountServiceImpl implements AccountService {
     }
 
     @Override
+    public boolean checkUsernameExisted(String username) {
+        return accountRepository.existsByUsername(username);
+    }
+
+    @Override
     public AccountResponse getAccountById(String id) {
         AccountEntity currentAccount = authUtils.getUserAccountFromAuthentication();
         AccountEntity account = accountRepository.findById(id)
