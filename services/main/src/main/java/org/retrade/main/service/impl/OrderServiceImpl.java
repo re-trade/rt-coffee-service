@@ -43,6 +43,7 @@ public class OrderServiceImpl implements OrderService {
     private final OrderStatusRepository orderStatusRepository;
     private final OrderHistoryRepository orderHistoryRepository;
     private final ProductRepository productRepository;
+    private final OrderDestinationRepository orderDestinationRepository;
     private final CustomerRepository customerRepository;
     private final CustomerContactRepository customerContactRepository;
     private final CartService cartService;
@@ -82,10 +83,17 @@ public class OrderServiceImpl implements OrderService {
         
         BigDecimal grandTotal = subtotal.add(taxTotal).subtract(discountTotal).add(BigDecimal.valueOf(DEFAULT_SHIPPING_COST));
 
-        OrderEntity order = createOrderEntity(customer, subtotal, taxTotal, discountTotal, grandTotal, orderDestinationEntity);
-        OrderEntity savedOrder = orderRepository.save(order);
-        
-        List<OrderComboEntity> orderCombos = createOrderCombos(savedOrder, productsBySeller);
+        OrderEntity order = createOrderEntity(customer, subtotal, taxTotal, discountTotal, grandTotal);
+        OrderEntity savedOrder;
+        OrderDestinationEntity orderDestination;
+        try {
+            savedOrder = orderRepository.save(order);
+            orderDestinationEntity.setOrder(savedOrder);
+            orderDestination = orderDestinationRepository.save(orderDestinationEntity);
+        } catch (Exception e) {
+            throw new ActionFailedException("Failed to save order destination", e);
+        }
+        List<OrderComboEntity> orderCombos = createOrderCombos(productsBySeller, orderDestination);
         
         createOrderItems(savedOrder, products, orderCombos);
         
@@ -94,7 +102,7 @@ public class OrderServiceImpl implements OrderService {
         }
         
         createOrderHistory(savedOrder, "Order created", customer.getId());
-        
+
         cartService.clearCart();
 
         log.info("Order created successfully with ID: {}", savedOrder.getId());
@@ -266,7 +274,7 @@ public class OrderServiceImpl implements OrderService {
     }
 
     private OrderEntity createOrderEntity(CustomerEntity customer, BigDecimal subtotal, BigDecimal taxTotal,
-                                          BigDecimal discountTotal, BigDecimal grandTotal, OrderDestinationEntity orderDestination) {
+                                          BigDecimal discountTotal, BigDecimal grandTotal) {
         return OrderEntity.builder()
                 .customer(customer)
                 .subtotal(subtotal)
@@ -274,11 +282,10 @@ public class OrderServiceImpl implements OrderService {
                 .discountTotal(discountTotal)
                 .shippingCost(DEFAULT_SHIPPING_COST)
                 .grandTotal(grandTotal)
-                .orderDestination(orderDestination)
                 .build();
     }
 
-    private List<OrderComboEntity> createOrderCombos(OrderEntity order, Map<SellerEntity, List<ProductEntity>> productsBySeller) {
+    private List<OrderComboEntity> createOrderCombos(Map<SellerEntity, List<ProductEntity>> productsBySeller, OrderDestinationEntity orderDestination) {
         OrderStatusEntity pendingStatus = orderStatusRepository.findByCode("PENDING")
                 .orElseThrow(() -> new ValidationException("Pending order status not found"));
 
@@ -295,15 +302,16 @@ public class OrderServiceImpl implements OrderService {
             OrderComboEntity combo = OrderComboEntity.builder()
                     .seller(seller)
                     .grandPrice(sellerTotal)
-                    .orderDestination(order.getOrderDestination())
+                    .orderDestination(orderDestination)
                     .orderStatus(pendingStatus)
                     .build();
-
-            OrderComboEntity savedCombo = orderComboRepository.save(combo);
-            orderCombos.add(savedCombo);
+            orderCombos.add(combo);
         }
-
-        return orderCombos;
+        try {
+            return orderComboRepository.saveAll(orderCombos);
+        } catch (Exception ex) {
+            throw new ActionFailedException("Failed to save order combos", ex);
+        }
     }
 
     private void createOrderItems(OrderEntity order, List<ProductEntity> products,
