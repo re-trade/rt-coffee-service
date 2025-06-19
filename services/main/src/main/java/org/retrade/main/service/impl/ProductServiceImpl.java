@@ -1,6 +1,8 @@
 package org.retrade.main.service.impl;
 
 import co.elastic.clients.elasticsearch._types.SortOrder;
+import co.elastic.clients.elasticsearch._types.query_dsl.Query;
+import co.elastic.clients.elasticsearch._types.query_dsl.TextQueryType;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
@@ -13,6 +15,8 @@ import org.retrade.common.model.exception.ValidationException;
 import org.retrade.main.model.document.ProductDocument;
 import org.retrade.main.model.dto.request.CreateProductRequest;
 import org.retrade.main.model.dto.request.UpdateProductRequest;
+import org.retrade.main.model.dto.response.CategoriesAdvanceSearch;
+import org.retrade.main.model.dto.response.FiledAdvanceSearch;
 import org.retrade.main.model.dto.response.ProductResponse;
 import org.retrade.main.model.entity.CategoryEntity;
 import org.retrade.main.model.entity.ProductEntity;
@@ -24,6 +28,7 @@ import org.retrade.main.repository.SellerRepository;
 import org.retrade.main.service.ProductService;
 import org.retrade.main.util.AuthUtils;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.elasticsearch.client.elc.NativeQuery;
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 import org.springframework.data.elasticsearch.core.SearchHit;
@@ -127,7 +132,8 @@ public class ProductServiceImpl implements ProductService {
         }
         try {
             productRepository.delete(product);
-            productSearchRepository.deleteById(id);;
+            productSearchRepository.deleteById(id);
+            ;
         } catch (Exception ex) {
             throw new ActionFailedException("Failed to delete product", ex);
         }
@@ -140,7 +146,8 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public PaginationWrapper<List<ProductResponse>> getAllProducts(QueryWrapper queryWrapper) {;
+    public PaginationWrapper<List<ProductResponse>> getAllProducts(QueryWrapper queryWrapper) {
+        ;
         return productRepository.query(queryWrapper, (param) -> (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
             return getPredicate(param, root, criteriaBuilder, predicates);
@@ -167,7 +174,7 @@ public class ProductServiceImpl implements ProductService {
         if (seller == null) {
             throw new ValidationException("Seller profile not found");
         }
-       return getProductsBySeller(seller, queryWrapper);
+        return getProductsBySeller(seller, queryWrapper);
     }
 
     @Override
@@ -185,38 +192,30 @@ public class ProductServiceImpl implements ProductService {
                 .map(this::mapToProductResponse)
                 .toList();
     }
+
     @Override
     public PaginationWrapper<List<ProductResponse>> searchProductByKeyword(QueryWrapper queryWrapper) {
         var search = queryWrapper.search();
         QueryFieldWrapper keyword = search.remove("keyword");
-        if (queryWrapper.search() == null  || queryWrapper.search().isEmpty()) {
-            return productRepository.query(queryWrapper, (param) -> (root, query, criteriaBuilder) -> {
-                Predicate[] defaultPredicates = productRepository.createDefaultPredicate(criteriaBuilder, root, param);
-                List<Predicate> predicates = new ArrayList<>(Arrays.asList(defaultPredicates));
-                return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
-            }, (items) -> {
-                var list = items.map(this::mapToProductResponse).stream().toList();
-                return new PaginationWrapper.Builder<List<ProductResponse>>()
-                        .setPaginationInfo(items)
-                        .setData(list)
-                        .build();
-            });
-        }
-        var nativeQuery = NativeQuery.builder()
-                .withQuery(q -> q.multiMatch(m -> m.fields("name", "shortDescription", "description").query(keyword.getValue().toString()).fuzziness("AUTO")))
-                .withPageable(queryWrapper.pagination())
-                .withSort(s -> s.field(f -> f.field("createdAt").order(SortOrder.Desc)))
-                .build();
-        SearchHits<ProductDocument> searchHits = elasticsearchOperations.search(nativeQuery, ProductDocument.class);
-        var searchHit = searchHits.getSearchHits().stream().map(SearchHit::getId).collect(Collectors.toSet());
         return productRepository.query(queryWrapper, (param) -> (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
-            predicates.add(root.get("id").in(searchHit));
+            if (keyword != null) {
+                Set<String> searchHitIds = getElasticSearchIds(keyword, queryWrapper.pagination());
+                if (searchHitIds.isEmpty()) {
+                    predicates.add(criteriaBuilder.disjunction());
+                } else {
+                    predicates.add(root.get("id").in(searchHitIds));
+                }
+            }
             if (param != null && !param.isEmpty()) {
+                Predicate[] advanceFilterPredicates = getAdvanceFilterPredicate(param, root, criteriaBuilder);
                 Predicate[] defaultPredicates = productRepository.createDefaultPredicate(criteriaBuilder, root, param);
                 predicates.addAll(Arrays.asList(defaultPredicates));
+                predicates.addAll(Arrays.asList(advanceFilterPredicates));
             }
-            return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
+            return predicates.isEmpty() ?
+                    criteriaBuilder.conjunction() :
+                    criteriaBuilder.and(predicates.toArray(new Predicate[0]));
         }, (items) -> {
             var list = items.map(this::mapToProductResponse).stream().toList();
             return new PaginationWrapper.Builder<List<ProductResponse>>()
@@ -224,7 +223,14 @@ public class ProductServiceImpl implements ProductService {
                     .setData(list)
                     .build();
         });
+    }
 
+    private Set<String> getElasticSearchIds(QueryFieldWrapper keyword, Pageable pagination) {
+        var searchHits = queryElasticSearchByKeyword(keyword, pagination);
+        return searchHits.getSearchHits()
+                .stream()
+                .map(SearchHit::getId)
+                .collect(Collectors.toSet());
     }
 
     @Override
@@ -274,6 +280,55 @@ public class ProductServiceImpl implements ProductService {
         }
     }
 
+
+
+    @Override
+    public Set<String> getCategoriesForFilter(QueryWrapper queryWrapper) {
+        PaginationWrapper<List<ProductResponse>> listProduct = searchProductByKeyword(queryWrapper);
+        List<ProductResponse> productResponses = listProduct.getData();
+
+        return productResponses.stream()
+                .filter(Objects::nonNull)
+                .flatMap(p -> p.getCategories().stream())
+                .collect(Collectors.toSet());
+    }
+
+
+    @Override
+    public FiledAdvanceSearch filedAdvanceSearch(QueryWrapper queryWrapper) {
+        QueryFieldWrapper keyword = queryWrapper.search().remove("keyword");
+
+        if (keyword == null) {
+            return FiledAdvanceSearch.builder()
+                    .brands(Collections.emptySet())
+                    .address(Collections.emptySet())
+                    .categoriesAdvanceSearch(Collections.emptyList())
+                    .build();
+        }
+
+        var searchHits = queryElasticSearchByKeyword(keyword, queryWrapper.pagination());
+
+        Set<String> brands = searchHits.stream()
+                .map(SearchHit::getContent)
+                .map(ProductDocument::getBrand)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
+        Set<CategoriesAdvanceSearch> categorySet = searchHits.stream()
+                .map(SearchHit::getContent)
+                .filter(doc -> doc.getCategories() != null)
+                .flatMap(doc -> doc.getCategories().stream())
+                .map(cat -> new CategoriesAdvanceSearch(cat.getId(), cat.getName()))
+                .collect(Collectors.toSet());
+
+        return FiledAdvanceSearch.builder()
+                .brands(brands)
+                .address(Collections.emptySet())
+                .categoriesAdvanceSearch(new ArrayList<>(categorySet))
+                .build();
+    }
+
+
     private ProductEntity getProductEntityById(String id) {
         return productRepository.findById(id)
                 .orElseThrow(() -> new ValidationException("Product not found with id: " + id));
@@ -310,6 +365,85 @@ public class ProductServiceImpl implements ProductService {
         return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
     }
 
+    private Predicate[] getAdvanceFilterPredicate(Map<String, QueryFieldWrapper> param, Root<ProductEntity> root, CriteriaBuilder criteriaBuilder) {
+        if (param == null || param.isEmpty()) {
+            return new Predicate[0];
+        }
+        Set<Predicate> predicates = new HashSet<>();
+        addCategoryPredicate(param.remove("categoryId"), root, predicates);
+        addBrandPredicate(param.remove("brand"), root, criteriaBuilder, predicates);
+        return predicates.toArray(new Predicate[0]);
+    }
+
+    private void addCategoryPredicate(QueryFieldWrapper categoryIds, Root<ProductEntity> root, Set<Predicate> predicates) {
+        if (categoryIds == null) return;
+
+        Set<String> categoryIdList = extractStringValues(categoryIds);
+        if (!categoryIdList.isEmpty()) {
+            var categoryJoin = root.join("categories");
+            predicates.add(categoryJoin.get("id").in(categoryIdList));
+        }
+    }
+
+    private void addBrandPredicate(QueryFieldWrapper brand, Root<ProductEntity> root, CriteriaBuilder criteriaBuilder, Set<Predicate> predicates) {
+        if (brand == null) return;
+        Set<String> brandNames = extractStringValues(brand);
+        if (!brandNames.isEmpty()) {
+            predicates.add(root.get("brand").in(brandNames));
+        }
+    }
+
+    private Set<String> extractStringValues(QueryFieldWrapper wrapper) {
+        if (wrapper == null) return Set.of();
+        return switch (wrapper.getOperator()) {
+            case EQ -> Set.of(wrapper.getValue().toString());
+            case IN -> {
+                var value = wrapper.getValue();
+                if (value instanceof Collection<?> collection) {
+                    yield collection.stream()
+                            .filter(Objects::nonNull)
+                            .map(Object::toString)
+                            .collect(Collectors.toSet());
+                }
+                yield Set.of();
+            }
+            default -> Set.of();
+        };
+    }
+
+    private SearchHits<ProductDocument> queryElasticSearchByKeyword(QueryFieldWrapper keyword, Pageable pageable) {
+        var nativeQuery = NativeQuery.builder()
+                .withQuery(elasticSearchKeywordQueryBuild(keyword.getValue().toString()))
+                .withPageable(pageable)
+                .withSort(s -> s.field(f -> f.field("createdAt").order(SortOrder.Desc)))
+                .build();
+        return elasticsearchOperations.search(nativeQuery, ProductDocument.class);
+    }
+
+    private Query elasticSearchKeywordQueryBuild(String keyword) {
+        return Query.of(q -> q.bool(b -> b
+                .should(s -> s.multiMatch(m -> m
+                        .fields("name^3", "shortDescription^2", "description^1")
+                        .query(keyword)
+                        .type(TextQueryType.BestFields)
+                        .fuzziness("1")
+                        .prefixLength(2)
+                ))
+                .should(s -> s.multiMatch(m -> m
+                        .fields("addressLine", "state", "district", "ward")
+                        .query(keyword)
+                        .type(TextQueryType.BestFields)
+                        .fuzziness("1")
+                ))
+                .should(s -> s.multiMatch(m -> m
+                        .fields("name^5", "shortDescription^3")
+                        .query(keyword)
+                        .type(TextQueryType.Phrase)
+                ))
+                .minimumShouldMatch("1")
+        ));
+    }
+
     private void validateCategories(Set<String> categoryIds) {
         if (categoryIds == null || categoryIds.isEmpty()) {
             throw new ValidationException("Invalid categories");
@@ -319,6 +453,7 @@ public class ProductServiceImpl implements ProductService {
             throw new ValidationException("Invalid categories");
         }
     }
+
     private Set<String> convertCategoryEntitiesToNames(Set<CategoryEntity> categoryEntities) {
         if (categoryEntities == null || categoryEntities.isEmpty()) {
             return Set.of();
@@ -327,6 +462,7 @@ public class ProductServiceImpl implements ProductService {
                 .map(CategoryEntity::getName)
                 .collect(Collectors.toSet());
     }
+
     private Set<CategoryEntity> convertCategoryIdsToEntities(Set<String> categoryIds) {
         if (categoryIds == null || categoryIds.isEmpty()) {
             throw new ValidationException("Invalid categories");
@@ -334,7 +470,7 @@ public class ProductServiceImpl implements ProductService {
         return categoryRepository.findByIdIn(categoryIds);
     }
 
-    private PaginationWrapper<List<ProductResponse>> getProductsBySeller (SellerEntity seller, QueryWrapper queryWrapper) {
+    private PaginationWrapper<List<ProductResponse>> getProductsBySeller(SellerEntity seller, QueryWrapper queryWrapper) {
         return productRepository.query(queryWrapper, (param) -> (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
             predicates.add(criteriaBuilder.equal(root.get("seller"), seller));
@@ -346,7 +482,6 @@ public class ProductServiceImpl implements ProductService {
                     .setData(list)
                     .build();
         });
-
     }
 
     private void saveProductDocument(ProductEntity productEntity, String id) {
@@ -369,25 +504,7 @@ public class ProductServiceImpl implements ProductService {
     }
 
     private void saveProductDocument(ProductEntity productEntity) {
-        var product = ProductDocument.builder()
-                .id(productEntity.getId())
-                .name(productEntity.getName())
-                .sellerId(productEntity.getSeller().getId())
-                .shortDescription(productEntity.getShortDescription())
-                .description(productEntity.getDescription())
-                .brand(productEntity.getBrand())
-                .discount(productEntity.getDiscount())
-                .model(productEntity.getModel())
-                .currentPrice(productEntity.getCurrentPrice())
-                .categories(productEntity.getCategories().stream().map(item -> ProductDocument.CategoryInfo.builder()
-                        .id(item.getId())
-                        .name(item.getName())
-                        .type(item.getType())
-                        .build()).collect(Collectors.toSet()))
-                .verified(productEntity.getVerified())
-                .createdAt(productEntity.getCreatedDate() != null ? productEntity.getCreatedDate() : null)
-                .updatedAt(productEntity.getUpdatedDate() != null ? productEntity.getUpdatedDate() : null)
-                .build();
+        var product = ProductDocument.wrapEntityToDocument(productEntity);
         productSearchRepository.save(product);
     }
 }

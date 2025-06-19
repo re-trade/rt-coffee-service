@@ -16,14 +16,16 @@ public class SellerEntity extends BaseSQLEntity {
     private String shopName;
     @Column(name = "description", columnDefinition = "TEXT")
     private String description;
-    @Column(name = "address", columnDefinition = "TEXT")
-    private String address;
-    @Column(name = "business_type")
-    private Integer businessType;
+    @Column(name = "address_line", length = 100, nullable = false)
+    private String addressLine;
+    @Column(name = "district", length = 50, nullable = false)
+    private String district;
+    @Column(name = "ward", length = 50, nullable = false)
+    private String ward;
+    @Column(name = "state", length = 50, nullable = false)
+    private String state;
     @Column(name = "avatar_url", length = 256)
     private String avatarUrl;
-    @Column(name = "tax_code", length = 50)
-    private String taxCode;
     @Column(name = "background", length = 256)
     private String background;
     @Column(name = "email", length = 50, nullable = false)

@@ -1,5 +1,7 @@
 package org.retrade.main.service.impl;
 
+import com.google.i18n.phonenumbers.PhoneNumberUtil;
+import com.google.i18n.phonenumbers.Phonenumber;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
@@ -11,6 +13,7 @@ import org.retrade.common.model.exception.ActionFailedException;
 import org.retrade.common.model.exception.ValidationException;
 import org.retrade.main.model.dto.request.CustomerContactRequest;
 import org.retrade.main.model.dto.request.UpdateCustomerProfileRequest;
+import org.retrade.main.model.dto.request.UpdatePhoneRequest;
 import org.retrade.main.model.dto.response.CustomerContactResponse;
 import org.retrade.main.model.dto.response.CustomerResponse;
 import org.retrade.main.model.entity.CustomerContactEntity;
@@ -21,6 +24,7 @@ import org.retrade.main.service.CustomerService;
 import org.retrade.main.util.AuthUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,6 +39,7 @@ public class CustomerServiceImpl implements CustomerService {
     private final CustomerRepository customerRepository;
     private final CustomerContactRepository customerContactRepository;
     private final AuthUtils authUtils;
+    private final PasswordEncoder passwordEncoder;
 
     @Override
     public CustomerResponse getCurrentCustomerProfile() {
@@ -50,7 +55,7 @@ public class CustomerServiceImpl implements CustomerService {
         var account = authUtils.getUserAccountFromAuthentication();
         var customer = customerRepository.findByAccount(account)
                 .orElseThrow(() -> new ValidationException("Customer profile not found"));
-
+        customer.setGender(request.getGender());
         customer.setFirstName(request.getFirstName());
         customer.setLastName(request.getLastName());
         customer.setPhone(request.getPhone());
@@ -184,6 +189,40 @@ public class CustomerServiceImpl implements CustomerService {
         } catch (Exception ex) {
             throw new ActionFailedException("Failed to remove customer contact", ex);
         }
+    }
+
+    @Transactional(rollbackFor = {ActionFailedException.class, Exception.class})
+    @Override
+    public CustomerResponse updateCustomerPhonenumber(UpdatePhoneRequest request) {
+        var phoneNumberUtil = PhoneNumberUtil.getInstance();
+        try {
+            var phone = request.getNewPhone();
+            Phonenumber.PhoneNumber number = phoneNumberUtil.parse(phone, "VN");
+            boolean isValid = phoneNumberUtil.isValidNumber(number);
+            if (!isValid) {
+                throw new ValidationException("Invalid phone number: " + phone);
+            }
+        } catch (Exception ex) {
+            throw new ValidationException("Invalid phone number");
+        }
+        var phone = request.getNewPhone();
+        var account = authUtils.getUserAccountFromAuthentication();
+        if (!passwordEncoder.matches(request.getPasswordConfirm(), account.getHashPassword())) {
+            throw new ValidationException("Invalid password");
+        }
+        var customer = account.getCustomer();
+        if (customer == null) {
+            throw new ValidationException("Customer profile not found");
+        }
+
+        customer.setPhone(phone);
+        try {
+            var result = customerRepository.save(customer);
+            return mapToCustomerResponse(result);
+        } catch (Exception ex) {
+            throw new ActionFailedException("Failed to update customer phone number", ex);
+        }
+
     }
 
     private CustomerEntity getAuthCustomer() {

@@ -20,6 +20,9 @@ public class AccountResponse {
     private boolean enabled;
     private boolean locked;
     private boolean using2FA;
+    private boolean changedUsername;
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private LocalDateTime lastLogin;
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime joinInDate;
     private List<String> roles;

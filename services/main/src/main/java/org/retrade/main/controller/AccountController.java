@@ -1,14 +1,23 @@
 package org.retrade.main.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.retrade.common.model.dto.request.QueryWrapper;
 import org.retrade.common.model.dto.response.PaginationWrapper;
 import org.retrade.common.model.dto.response.ResponseObject;
+import org.retrade.main.model.dto.request.UpdateEmailRequest;
 import org.retrade.main.model.dto.request.UpdatePasswordRequest;
+import org.retrade.main.model.dto.request.UpdateUsernameRequest;
 import org.retrade.main.model.dto.response.AccountResponse;
 import org.retrade.main.service.AccountService;
 import org.springframework.data.domain.Pageable;
@@ -18,9 +27,10 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
-@RequestMapping("/accounts")
+@RequestMapping("accounts")
 @RequiredArgsConstructor
 @Tag(name = "Account Management", description = "User account management and profile endpoints")
 public class AccountController {
@@ -53,11 +63,66 @@ public class AccountController {
                 .build());
     }
 
-    @PutMapping("{id}/password")
+    @Operation(
+            summary = "Check if username exists",
+            description = "Checks whether a given username already exists in the system",
+            tags = {"Account"}
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Username check completed successfully",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ResponseObject.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "username_exists",
+                                            summary = "Username exists",
+                                            value = """
+                        {
+                            "success": true,
+                            "code": "SUCCESS",
+                            "content": {
+                                "existed": true
+                            },
+                            "messages": "Account retrieved successfully"
+                        }
+                        """
+                                    ),
+                                    @ExampleObject(
+                                            name = "username_not_exists",
+                                            summary = "Username doesn't exist",
+                                            value = """
+                        {
+                            "success": true,
+                            "code": "SUCCESS",
+                            "content": {
+                                "existed": false
+                            },
+                            "messages": "Account retrieved successfully"
+                        }
+                        """
+                                    )
+                            }
+                    )
+            )
+    })
+    @GetMapping("check-username")
+    public ResponseEntity<ResponseObject<Map<String, Boolean>>> checkUsernameExisted(@RequestParam String username) {
+        var response = accountService.checkUsernameExisted(username);
+        return ResponseEntity.ok(new ResponseObject.Builder<Map<String, Boolean>>()
+                .success(true)
+                .code("SUCCESS")
+                .content(Map.of("existed", response))
+                .messages("Account retrieved successfully")
+                .build());
+    }
+
+    @PutMapping("password")
     public ResponseEntity<ResponseObject<Void>> updatePassword(
-            @PathVariable String id,
             @Valid @RequestBody UpdatePasswordRequest request) {
-        accountService.updatePassword(id, request);
+        accountService.updatePassword(request);
         return ResponseEntity.ok(new ResponseObject.Builder<Void>()
                 .success(true)
                 .code("SUCCESS")
@@ -72,6 +137,31 @@ public class AccountController {
                         .success(true)
                         .code("SUCCESS")
                         .messages("Account password reset successfully")
+                .build());
+    }
+
+    @PatchMapping("email")
+    public ResponseEntity<ResponseObject<AccountResponse>> updateEmail(@Valid @RequestBody UpdateEmailRequest request) {
+        var response = accountService.updateEmail(request);
+        return ResponseEntity.ok(new ResponseObject.Builder<AccountResponse>()
+                .success(true)
+                .code("SUCCESS")
+                .content(response)
+                .messages("Account username change successful. Please check your email for the new username.")
+                .build());
+    }
+
+    @PatchMapping("username")
+    public ResponseEntity<ResponseObject<AccountResponse>> updateUsername(
+            @Valid @RequestBody UpdateUsernameRequest updateUsernameRequest,
+            HttpServletRequest request,
+            HttpServletResponse response) {
+        var result = accountService.updateUsername(updateUsernameRequest,request, response);
+        return ResponseEntity.ok(new ResponseObject.Builder<AccountResponse>()
+                .success(true)
+                .code("SUCCESS")
+                .content(result)
+                .messages("Account password reset successfully")
                 .build());
     }
 

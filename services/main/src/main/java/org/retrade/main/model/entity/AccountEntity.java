@@ -30,6 +30,10 @@ public class AccountEntity extends BaseSQLEntity {
     private boolean using2FA;
     @Column(name = "join_in_date", nullable = false)
     private LocalDateTime joinInDate;
+    @Column(name = "changed_username", nullable = false, columnDefinition = "BOOLEAN DEFAULT FALSE")
+    private boolean changedUsername;
+    @Column(name = "last_login")
+    private LocalDateTime lastLogin;
     @OneToOne(cascade = {CascadeType.PERSIST, CascadeType.MERGE}, fetch = FetchType.EAGER, mappedBy = "account")
     private CustomerEntity customer;
     @OneToOne(cascade = {CascadeType.PERSIST, CascadeType.MERGE}, fetch = FetchType.EAGER, mappedBy = "account")
