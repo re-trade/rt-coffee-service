@@ -7,7 +7,6 @@ import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
 import lombok.RequiredArgsConstructor;
-import org.retrade.common.model.constant.QueryOperatorEnum;
 import org.retrade.common.model.dto.request.QueryFieldWrapper;
 import org.retrade.common.model.dto.request.QueryWrapper;
 import org.retrade.common.model.dto.response.PaginationWrapper;
@@ -367,38 +366,49 @@ public class ProductServiceImpl implements ProductService {
     }
 
     private Predicate[] getAdvanceFilterPredicate(Map<String, QueryFieldWrapper> param, Root<ProductEntity> root, CriteriaBuilder criteriaBuilder) {
+        if (param == null || param.isEmpty()) {
+            return new Predicate[0];
+        }
         Set<Predicate> predicates = new HashSet<>();
-        if (param != null && !param.isEmpty()) {
-            var categoryIds = param.remove("categoryId");
-            Set<String> categoryIdList = null;
-            if (categoryIds != null &&  categoryIds.getOperator() == QueryOperatorEnum.IN) {
-                var value = categoryIds.getValue();
-                if (value instanceof List<?>) {
-                    categoryIdList = ((List<?>) value).stream()
+        addCategoryPredicate(param.remove("categoryId"), root, predicates);
+        addBrandPredicate(param.remove("brand"), root, criteriaBuilder, predicates);
+        return predicates.toArray(new Predicate[0]);
+    }
+
+    private void addCategoryPredicate(QueryFieldWrapper categoryIds, Root<ProductEntity> root, Set<Predicate> predicates) {
+        if (categoryIds == null) return;
+
+        Set<String> categoryIdList = extractStringValues(categoryIds);
+        if (!categoryIdList.isEmpty()) {
+            var categoryJoin = root.join("categories");
+            predicates.add(categoryJoin.get("id").in(categoryIdList));
+        }
+    }
+
+    private void addBrandPredicate(QueryFieldWrapper brand, Root<ProductEntity> root, CriteriaBuilder criteriaBuilder, Set<Predicate> predicates) {
+        if (brand == null) return;
+        Set<String> brandNames = extractStringValues(brand);
+        if (!brandNames.isEmpty()) {
+            predicates.add(root.get("brand").in(brandNames));
+        }
+    }
+
+    private Set<String> extractStringValues(QueryFieldWrapper wrapper) {
+        if (wrapper == null) return Set.of();
+        return switch (wrapper.getOperator()) {
+            case EQ -> Set.of(wrapper.getValue().toString());
+            case IN -> {
+                var value = wrapper.getValue();
+                if (value instanceof Collection<?> collection) {
+                    yield collection.stream()
+                            .filter(Objects::nonNull)
                             .map(Object::toString)
                             .collect(Collectors.toSet());
                 }
-                if (categoryIdList != null && !categoryIdList.isEmpty()) {
-                    var categoryJoin = root.join("categories");
-                    predicates.add(categoryJoin.get("id").in(categoryIdList));
-                }
+                yield Set.of();
             }
-            var brand = param.remove("brand");
-            if (brand != null && brand.getOperator() == QueryOperatorEnum.IN) {
-                if (brand.getValue() instanceof Collection<?> rawValues) {
-                    List<String> brandNames = rawValues.stream()
-                            .filter(String.class::isInstance)
-                            .map(String.class::cast)
-                            .toList();
-                    if (!brandNames.isEmpty()) {
-                        CriteriaBuilder.In<String> inClause = criteriaBuilder.in(root.get("brand"));
-                        brandNames.forEach(inClause::value);
-                        predicates.add(inClause);
-                    }
-                }
-            }
-        }
-        return predicates.toArray(new Predicate[0]);
+            default -> Set.of();
+        };
     }
 
     private SearchHits<ProductDocument> queryElasticSearchByKeyword(QueryFieldWrapper keyword, Pageable pageable) {
