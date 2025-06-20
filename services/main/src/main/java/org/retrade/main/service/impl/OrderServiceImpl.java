@@ -30,6 +30,7 @@ import org.springframework.util.StringUtils;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 @Service
@@ -51,7 +52,6 @@ public class OrderServiceImpl implements OrderService {
     private final AuthUtils authUtils;
     
     private static final BigDecimal TAX_RATE = new BigDecimal("0.10");
-    private static final Double DEFAULT_SHIPPING_COST = 25000.0;
     
     @Override
     @Transactional(rollbackFor = {ActionFailedException.class, Exception.class})
@@ -80,8 +80,10 @@ public class OrderServiceImpl implements OrderService {
                 throw new ValidationException("Voucher validation failed: " + voucherValidation.getMessage());
             }
         }
-        
-        BigDecimal grandTotal = subtotal.add(taxTotal).subtract(discountTotal).add(BigDecimal.valueOf(DEFAULT_SHIPPING_COST));
+        var totalDiscountPercent = calculateProductDiscountTotal(products);
+        var totalDiscount = subtotal.multiply(new BigDecimal(totalDiscountPercent)).setScale(2, RoundingMode.HALF_UP);
+
+        BigDecimal grandTotal = subtotal.add(taxTotal).subtract(discountTotal).subtract(totalDiscount);
 
         OrderEntity order = createOrderEntity(customer, subtotal, taxTotal, discountTotal, grandTotal);
         OrderEntity savedOrder;
@@ -280,7 +282,7 @@ public class OrderServiceImpl implements OrderService {
                 .subtotal(subtotal)
                 .taxTotal(taxTotal)
                 .discountTotal(discountTotal)
-                .shippingCost(DEFAULT_SHIPPING_COST)
+                .shippingCost(0.0)
                 .grandTotal(grandTotal)
                 .build();
     }
@@ -369,6 +371,17 @@ public class OrderServiceImpl implements OrderService {
                 .ward(destination.getWard())
                 .addressLine(destination.getAddressLine())
                 .build();
+    }
+
+    private Double calculateProductDiscountTotal(List<ProductEntity> productEntities) {
+        if (productEntities == null || productEntities.isEmpty()) {
+            return 0.0;
+        }
+        AtomicReference<Double> discountTotal = new AtomicReference<>(0.0);
+        productEntities.forEach(product -> {
+            discountTotal.set(product.getDiscount());
+        });
+        return discountTotal.get();
     }
 
     private List<OrderItemResponse> mapToOrderItemResponses(OrderEntity order) {
