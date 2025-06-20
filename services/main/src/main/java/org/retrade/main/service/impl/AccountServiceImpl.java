@@ -93,6 +93,8 @@ public class AccountServiceImpl implements AccountService {
 
     @Override
     public void resetPassword(String id) {
+        AccountEntity currentAccount = authUtils.getUserAccountFromAuthentication();
+
         var account = accountRepository.findById(id).orElseThrow(() -> new ValidationException("Account not found with id: " + id));
         var passwordGen = TokenUtils.generatePassword(12);
         account.setHashPassword(passwordEncoder.encode(passwordGen));

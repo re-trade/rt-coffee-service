@@ -12,6 +12,7 @@ import org.retrade.common.model.dto.request.QueryWrapper;
 import org.retrade.common.model.dto.response.PaginationWrapper;
 import org.retrade.common.model.exception.ActionFailedException;
 import org.retrade.common.model.exception.ValidationException;
+import org.retrade.main.model.constant.EProductStatus;
 import org.retrade.main.model.document.ProductDocument;
 import org.retrade.main.model.dto.request.CreateProductRequest;
 import org.retrade.main.model.dto.request.UpdateProductRequest;
@@ -74,9 +75,17 @@ public class ProductServiceImpl implements ProductService {
                 .categories(convertCategoryIdsToEntities(request.getCategoryIds()))
                 .keywords(request.getKeywords())
                 .tags(request.getTags())
+                .status(EProductStatus.INIT)
                 .verified(false)
                 .build();
 
+        if (request.getStatus() != null) {
+            var enumSet = Set.of(EProductStatus.DRAFT, EProductStatus.INIT);
+            if (!enumSet.contains(request.getStatus())) {
+                throw new ValidationException("Invalid product status");
+            }
+            product.setStatus(request.getStatus());
+        }
         try {
             var savedProduct = productRepository.save(product);
             saveProductDocument(savedProduct);

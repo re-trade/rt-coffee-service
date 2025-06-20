@@ -18,6 +18,7 @@ import org.retrade.main.config.GoogleApisConfig;
 import org.retrade.main.model.constant.JwtTokenType;
 import org.retrade.main.model.dto.request.AuthenticationRequest;
 import org.retrade.main.model.dto.request.ForgotPasswordRequest;
+import org.retrade.main.model.dto.request.ResetPasswordRequest;
 import org.retrade.main.model.dto.response.AuthResponse;
 import org.retrade.main.model.entity.AccountEntity;
 import org.retrade.main.model.entity.CustomerEntity;
@@ -214,6 +215,25 @@ public class AuthServiceImpl implements AuthService {
         } catch (Exception e) {
             throw new ActionFailedException(e.getMessage());
         }
+    }
+
+    @Override
+    public void resetPassword(ResetPasswordRequest request) {
+        var accountEntity = authUtils.getUserAccountFromAuthentication();
+        if (accountEntity == null) {
+            throw new ActionFailedException("Not Found Account");
+        }
+        if (accountEntity.getCustomer() == null) {
+            throw new ValidationException("This action requires customer role");
+        }
+        if (!passwordEncoder.matches(request.getOldPassword(), accountEntity.getHashPassword())) {
+            throw new ValidationException("Old password is incorrect");
+        }
+        if (!request.getNewPassword().equals(request.getConfirmNewPassword())) {
+            throw new ValidationException("New password and confirmation do not match");
+        }
+        accountEntity.setHashPassword(passwordEncoder.encode(request.getNewPassword()));
+        accountRepository.save(accountEntity);
     }
 
     private GoogleProfileResponse fetchGoogleProfile (String accessToken) {

@@ -15,6 +15,8 @@ import org.retrade.common.model.exception.AuthException;
 import org.retrade.main.config.HostConfig;
 import org.retrade.main.model.dto.request.AuthenticationRequest;
 import org.retrade.main.model.dto.request.ForgotPasswordRequest;
+import org.retrade.main.model.dto.request.ResetPasswordRequest;
+import org.retrade.main.model.dto.response.AccountResponse;
 import org.retrade.main.model.dto.response.AuthResponse;
 import org.retrade.main.service.AuthService;
 import org.springframework.http.HttpStatus;
@@ -140,6 +142,27 @@ public class AuthenticationController {
                         .build()
         );
     }
+
+
+    @Operation(
+            summary = "Reset password (when logged in)",
+            description = "Reset the password by providing old password, new password, and confirm new password. Requires authentication.",
+            security = {@SecurityRequirement(name = "bearerAuth"), @SecurityRequirement(name = "cookieAuth")}
+    )
+    @PutMapping("reset-password")
+    public ResponseEntity<ResponseObject<Void>> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        authService.resetPassword(request);
+        return ResponseEntity.ok(
+                new ResponseObject.Builder<Void>()
+                        .code("SUCCESS")
+                        .messages("Password has been reset successfully")
+                        .success(true)
+                        .build()
+        );
+    }
+
+
+
 
     @PostMapping("forgot-password/confirm")
     public ResponseEntity<ResponseObject<Void>> forgotPasswordConfirm(@RequestBody ForgotPasswordRequest request) {
