@@ -3,7 +3,10 @@ package org.retrade.main.controller;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.retrade.common.model.dto.response.ResponseObject;
+import org.retrade.main.model.dto.request.ApproveSellerRequest;
 import org.retrade.main.model.dto.request.SellerRegisterRequest;
+import org.retrade.main.model.dto.request.SellerUpdateRequest;
+import org.retrade.main.model.dto.response.SellerBaseResponse;
 import org.retrade.main.model.dto.response.SellerRegisterResponse;
 import org.retrade.main.service.FileService;
 import org.retrade.main.service.SellerService;
@@ -44,6 +47,28 @@ public class SellerController {
                 .code("SUCCESS")
                 .content(result)
                 .messages("CCCD Seller Submit Successfully")
+                .build());
+    }
+
+    @PutMapping(path = "profile")
+    public ResponseEntity<ResponseObject<SellerBaseResponse>> updateSellerProfile(@RequestBody @Valid SellerUpdateRequest request) {
+        var result = sellerService.updateSellerProfile(request);
+        return ResponseEntity.ok(new ResponseObject.Builder<SellerBaseResponse>()
+                .success(true)
+                .code("SUCCESS")
+                .messages("Profile Seller Save Successfully")
+                .content(result)
+                .build());
+    }
+
+    @PatchMapping(path = "approve")
+    public ResponseEntity<ResponseObject<Void>> approveSeller(
+            @Valid @RequestBody ApproveSellerRequest request) {
+        sellerService.approveSeller(request);
+        return ResponseEntity.ok(new ResponseObject.Builder<Void>()
+                .success(true)
+                .code("SUCCESS")
+                .messages("Approve Seller Submit Successfully")
                 .build());
     }
 }
