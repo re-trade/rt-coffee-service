@@ -16,6 +16,7 @@ jobs:
     strategy:
       matrix:
         service: [ main, feedback-notification, voucher, storage, prover ]
+      fail-fast: false
     env:
       REGISTRY: ghcr.io/${{ inputs.repository }}
     steps:
