@@ -21,6 +21,7 @@ jobs:
         run: echo "sha=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
 
   update-gitops:
+    name: Update Metadata
     runs-on: ubuntu-latest
     needs: get-sha
     steps:
@@ -51,10 +52,9 @@ jobs:
           done
       - name: Cat File For Testing
         run: cat overlays/production/kustomization.yaml
-#      - name: Commit and push updated image tags
-#        run: |
-#          cd gitops
-#          git config user.name github-actions
-#          git config user.email github-actions@github.com
-#          git commit -am "misc(kustomize): update image tag to ${{ inputs.sha }}"
-#          git push
+      - name: Commit and push updated image tags
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git commit -am "misc(kustomize): update image tag to ${{ needs.get-sha.outputs.sha }}"
+          git push

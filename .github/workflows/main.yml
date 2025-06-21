@@ -5,6 +5,7 @@ on:
       - deploy/add_migration_service
 jobs:
   build-coffee-image:
+    name: Build / API
     uses: ./.github/workflows/build-image.yaml
     permissions:
       contents: read
@@ -14,18 +15,20 @@ jobs:
       repository: ${{ github.repository }}
     secrets: inherit
 
-#  deploy-dev:
-#    needs: build-coffee-image
-#    uses: ./.github/workflows/deploy-dev.yaml
-#    permissions:
-#      contents: read
-#      packages: write
-#    with:
-#      actor: ${{ github.actor }}
-#      repository: ${{ github.repository }}
-#    secrets: inherit
+  deploy-dev:
+    name: Deploy / DEV
+    needs: build-coffee-image
+    uses: ./.github/workflows/deploy-dev.yaml
+    permissions:
+      contents: read
+      packages: write
+    with:
+      actor: ${{ github.actor }}
+      repository: ${{ github.repository }}
+    secrets: inherit
 
   update-metadata:
+    name: Deploy / Update Metadata
     needs: build-coffee-image
     permissions:
       contents: write

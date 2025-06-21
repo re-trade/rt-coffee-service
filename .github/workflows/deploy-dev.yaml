@@ -10,6 +10,7 @@ on:
         type: string
 jobs:
   deploy-dev:
+    name: Deploy / Dev
     runs-on: retrade-dev
     permissions:
       contents: read
