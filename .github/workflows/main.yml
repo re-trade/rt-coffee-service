@@ -6,6 +6,9 @@ on:
 jobs:
   build-coffee-image:
     uses: ./.github/workflows/build-image.yaml
+    permissions:
+      contents: read
+      packages: write
     with:
       actor: ${{ github.actor }}
       repository: ${{ github.repository }}
@@ -13,6 +16,9 @@ jobs:
 
   deploy-dev:
     uses: ./.github/workflows/deploy-dev.yaml
+    permissions:
+      contents: read
+      packages: write
     with:
       actor: ${{ github.actor }}
       repository: ${{ github.repository }}

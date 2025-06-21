@@ -16,9 +16,6 @@ jobs:
   build-service-image:
     name: Build API Images
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
     strategy:
       matrix:
         service: [ main, feedback-notification, voucher, storage, prover ]
@@ -50,9 +47,6 @@ jobs:
 
   build-docs-image:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
     env:
       REGISTRY: ghcr.io/${{ inputs.repository }}
     steps:
