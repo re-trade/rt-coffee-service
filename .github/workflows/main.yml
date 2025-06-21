@@ -12,7 +12,7 @@ jobs:
     with:
       actor: ${{ github.actor }}
       repository: ${{ github.repository }}
-      token: ${{ github.token }}
+      token: ${{ secrets.GITHUB_TOKEN }}
 
   deploy-dev:
     uses: ./.github/workflows/deploy-dev.yaml
@@ -22,7 +22,7 @@ jobs:
     with:
       actor: ${{ github.actor }}
       repository: ${{ github.repository }}
-      token: ${{ github.token }}
+      token: ${{ secrets.GITHUB_TOKEN }}
     secrets:
       INFISICAL_URL: ${{secrets.INFISICAL_URL}}
       INFISICAL_CLIENT_ID: ${{secrets.INFISICAL_CLIENT_ID}}
