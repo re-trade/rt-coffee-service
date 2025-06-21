@@ -15,6 +15,7 @@ jobs:
     secrets: inherit
 
   deploy-dev:
+    needs: build-coffee-image
     uses: ./.github/workflows/deploy-dev.yaml
     permissions:
       contents: read

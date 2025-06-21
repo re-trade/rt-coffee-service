@@ -1,45 +1,60 @@
 services:
   main-services:
-    image: ${REGISTRY}/rt-main-service:latest
+    image: ${REGISTRY}/rt-main-service
     build:
       context: ..
       dockerfile: services/main/Dockerfile
+      tags:
+        - ${REGISTRY}/rt-main-service:latest
+        - ${REGISTRY}/rt-main-service:${TAG}
     profiles:
       - backend
       - build
       - main
   feedback-notification-services:
-    image: ${REGISTRY}/rt-feedback-notification-service:latest
+    image: ${REGISTRY}/rt-feedback-notification-service
     build:
       context: ..
       dockerfile: services/feedback-notification/Dockerfile
+      tags:
+        - ${REGISTRY}/rt-feedback-notification-service:latest
+        - ${REGISTRY}/rt-feedback-notification-service:${TAG}
     profiles:
       - backend
       - build
       - feedback-notification
   voucher-services:
-    image: ${REGISTRY}/rt-voucher-service:latest
+    image: ${REGISTRY}/rt-voucher-service
     build:
       context: ..
       dockerfile: services/voucher/Dockerfile
+      tags:
+        - ${REGISTRY}/rt-voucher-service:latest
+        - ${REGISTRY}/rt-voucher-service:${TAG}
     profiles:
       - backend
       - build
       - voucher
   storage-services:
-    image: ${REGISTRY}/rt-storage-service:latest
+    image: ${REGISTRY}/rt-storage-service
     build:
       context: ..
       dockerfile: services/storage/Dockerfile
+      tags:
+        - ${REGISTRY}/rt-storage-service:latest
+        - ${REGISTRY}/rt-storage-service:${TAG}
     profiles:
       - backend
       - build
       - storage
   prover-services:
-    image: ${REGISTRY}/rt-prover-service:latest
+    image: ${REGISTRY}/rt-prover-service
     build:
       context: ..
       dockerfile: services/prover/Dockerfile
+      tags:
+        - ${REGISTRY}/rt-prover-service:latest
+        - ${REGISTRY}/rt-prover-service:${TAG}
     profiles:
       - backend
       - build
