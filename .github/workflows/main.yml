@@ -14,13 +14,23 @@ jobs:
       repository: ${{ github.repository }}
     secrets: inherit
 
-  deploy-dev:
+#  deploy-dev:
+#    needs: build-coffee-image
+#    uses: ./.github/workflows/deploy-dev.yaml
+#    permissions:
+#      contents: read
+#      packages: write
+#    with:
+#      actor: ${{ github.actor }}
+#      repository: ${{ github.repository }}
+#    secrets: inherit
+
+  update-metadata:
     needs: build-coffee-image
-    uses: ./.github/workflows/deploy-dev.yaml
     permissions:
-      contents: read
+      contents: write
       packages: write
+    uses: ./.github/workflows/update-metadata.yaml
     with:
-      actor: ${{ github.actor }}
-      repository: ${{ github.repository }}
+      services: main,feedback-notification,voucher,storage,prover
     secrets: inherit

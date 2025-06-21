@@ -1,4 +1,4 @@
-name: deploy-dev.yaml
+name: Deploy / Dev
 on:
   workflow_call:
     inputs:

@@ -1,4 +1,4 @@
-name: build-image.yaml
+name: Build / API
 on:
   workflow_call:
     inputs:
