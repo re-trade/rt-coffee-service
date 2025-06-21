@@ -12,10 +12,7 @@ import org.retrade.common.model.exception.ActionFailedException;
 import org.retrade.common.model.exception.ValidationException;
 import org.retrade.main.client.VoucherGrpcClient;
 import org.retrade.main.model.dto.request.CreateOrderRequest;
-import org.retrade.main.model.dto.response.OrderComboResponse;
-import org.retrade.main.model.dto.response.OrderDestinationResponse;
-import org.retrade.main.model.dto.response.OrderItemResponse;
-import org.retrade.main.model.dto.response.OrderResponse;
+import org.retrade.main.model.dto.response.*;
 import org.retrade.main.model.entity.*;
 import org.retrade.main.repository.*;
 import org.retrade.main.service.CartService;
@@ -30,7 +27,6 @@ import org.springframework.util.StringUtils;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 @Service
@@ -137,6 +133,27 @@ public class OrderServiceImpl implements OrderService {
         return orders.stream()
                 .map(this::mapToOrderResponse)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional
+    public PaginationWrapper<List<CustomerOrderComboResponse>> getCustomerOrderCombos(QueryWrapper queryWrapper) {
+        var account = authUtils.getUserAccountFromAuthentication();
+        var customerEntity = account.getCustomer();
+        if (customerEntity == null) {
+            throw new ValidationException("User is not a customer");
+        }
+        return orderComboRepository.query(queryWrapper, (param) -> (root, query, criteriaBuilder) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            predicates.add(criteriaBuilder.equal(root.get("orderDestination").get("order").get("customer"),customerEntity));
+            return getOrderComboPredicate(param, root, criteriaBuilder, predicates);
+        }, (items) -> {
+            var list = items.map(this::wrapCustomerOrderComboResponse).stream().toList();
+            return new PaginationWrapper.Builder<List<CustomerOrderComboResponse>>()
+                    .setPaginationInfo(items)
+                    .setData(list)
+                    .build();
+        });
     }
 
     @Override
@@ -332,7 +349,8 @@ public class OrderServiceImpl implements OrderService {
                     .shortDescription(product.getShortDescription())
                     .backgroundUrl(product.getThumbnail())
                     .basePrice(product.getCurrentPrice())
-                    .unit("pcs")
+                    .discount(product.getDiscount())
+                    .unit("vnd")
                     .build();
 
             orderItemRepository.save(orderItem);
@@ -374,15 +392,12 @@ public class OrderServiceImpl implements OrderService {
     }
 
     private Double calculateProductDiscountTotal(List<ProductEntity> productEntities) {
-        if (productEntities == null || productEntities.isEmpty()) {
-            return 0.0;
-        }
-        AtomicReference<Double> discountTotal = new AtomicReference<>(0.0);
-        productEntities.forEach(product -> {
-            discountTotal.set(product.getDiscount());
-        });
-        return discountTotal.get();
+        return productEntities.stream()
+                .mapToDouble(ProductEntity::getDiscount)
+                .average()
+                .orElse(0.0);
     }
+
 
     private List<OrderItemResponse> mapToOrderItemResponses(OrderEntity order) {
         List<OrderItemEntity> orderItems = orderItemRepository.findByOrder(order);
@@ -441,6 +456,37 @@ public class OrderServiceImpl implements OrderService {
                 .build();
     }
 
+    private CustomerOrderComboResponse wrapCustomerOrderComboResponse(OrderComboEntity combo) {
+        var orderItems = combo.getOrderItems();
+        var seller = combo.getSeller();
+        var orderStatus = combo.getOrderStatus();
+        var orderItemResponses = wrapCustomerOrderItemResponse(orderItems);
+        return CustomerOrderComboResponse.builder()
+                .comboId(combo.getId())
+                .sellerId(seller.getId())
+                .sellerAvatarUrl(seller.getAvatarUrl())
+                .sellerName(seller.getShopName())
+                .grandPrice(combo.getGrandPrice())
+                .orderStatusId(orderStatus.getId())
+                .orderStatus(orderStatus.getName())
+                .items(orderItemResponses)
+                .build();
+    }
+
+    private Set<CustomerOrderItemResponse> wrapCustomerOrderItemResponse(Set<OrderItemEntity> orderItems) {
+        if (orderItems.isEmpty()) {
+            return Collections.emptySet();
+        }
+        return orderItems.stream().map(item -> CustomerOrderItemResponse.builder()
+                .itemId(item.getId())
+                .itemThumbnail(item.getBackgroundUrl())
+                .itemName(item.getProductName())
+                .productId(item.getProduct().getId())
+                .basePrice(item.getBasePrice())
+                .discount(item.getDiscount())
+                .build()).collect(Collectors.toSet());
+    }
+
     private Predicate getPredicate(Map<String, QueryFieldWrapper> param, Root<OrderEntity> root, CriteriaBuilder criteriaBuilder, List<Predicate> predicates) {
         if (param != null && !param.isEmpty()) {
             Predicate[] defaultPredicates = orderRepository.createDefaultPredicate(criteriaBuilder, root, param);
@@ -448,4 +494,13 @@ public class OrderServiceImpl implements OrderService {
         }
         return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
     }
+
+    private Predicate getOrderComboPredicate(Map<String, QueryFieldWrapper> param, Root<OrderComboEntity> root, CriteriaBuilder criteriaBuilder, List<Predicate> predicates) {
+        if (param != null && !param.isEmpty()) {
+            Predicate[] defaultPredicates = orderComboRepository.createDefaultPredicate(criteriaBuilder, root, param);
+            predicates.addAll(Arrays.asList(defaultPredicates));
+        }
+        return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
+    }
+
 }
