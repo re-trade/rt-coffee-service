@@ -2,7 +2,6 @@ on:
   push:
     branches:
       - main
-      - deploy/add_migration_service
 jobs:
   build-coffee-image:
     name: Build / API
@@ -29,11 +28,11 @@ jobs:
 
   update-metadata:
     name: Deploy / Update Metadata
-    needs: build-coffee-image
+    needs: [build-coffee-image, deploy-dev]
     permissions:
       contents: write
       packages: write
     uses: ./.github/workflows/update-metadata.yaml
     with:
-      services: main,feedback-notification,voucher,storage,prover
+      services: main,feedback-notification,voucher,storage,prover,migration
     secrets: inherit

@@ -59,6 +59,18 @@ services:
       - backend
       - build
       - prover
+  migration-services:
+    image: ${REGISTRY}/rt-migration-service
+    build:
+      context: ..
+      dockerfile: services/migration/Dockerfile
+      tags:
+        - ${REGISTRY}/rt-migration-service:latest
+        - ${REGISTRY}/rt-migration-service:${TAG}
+    profiles:
+      - backend
+      - build
+      - migration
   gateway-services:
     image: ${REGISTRY}/rt-gateway-service:latest
     build:
