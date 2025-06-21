@@ -5,17 +5,9 @@ on:
       actor:
         required: true
         type: string
-      token:
-        required: true
-        type: string
       repository:
         required: true
         type: string
-    secrets:
-      INFISICAL_URL:
-      INFISICAL_CLIENT_ID:
-      INFISICAL_CLIENT_SECRET:
-      INFISICAL_PROJECT_ID:
 jobs:
   deploy-dev:
     runs-on: retrade-dev
