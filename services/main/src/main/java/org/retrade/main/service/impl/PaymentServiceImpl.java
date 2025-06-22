@@ -152,8 +152,8 @@ public class PaymentServiceImpl implements PaymentService {
                 .build();
     }
 
-    private Optional<PaymentHandler> getPaymentHandler(String code) {
-        var paymentMethod = paymentMethodRepository.findByCodeIgnoreCase(code).orElseThrow(() -> new ValidationException("This payment method does not exist"));
+    private Optional<PaymentHandler> getPaymentHandler(String id) {
+        var paymentMethod = paymentMethodRepository.findById(id).orElseThrow(() -> new ValidationException("This payment method does not exist"));
         return getPaymentHandler(paymentMethod);
     }
 
