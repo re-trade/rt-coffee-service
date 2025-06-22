@@ -60,7 +60,7 @@ public class PaymentServiceImpl implements PaymentService {
         } catch (Exception ex) {
             throw new ValidationException("Have a problem when init payment", ex);
         }
-        var paymentHandler = getPaymentHandler(paymentInitRequest.getPaymentMethodId());
+        var paymentHandler = getPaymentHandler(paymentMethodEntity);
         if (paymentHandler.isPresent()) {
             var paymentLink =  paymentHandler.get().initPayment(
                     orderEntity.getGrandTotal().intValue(),
@@ -152,8 +152,8 @@ public class PaymentServiceImpl implements PaymentService {
                 .build();
     }
 
-    private Optional<PaymentHandler> getPaymentHandler(String id) {
-        var paymentMethod = paymentMethodRepository.findById(id).orElseThrow(() -> new ValidationException("This payment method does not exist"));
+    private Optional<PaymentHandler> getPaymentHandler(String code) {
+        var paymentMethod = paymentMethodRepository.findByCodeIgnoreCase(code).orElseThrow(() -> new ValidationException("This payment method does not exist"));
         return getPaymentHandler(paymentMethod);
     }
 
