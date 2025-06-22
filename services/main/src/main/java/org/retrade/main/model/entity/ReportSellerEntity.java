@@ -36,10 +36,9 @@ public class ReportSellerEntity extends BaseSQLEntity {
     @JoinColumn(name = "oder_id",nullable = false)
     private OrderComboEntity orderCombo;
 
-//    @ManyToOne(targetEntity = Admin.class, fetch = FetchType.EAGER, optional = false)
-//    @JoinColumn(name = "admin_id", nullable = false)
-//    private SellerEntity seller;
-    // th vinh import dùm t thằng admin vào này nhé
+    @ManyToOne(targetEntity = AccountEntity.class, fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "admin_id", nullable = false)
+    private AccountEntity account;
 
 
     @Column(name="image")
