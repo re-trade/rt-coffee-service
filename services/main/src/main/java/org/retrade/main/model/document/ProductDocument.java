@@ -112,7 +112,6 @@ public class ProductDocument {
                 .categories(productEntity.getCategories().stream().map(item -> ProductDocument.CategoryInfo.builder()
                         .id(item.getId())
                         .name(item.getName())
-                        .type(item.getType())
                         .build()).collect(Collectors.toSet()))
                 .verified(productEntity.getVerified())
                 .createdAt(productEntity.getCreatedDate() != null ? productEntity.getCreatedDate() : null)

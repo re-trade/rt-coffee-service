@@ -99,7 +99,6 @@ public class ElasticsearchMigrationService {
                                             .analyzer("standard")
                                             .fields("keyword", f -> f.keyword(k -> k.ignoreAbove(256)))
                                     ))
-                                    .properties("type", cp -> cp.keyword(k -> k))
                             ))
                     )
                     .settings(s -> s

@@ -3,14 +3,17 @@ package org.retrade.main.controller;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.retrade.common.model.dto.request.QueryWrapper;
 import org.retrade.common.model.dto.response.ResponseObject;
+import org.retrade.main.model.dto.request.CategoryRequest;
 import org.retrade.main.model.dto.response.CategoryResponse;
 import org.retrade.main.service.CategoryService;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -21,6 +24,32 @@ import java.util.List;
 @Tag(name = "Categories", description = "Product category management endpoints")
 public class CategoryController {
     private final CategoryService categoryService;
+
+    @PostMapping
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    public ResponseEntity<ResponseObject<CategoryResponse>> createCategory(
+            @Valid @RequestBody CategoryRequest request) {
+        var category = categoryService.createCategory(request);
+        return ResponseEntity.ok(new ResponseObject.Builder<CategoryResponse>()
+                .success(true)
+                .code("CATEGORIES_RETRIEVED")
+                .messages("Categories retrieved successfully")
+                .content(category)
+                .build());
+    }
+
+    @PutMapping("{id}")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    public ResponseEntity<ResponseObject<CategoryResponse>> createCategory(@PathVariable String id,
+            @Valid @RequestBody CategoryRequest request) {
+        var category = categoryService.updateCategory(id, request);
+        return ResponseEntity.ok(new ResponseObject.Builder<CategoryResponse>()
+                .success(true)
+                .code("CATEGORIES_RETRIEVED")
+                .messages("Categories retrieved successfully")
+                .content(category)
+                .build());
+    }
 
     @Operation(
             summary = "Get all categories",
@@ -141,7 +170,7 @@ public class CategoryController {
     @GetMapping("search")
     public ResponseEntity<ResponseObject<List<CategoryResponse>>> searchCategories(
             @Parameter(description = "Pagination parameters") @PageableDefault Pageable pageable,
-            @Parameter(description = "Search query string", required = true) @RequestParam(required = false, name = "q") String query) {
+            @Parameter(description = "Search query string") @RequestParam(required = false, name = "q") String query) {
         var wrapper = QueryWrapper.builder()
                 .pageable(pageable)
                 .search(query)

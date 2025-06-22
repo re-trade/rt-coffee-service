@@ -45,7 +45,7 @@ public class SellerEntity extends BaseSQLEntity {
     @Enumerated(EnumType.ORDINAL)
     @Column(name = "identity_verified", nullable = false, columnDefinition = "SMALLINT DEFAULT 0")
     private IdentityVerifiedStatusEnum identityVerified;
-    @Column(name = "balance", nullable = false , columnDefinition = "NUMERIC(19, 2) DEFAULT 0.00 NOT NULL")
+    @Column(name = "balance", nullable = false , columnDefinition = "DEFAULT 0.00 NOT NULL")
     private BigDecimal balance;
     @OneToOne(fetch = FetchType.EAGER, optional = false, targetEntity = AccountEntity.class)
     @JoinColumn(name = "account_id", nullable = false)
