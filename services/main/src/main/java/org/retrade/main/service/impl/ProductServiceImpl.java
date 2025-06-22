@@ -18,14 +18,13 @@ import org.retrade.main.model.dto.request.CreateProductRequest;
 import org.retrade.main.model.dto.request.UpdateProductRequest;
 import org.retrade.main.model.dto.response.CategoriesAdvanceSearch;
 import org.retrade.main.model.dto.response.FiledAdvanceSearch;
+import org.retrade.main.model.dto.response.ProductPriceHistoryResponse;
 import org.retrade.main.model.dto.response.ProductResponse;
 import org.retrade.main.model.entity.CategoryEntity;
 import org.retrade.main.model.entity.ProductEntity;
+import org.retrade.main.model.entity.ProductPriceHistoryEntity;
 import org.retrade.main.model.entity.SellerEntity;
-import org.retrade.main.repository.CategoryRepository;
-import org.retrade.main.repository.ProductElasticsearchRepository;
-import org.retrade.main.repository.ProductRepository;
-import org.retrade.main.repository.SellerRepository;
+import org.retrade.main.repository.*;
 import org.retrade.main.service.ProductService;
 import org.retrade.main.util.AuthUtils;
 import org.springframework.data.domain.Page;
@@ -37,6 +36,7 @@ import org.springframework.data.elasticsearch.core.SearchHits;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -49,16 +49,17 @@ public class ProductServiceImpl implements ProductService {
     private final SellerRepository sellerRepository;
     private final CategoryRepository categoryRepository;
     private final AuthUtils authUtils;
+    private final ProductPriceHistoryRepository productPriceHistoryRepository;
 
     @Override
     @Transactional(rollbackFor = {ActionFailedException.class, Exception.class})
     public ProductResponse createProduct(CreateProductRequest request) {
         var account = authUtils.getUserAccountFromAuthentication();
         var seller = account.getSeller();
+
         if (seller == null) {
             throw new ValidationException("Seller profile not found");
         }
-
         validateCategories(request.getCategoryIds());
 
         var product = ProductEntity.builder()
@@ -89,6 +90,7 @@ public class ProductServiceImpl implements ProductService {
         try {
             var savedProduct = productRepository.save(product);
             saveProductDocument(savedProduct);
+            implementProductPriceHistory(savedProduct,BigDecimal.ZERO) ;
             return mapToProductResponse(savedProduct);
         } catch (Exception ex) {
             throw new ActionFailedException("Failed to create product", ex);
@@ -123,6 +125,7 @@ public class ProductServiceImpl implements ProductService {
         try {
             var updatedProduct = productRepository.save(product);
             saveProductDocument(updatedProduct, id);
+            implementProductPriceHistory(updatedProduct, product.getCurrentPrice());
             return mapToProductResponse(updatedProduct);
         } catch (Exception ex) {
             throw new ActionFailedException("Failed to update product", ex);
@@ -514,5 +517,25 @@ public class ProductServiceImpl implements ProductService {
     private void saveProductDocument(ProductEntity productEntity) {
         var product = ProductDocument.wrapEntityToDocument(productEntity);
         productSearchRepository.save(product);
+    }
+    public ProductPriceHistoryResponse implementProductPriceHistory(ProductEntity product, BigDecimal oldPrice) {
+        if(product.getCurrentPrice().equals(oldPrice)) {
+            throw new ValidationException("Current price is greater than old price");
+        }
+        ProductPriceHistoryEntity productPriceHistoryEntity = new ProductPriceHistoryEntity();
+        productPriceHistoryEntity.setId(product.getId());
+        productPriceHistoryEntity.setNewPrice(product.getCurrentPrice());
+        productPriceHistoryEntity.setOldPrice(oldPrice);
+        try{
+            productPriceHistoryRepository.save(productPriceHistoryEntity);
+            return ProductPriceHistoryResponse.builder()
+                    .newPrice(productPriceHistoryEntity.getNewPrice())
+                    .dateUpdate(productPriceHistoryEntity.getUpdatedDate().toLocalDateTime())
+                    .build();
+        }catch(Exception e) {
+            throw new ActionFailedException(e.getMessage());
+        }
+
+
     }
 }

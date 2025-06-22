@@ -4,7 +4,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.retrade.main.model.entity.ProductEntity;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -15,11 +14,12 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 public class ProductPriceHistoryResponse {
 
+    private String productId;
+
     private BigDecimal oldPrice;
 
     private BigDecimal newPrice;
 
-    private LocalDateTime fromDate;
+    private LocalDateTime dateUpdate;
 
-    private LocalDateTime toDate;
 }

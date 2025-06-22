@@ -12,6 +12,7 @@ import org.retrade.main.model.dto.request.CreateProductRequest;
 import org.retrade.main.model.dto.request.UpdateProductRequest;
 import org.retrade.main.model.dto.response.FiledAdvanceSearch;
 import org.retrade.main.model.dto.response.ProductListPriceHistoryResponse;
+import org.retrade.main.model.dto.response.ProductPriceHistoryResponse;
 import org.retrade.main.model.dto.response.ProductResponse;
 import org.retrade.main.service.ProductPriceHistoryService;
 import org.retrade.main.service.ProductService;
@@ -86,9 +87,9 @@ public class ProductController {
     }
 
     @GetMapping("product-price-history/{id}")
-    public ResponseEntity<ResponseObject<ProductListPriceHistoryResponse>> getProductPriceHistoryById(@PathVariable String id) {
-        var result = productPriceHistoryService.gettProductPriceHistoryList(id);
-        return ResponseEntity.ok(new ResponseObject.Builder<ProductListPriceHistoryResponse>()
+    public ResponseEntity<ResponseObject<List<ProductPriceHistoryResponse>>> getProductPriceHistoryById(@PathVariable String id) {
+        var result = productPriceHistoryService.getProductPriceHistoryList(id);
+        return ResponseEntity.ok(new ResponseObject.Builder<List<ProductPriceHistoryResponse>>()
                 .success(true)
                 .code("SUCCESS")
                 .content(result)
