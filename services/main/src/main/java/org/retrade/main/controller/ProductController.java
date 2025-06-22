@@ -11,7 +11,10 @@ import org.retrade.common.model.dto.response.ResponseObject;
 import org.retrade.main.model.dto.request.CreateProductRequest;
 import org.retrade.main.model.dto.request.UpdateProductRequest;
 import org.retrade.main.model.dto.response.FiledAdvanceSearch;
+import org.retrade.main.model.dto.response.ProductListPriceHistoryResponse;
+import org.retrade.main.model.dto.response.ProductPriceHistoryResponse;
 import org.retrade.main.model.dto.response.ProductResponse;
+import org.retrade.main.service.ProductPriceHistoryService;
 import org.retrade.main.service.ProductService;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
@@ -28,7 +31,7 @@ import java.util.Set;
 @Tag(name = "Products", description = "Product management and catalog endpoints")
 public class ProductController {
     private final ProductService productService;
-
+    private final ProductPriceHistoryService productPriceHistoryService;
     @Operation(
             summary = "Create new product",
             description = "Create a new product in the catalog. Requires SELLER role.",
@@ -76,6 +79,17 @@ public class ProductController {
     public ResponseEntity<ResponseObject<ProductResponse>> getProductById(@PathVariable String id) {
         var result = productService.getProductById(id);
         return ResponseEntity.ok(new ResponseObject.Builder<ProductResponse>()
+                .success(true)
+                .code("SUCCESS")
+                .content(result)
+                .messages("Product retrieved successfully")
+                .build());
+    }
+
+    @GetMapping("product-price-history/{id}")
+    public ResponseEntity<ResponseObject<List<ProductPriceHistoryResponse>>> getProductPriceHistoryById(@PathVariable String id) {
+        var result = productPriceHistoryService.getProductPriceHistoryList(id);
+        return ResponseEntity.ok(new ResponseObject.Builder<List<ProductPriceHistoryResponse>>()
                 .success(true)
                 .code("SUCCESS")
                 .content(result)
