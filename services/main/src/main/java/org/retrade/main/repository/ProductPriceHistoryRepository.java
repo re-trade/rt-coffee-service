@@ -14,7 +14,6 @@ import java.util.List;
 public interface ProductPriceHistoryRepository extends BaseJpaRepository<ProductPriceHistoryEntity, String> {
     List<ProductPriceHistoryEntity> findByProduct(ProductEntity product);
     List<ProductPriceHistoryEntity> findByProductAndFromDateAfter(ProductEntity product, LocalDateTime fromDate);
-    List<ProductPriceHistoryEntity> findByProductAndToDateIsNull(ProductEntity product);
     List<ProductPriceHistoryEntity> findByProduct_Id(String productId);
 
 }
