@@ -38,7 +38,6 @@ public class OrderServiceImpl implements OrderService {
     private final OrderItemRepository orderItemRepository;
     private final OrderComboRepository orderComboRepository;
     private final OrderStatusRepository orderStatusRepository;
-    private final OrderHistoryRepository orderHistoryRepository;
     private final ProductRepository productRepository;
     private final OrderDestinationRepository orderDestinationRepository;
     private final CustomerRepository customerRepository;
@@ -98,23 +97,12 @@ public class OrderServiceImpl implements OrderService {
         if (voucherValidation != null && voucherValidation.getValid()) {
             applyVoucher(request.getVoucherCode(), customer.getId(), savedOrder.getId(), grandTotal);
         }
-        
-        createOrderHistory(savedOrder, "Order created", customer.getId());
+
 
         cartService.clearCart();
 
         log.info("Order created successfully with ID: {}", savedOrder.getId());
         return mapToOrderResponse(savedOrder);
-    }
-    private void createOrderHistory(OrderEntity order, String notes, String createdBy) {
-        OrderHistoryEntity history = OrderHistoryEntity.builder()
-                .order(order)
-                .status(true)
-                .notes(notes)
-                .createdBy(createdBy)
-                .build();
-
-        orderHistoryRepository.save(history);
     }
 
     @Override
@@ -184,9 +172,6 @@ public class OrderServiceImpl implements OrderService {
             combo.setOrderStatus(newStatus);
             orderComboRepository.save(combo);
         }
-
-        createOrderHistory(order, notes != null ? notes : "Status updated to " + newStatus.getName(), customerEntity.getLastName());
-
         return mapToOrderResponse(order);
     }
 
@@ -204,8 +189,6 @@ public class OrderServiceImpl implements OrderService {
             combo.setOrderStatus(cancelledStatus);
             orderComboRepository.save(combo);
         }
-
-        createOrderHistory(order, "Order cancelled: " + (reason != null ? reason : "No reason provided"), customerEntity.getLastName());
     }
     @Override
     @Transactional(readOnly = true)
