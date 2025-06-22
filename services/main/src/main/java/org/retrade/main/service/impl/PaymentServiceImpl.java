@@ -1,12 +1,19 @@
 package org.retrade.main.service.impl;
 
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Root;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import org.retrade.common.model.dto.request.QueryFieldWrapper;
+import org.retrade.common.model.dto.request.QueryWrapper;
+import org.retrade.common.model.dto.response.PaginationWrapper;
 import org.retrade.common.model.exception.ActionFailedException;
 import org.retrade.common.model.exception.ValidationException;
 import org.retrade.main.handler.PaymentHandler;
 import org.retrade.main.model.constant.PaymentStatusEnum;
 import org.retrade.main.model.dto.request.PaymentInitRequest;
+import org.retrade.main.model.dto.response.PaymentMethodResponse;
 import org.retrade.main.model.entity.PaymentHistoryEntity;
 import org.retrade.main.model.entity.PaymentMethodEntity;
 import org.retrade.main.model.other.PaymentProviderCallbackWrapper;
@@ -20,7 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.interceptor.TransactionAspectSupport;
 
 import java.time.LocalDateTime;
-import java.util.Optional;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -109,6 +116,40 @@ public class PaymentServiceImpl implements PaymentService {
             TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
             return handleErrorCallback(methodCode, "Something went wrong with our third-party payment method");
         }
+    }
+
+
+    @Override
+    public PaginationWrapper<List<PaymentMethodResponse>> getPaymentMethods(QueryWrapper queryWrapper) {
+        return paymentMethodRepository.query(queryWrapper, (param) -> (root, query, criteriaBuilder) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            return getPredicate(param, root, criteriaBuilder, predicates);
+        }, (items) -> {
+            var list = items.map(this::wrapPaymentMethodResponse).stream().toList();
+            return new PaginationWrapper.Builder<List<PaymentMethodResponse>>()
+                    .setPaginationInfo(items)
+                    .setData(list)
+                    .build();
+        });
+    }
+
+    private Predicate getPredicate(Map<String, QueryFieldWrapper> param, Root<PaymentMethodEntity> root, CriteriaBuilder criteriaBuilder, List<Predicate> predicates) {
+        if (param != null && !param.isEmpty()) {
+            Predicate[] defaultPredicates = paymentMethodRepository.createDefaultPredicate(criteriaBuilder, root, param);
+            predicates.addAll(Arrays.asList(defaultPredicates));
+        }
+        return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
+    }
+
+    private PaymentMethodResponse wrapPaymentMethodResponse(PaymentMethodEntity paymentMethodEntity) {
+        return PaymentMethodResponse.builder()
+                .id(paymentMethodEntity.getId())
+                .code(paymentMethodEntity.getCode())
+                .name(paymentMethodEntity.getName())
+                .type(paymentMethodEntity.getType())
+                .imgUrl(paymentMethodEntity.getImgUrl())
+                .description(paymentMethodEntity.getDescription())
+                .build();
     }
 
     private Optional<PaymentHandler> getPaymentHandler(String code) {
