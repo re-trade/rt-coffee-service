@@ -30,6 +30,8 @@ public class OrderItemEntity extends BaseSQLEntity {
     private String backgroundUrl;
     @Column(name = "base_price", nullable = false)
     private BigDecimal basePrice;
+    @Column(name = "discount", nullable = false, columnDefinition = "NUMERIC(5, 2) DEFAULT 0.00 NOT NULL")
+    private Double discount;
     @Column(name = "unit", nullable = false, length = 10)
     private String unit;
 }

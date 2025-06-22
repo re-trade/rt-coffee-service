@@ -1,0 +1,60 @@
+name: Deploy / Metadata
+
+on:
+  workflow_call:
+    inputs:
+      services:
+        required: true
+        type: string
+
+jobs:
+  get-sha:
+    name: Get SHA
+    runs-on: ubuntu-latest
+    outputs:
+      sha: ${{ steps.extract-sha.outputs.sha }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Extract short Git SHA
+        id: extract-sha
+        run: echo "sha=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+
+  update-gitops:
+    name: Update Metadata
+    runs-on: ubuntu-latest
+    needs: get-sha
+    steps:
+      - name: Checkout GitOps repository
+        uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.PAT }}
+          repository: re-trade/rt-metadata
+
+      - name: Install yq
+        run: |
+          sudo curl -sLo /usr/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+          sudo chmod +x /usr/bin/yq
+
+      - name: Update image tags in Kustomize
+        run: |
+          SERVICES=($(echo "${{ inputs.services }}" | tr ',' ' '))
+          FILE=overlays/production/kustomization.yaml
+          SHA=${{ needs.get-sha.outputs.sha }}
+          for SERVICE in "${SERVICES[@]}"; do
+            NAME="rt-${SERVICE}-service"
+            yq -i '
+             .images[] |= (
+               select(.name == "'"$NAME"'")
+               .newTag = "'"$SHA"'"
+             )
+            ' "$FILE"
+          done
+      - name: Cat File For Testing
+        run: cat overlays/production/kustomization.yaml
+      - name: Commit and push updated image tags
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git commit -am "misc(kustomize): update image tag to ${{ needs.get-sha.outputs.sha }}"
+          git push

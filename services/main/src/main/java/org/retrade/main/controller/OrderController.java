@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.retrade.common.model.dto.request.QueryWrapper;
 import org.retrade.common.model.dto.response.ResponseObject;
 import org.retrade.main.model.dto.request.CreateOrderRequest;
+import org.retrade.main.model.dto.response.CustomerOrderComboResponse;
 import org.retrade.main.model.dto.response.OrderResponse;
 import org.retrade.main.service.OrderService;
 import org.springframework.data.domain.Pageable;
@@ -176,6 +177,34 @@ public class OrderController {
                 .success(true)
                 .code("SUCCESS")
                 .messages("Order cancelled successfully")
+                .build());
+    }
+
+    @PreAuthorize("hasRole('ROLE_CUSTOMER')")
+    @GetMapping("customer/combo")
+    public ResponseEntity<ResponseObject<List<CustomerOrderComboResponse>>> getOrderCombosByCustomer(@RequestParam(required = false, name = "q") String q,
+                                                                                                     @PageableDefault(size = 10) Pageable pageable) {
+        var queryWrapper = new QueryWrapper.QueryWrapperBuilder().search(q).wrapSort(pageable).build();
+        var orders = orderService.getCustomerOrderCombos(queryWrapper);
+        return ResponseEntity.ok(new ResponseObject.Builder<List<CustomerOrderComboResponse>>()
+                .success(true)
+                .code("SUCCESS")
+                .unwrapPaginationWrapper(orders)
+                .messages("Orders retrieved successfully")
+                .build());
+    }
+
+    @PreAuthorize("hasRole('ROLE_SELLER')")
+    @GetMapping("seller")
+    public ResponseEntity<ResponseObject<List<CustomerOrderComboResponse>>> getOrderCombosBySeller(@RequestParam(required = false, name = "q") String q,
+                                                                                                     @PageableDefault Pageable pageable) {
+        var queryWrapper = new QueryWrapper.QueryWrapperBuilder().search(q).wrapSort(pageable).build();
+        var orders = orderService.getSellerOrderCombos(queryWrapper);
+        return ResponseEntity.ok(new ResponseObject.Builder<List<CustomerOrderComboResponse>>()
+                .success(true)
+                .code("SUCCESS")
+                .unwrapPaginationWrapper(orders)
+                .messages("Orders retrieved successfully")
                 .build());
     }
 }

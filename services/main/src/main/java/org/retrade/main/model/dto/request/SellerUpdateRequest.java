@@ -17,8 +17,6 @@ public class SellerUpdateRequest {
     private String district;
     private String ward;
     private String state;
-    private String avatarUrl;
     private String email;
-    private String background;
     private String phoneNumber;
 }

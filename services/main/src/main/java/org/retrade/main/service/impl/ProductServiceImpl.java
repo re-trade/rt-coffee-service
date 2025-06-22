@@ -506,7 +506,6 @@ public class ProductServiceImpl implements ProductService {
         productDoc.setCategories(productEntity.getCategories().stream().map(item -> ProductDocument.CategoryInfo.builder()
                 .id(item.getId())
                 .name(item.getName())
-                .type(item.getType())
                 .build()).collect(Collectors.toSet()));
         productDoc.setUpdatedAt(productEntity.getUpdatedDate() != null ? productEntity.getUpdatedDate() : null);
         productSearchRepository.save(productDoc);

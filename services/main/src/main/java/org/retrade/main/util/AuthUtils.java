@@ -9,10 +9,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Component
@@ -38,6 +35,11 @@ public class AuthUtils {
         } catch (Exception ex) {
             return Optional.empty();
         }
+    }
+
+    public Set<String> getRolesFromAuthUser() {
+        var account = getUserAccountFromAuthentication();
+        return new HashSet<>(convertAccountToRole(account));
     }
 
     public static Collection<GrantedAuthority> convertRoleToAuthority (AccountEntity account) {

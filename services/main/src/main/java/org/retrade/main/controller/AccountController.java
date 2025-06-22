@@ -65,8 +65,7 @@ public class AccountController {
 
     @Operation(
             summary = "Check if username exists",
-            description = "Checks whether a given username already exists in the system",
-            tags = {"Account"}
+            description = "Checks whether a given username already exists in the system"
     )
     @ApiResponses(value = {
             @ApiResponse(
