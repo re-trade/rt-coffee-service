@@ -9,6 +9,7 @@ import org.retrade.main.util.NetUtils;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
@@ -109,4 +110,43 @@ public class VNPayPaymentHandler implements PaymentHandler {
                 .orderInfo(orderInfo)
                 .build();
     }
+
+    @Override
+    public PaymentAPICallback captureWebhook(HttpServletRequest request) {
+        try {
+            Map<String, String> fields = new HashMap<>();
+            for (Enumeration<String> params = request.getParameterNames(); params.hasMoreElements();) {
+                String paramName = params.nextElement();
+                String paramValue = request.getParameter(paramName);
+                if (paramValue != null && !paramValue.isEmpty()) {
+                    fields.put(paramName, paramValue);
+                }
+            }
+            String vnpSecureHash = fields.remove("vnp_SecureHash");
+            fields.remove("vnp_SecureHashType");
+            String signValue = hashUtils.hashAllFields(fields, vnPayConfig.getVnpHashSecret());
+            if (!signValue.equalsIgnoreCase(vnpSecureHash)) {
+                throw new SecurityException("VNPay signature is invalid");
+            }
+            int status = "00".equals(fields.get("vnp_TransactionStatus")) ? 1 : 0;
+            Long orderId = Long.valueOf(fields.get("vnp_TxnRef"));
+            BigDecimal amount = new BigDecimal(fields.get("vnp_Amount")).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+            String transactionId = fields.get("vnp_TransactionNo");
+            String orderInfo = fields.get("vnp_OrderInfo");
+            return PaymentAPICallback.builder()
+                    .status(status == 1)
+                    .total(amount)
+                    .id(orderId)
+                    .transactionId(transactionId)
+                    .orderInfo(orderInfo)
+                    .build();
+
+        } catch (Exception ex) {
+            return PaymentAPICallback.builder()
+                    .status(false)
+                    .id(-1L)
+                    .build();
+        }
+    }
+
 }
