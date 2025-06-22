@@ -136,7 +136,7 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    @Transactional
+    @Transactional(readOnly = true)
     public PaginationWrapper<List<CustomerOrderComboResponse>> getCustomerOrderCombos(QueryWrapper queryWrapper) {
         var account = authUtils.getUserAccountFromAuthentication();
         var customerEntity = account.getCustomer();
@@ -206,6 +206,27 @@ public class OrderServiceImpl implements OrderService {
         }
 
         createOrderHistory(order, "Order cancelled: " + (reason != null ? reason : "No reason provided"), customerEntity.getLastName());
+    }
+    @Override
+    @Transactional(readOnly = true)
+    public PaginationWrapper<List<CustomerOrderComboResponse>> getSellerOrderCombos(QueryWrapper queryFieldWrapper) {
+        var account = authUtils.getUserAccountFromAuthentication();
+        var seller = account.getSeller();
+        if (seller == null) {
+            throw new ValidationException("User is not a seller");
+        }
+        return orderComboRepository.query(queryFieldWrapper, (param) -> (root, query, criteriaBuilder) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            predicates.add(criteriaBuilder.equal(root.get("seller"), seller));
+            predicates.add(criteriaBuilder.notEqual(root.get("orderStatus").get("code"), "PENDING"));
+            return getOrderComboPredicate(param, root, criteriaBuilder, predicates);
+        }, (items) -> {
+            var list = items.map(this::wrapCustomerOrderComboResponse).stream().toList();
+            return new PaginationWrapper.Builder<List<CustomerOrderComboResponse>>()
+                    .setPaginationInfo(items)
+                    .setData(list)
+                    .build();
+        });
     }
 
     private CustomerEntity getCurrentCustomerAccount() {
@@ -460,6 +481,8 @@ public class OrderServiceImpl implements OrderService {
         var orderItems = combo.getOrderItems();
         var seller = combo.getSeller();
         var orderStatus = combo.getOrderStatus();
+        var orderDestination = combo.getOrderDestination();
+        var orderDestinationResponse = wrapOrderDestinationResponse(orderDestination);
         var orderItemResponses = wrapCustomerOrderItemResponse(orderItems);
         return CustomerOrderComboResponse.builder()
                 .comboId(combo.getId())
@@ -470,6 +493,19 @@ public class OrderServiceImpl implements OrderService {
                 .orderStatusId(orderStatus.getId())
                 .orderStatus(orderStatus.getName())
                 .items(orderItemResponses)
+                .destination(orderDestinationResponse)
+                .build();
+    }
+
+    private OrderDestinationResponse wrapOrderDestinationResponse(OrderDestinationEntity orderDestination) {
+        return OrderDestinationResponse.builder()
+                .customerName(orderDestination.getCustomerName())
+                .phone(orderDestination.getPhone())
+                .state(orderDestination.getState())
+                .country(orderDestination.getCountry())
+                .district(orderDestination.getDistrict())
+                .ward(orderDestination.getWard())
+                .addressLine(orderDestination.getAddressLine())
                 .build();
     }
 

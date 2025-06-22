@@ -21,4 +21,5 @@ public class CustomerOrderComboResponse {
     private String orderStatus;
     private BigDecimal grandPrice;
     private Set<CustomerOrderItemResponse> items;
+    private OrderDestinationResponse destination;
 }

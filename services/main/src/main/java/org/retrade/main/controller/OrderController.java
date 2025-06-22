@@ -193,4 +193,18 @@ public class OrderController {
                 .messages("Orders retrieved successfully")
                 .build());
     }
+
+    @PreAuthorize("hasRole('ROLE_SELLER')")
+    @GetMapping("seller")
+    public ResponseEntity<ResponseObject<List<CustomerOrderComboResponse>>> getOrderCombosBySeller(@RequestParam(required = false, name = "q") String q,
+                                                                                                     @PageableDefault Pageable pageable) {
+        var queryWrapper = new QueryWrapper.QueryWrapperBuilder().search(q).wrapSort(pageable).build();
+        var orders = orderService.getSellerOrderCombos(queryWrapper);
+        return ResponseEntity.ok(new ResponseObject.Builder<List<CustomerOrderComboResponse>>()
+                .success(true)
+                .code("SUCCESS")
+                .unwrapPaginationWrapper(orders)
+                .messages("Orders retrieved successfully")
+                .build());
+    }
 }

@@ -23,4 +23,6 @@ public interface OrderService {
     OrderResponse updateOrderStatus(String orderId, String statusCode, String notes);
     
     void cancelOrder(String orderId, String reason);
+
+    PaginationWrapper<List<CustomerOrderComboResponse>> getSellerOrderCombos(QueryWrapper queryFieldWrapper);
 }
