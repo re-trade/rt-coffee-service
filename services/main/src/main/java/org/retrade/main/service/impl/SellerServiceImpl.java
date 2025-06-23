@@ -5,19 +5,25 @@ import org.jetbrains.annotations.NotNull;
 import org.retrade.common.model.exception.ActionFailedException;
 import org.retrade.common.model.exception.ValidationException;
 import org.retrade.main.model.constant.IdentityVerifiedStatusEnum;
+import org.retrade.main.model.dto.request.ApproveSellerRequest;
 import org.retrade.main.model.dto.request.SellerRegisterRequest;
 import org.retrade.main.model.dto.request.SellerUpdateRequest;
 import org.retrade.main.model.dto.response.SellerBaseResponse;
 import org.retrade.main.model.dto.response.SellerRegisterResponse;
+import org.retrade.main.model.entity.AccountRoleEntity;
+import org.retrade.main.model.entity.RoleEntity;
 import org.retrade.main.model.entity.SellerEntity;
 import org.retrade.main.model.message.CCCDVerificationMessage;
 import org.retrade.main.model.message.CCCDVerificationResultMessage;
 import org.retrade.main.model.other.SellerWrapperBase;
+import org.retrade.main.repository.AccountRoleRepository;
+import org.retrade.main.repository.RoleRepository;
 import org.retrade.main.repository.SellerRepository;
 import org.retrade.main.service.MessageProducerService;
 import org.retrade.main.service.SellerService;
 import org.retrade.main.util.AuthUtils;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
@@ -27,6 +33,8 @@ public class SellerServiceImpl implements SellerService {
     private final SellerRepository sellerRepository;
     private final MessageProducerService messageProducerService;
     private final AuthUtils authUtils;
+    private final RoleRepository roleRepository;
+    private final AccountRoleRepository accountRoleRepository;
 
     @Override
     public SellerRegisterResponse createSeller(SellerRegisterRequest request) {
@@ -60,6 +68,32 @@ public class SellerServiceImpl implements SellerService {
             return wrapSellerRegisterResponse(result);
         } catch (Exception ex) {
             throw new ActionFailedException("Failed to create seller", ex);
+        }
+    }
+
+    @Override
+    @Transactional(rollbackFor = {ActionFailedException.class, Exception.class})
+    public void approveSeller(ApproveSellerRequest request) {
+        var roles = authUtils.getRolesFromAuthUser();
+        if (!roles.contains("ROLE_ADMIN")) {
+            throw new ValidationException("User does not have permission to approve seller");
+        }
+        var sellerEntity = sellerRepository.findById(request.getSellerId()).orElseThrow(() -> new ValidationException("No such seller existed seller"));
+        validateApproveSeller(sellerEntity, request.getForced());
+        if (!request.getApprove()) {
+            sellerEntity.setVerified(false);
+            sellerEntity.setIdentityVerified(IdentityVerifiedStatusEnum.FAILED);
+            sellerEntity.setFrontSideIdentityCard("example");
+            sellerEntity.setBackSideIdentityCard("example");
+        } else {
+            sellerEntity.setVerified(true);
+            var roleEntity = roleRepository.findByCode("ROLE_SELLER").orElseThrow(() -> new ValidationException("System can't sign role as this moment, please try again next time"));
+            signRoleSellerToUser(sellerEntity, roleEntity);
+        }
+        try {
+            sellerRepository.save(sellerEntity);
+        } catch (Exception ex) {
+            throw new ActionFailedException("Failed to approve seller", ex);
         }
     }
 
@@ -104,26 +138,20 @@ public class SellerServiceImpl implements SellerService {
     public SellerBaseResponse updateSellerProfile(SellerUpdateRequest request) {
         var accountEntity = authUtils.getUserAccountFromAuthentication();
         if (accountEntity.getCustomer() == null) {
-            throw new ValidationException("Account must be a customer to create a seller");
+            throw new ValidationException("Account must be a customer to become a seller");
         }
-        if (accountEntity.getSeller() != null) {
-            throw new ValidationException("Account already has a seller");
+        if (accountEntity.getSeller() == null) {
+            throw new ValidationException("Account is not a seller");
         }
-        var sellerEntity = SellerEntity.builder()
-                .shopName(request.getShopName())
-                .description(request.getDescription())
-                .addressLine(request.getAddressLine())
-                .district(request.getDistrict())
-                .ward(request.getWard())
-                .state(request.getState())
-                .email(request.getEmail())
-                .avatarUrl(request.getAvatarUrl())
-                .background(request.getBackground())
-                .phoneNumber(request.getPhoneNumber())
-                .verified(false)
-                .identityVerified(IdentityVerifiedStatusEnum.VERIFIED)
-                .account(accountEntity)
-                .build();
+        var sellerEntity = accountEntity.getSeller();
+        sellerEntity.setShopName(request.getShopName());
+        sellerEntity.setDescription(request.getDescription());
+        sellerEntity.setAddressLine(request.getAddressLine());
+        sellerEntity.setDistrict(request.getDistrict());
+        sellerEntity.setWard(request.getWard());
+        sellerEntity.setState(request.getState());
+        sellerEntity.setEmail(request.getEmail());
+        sellerEntity.setPhoneNumber(request.getPhoneNumber());
         try {
             var result = sellerRepository.save(sellerEntity);
             return wrapSellerBaseResponse(result);
@@ -160,7 +188,6 @@ public class SellerServiceImpl implements SellerService {
                 .id(sellerEntity.getId())
                 .shopName(sellerEntity.getShopName())
                 .description(sellerEntity.getDescription())
-
                 .avatarUrl(sellerEntity.getAvatarUrl())
                 .email(sellerEntity.getEmail())
                 .background(sellerEntity.getBackground())
@@ -171,6 +198,34 @@ public class SellerServiceImpl implements SellerService {
                 .build();
     }
 
+    private void signRoleSellerToUser(SellerEntity sellerEntity, RoleEntity roleEntity) {
+        var account = sellerEntity.getAccount();
+        var accountRole = AccountRoleEntity.builder()
+                .account(account)
+                .role(roleEntity)
+                .enabled(true)
+                .build();
+        try {
+            accountRoleRepository.save(accountRole);
+        }catch (Exception ex) {
+            throw new ActionFailedException("Failed to sign seller role to user", ex);
+        }
+    }
+
+    private void validateApproveSeller(SellerEntity sellerEntity, boolean force) {
+        if (force) {
+            return;
+        }
+        if (sellerEntity.getVerified()) {
+            throw new ValidationException("Seller already verified");
+        }
+        if (sellerEntity.getBackSideIdentityCard().equals("example") || sellerEntity.getFrontSideIdentityCard().equals("example")) {
+            throw new ValidationException("Seller has not uploaded identity card");
+        }
+        if (sellerEntity.getIdentityVerified() != IdentityVerifiedStatusEnum.WAITING) {
+            throw new ValidationException("Seller identity verification status is not waiting");
+        }
+    }
 
     private SellerRegisterResponse wrapSellerRegisterResponse(SellerEntity sellerEntity) {
         return SellerRegisterResponse.builder()

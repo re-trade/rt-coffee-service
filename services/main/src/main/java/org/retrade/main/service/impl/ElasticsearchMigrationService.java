@@ -84,8 +84,15 @@ public class ElasticsearchMigrationService {
                             .properties("updatedAt", p -> p.date(d -> d))
                             .properties("categories", p -> p.nested(n -> n
                                     .properties("id", cp -> cp.keyword(k -> k))
+<<<<<<< HEAD
                                     .properties("name", cp -> cp.keyword(k -> k))
                                     .properties("type", cp -> cp.keyword(k -> k))
+=======
+                                    .properties("name", cp -> cp.text(t -> t
+                                            .analyzer("standard")
+                                            .fields("keyword", f -> f.keyword(k -> k.ignoreAbove(256)))
+                                    ))
+>>>>>>> 644b29bb29325c5f33ef47e964a21213396462ca
                             ))
                     )
                     .settings(s -> s

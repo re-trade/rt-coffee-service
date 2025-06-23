@@ -21,8 +21,7 @@ public class ProductPriceHistoryEntity extends BaseSQLEntity {
     private BigDecimal oldPrice;
     @Column(name = "new_price", nullable = false)
     private BigDecimal newPrice;
-    @Column(name = "from_date", nullable = false)
+    @Column(name = "update_date", nullable = false)
     private LocalDateTime fromDate;
-    @Column(name = "to_date")
-    private LocalDateTime toDate;
+
 }

@@ -53,7 +53,66 @@ public class AccountController {
                 .build());
     }
 
+<<<<<<< HEAD
     @PutMapping("{id}/password")
+=======
+    @Operation(
+            summary = "Check if username exists",
+            description = "Checks whether a given username already exists in the system"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Username check completed successfully",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ResponseObject.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "username_exists",
+                                            summary = "Username exists",
+                                            value = """
+                        {
+                            "success": true,
+                            "code": "SUCCESS",
+                            "content": {
+                                "existed": true
+                            },
+                            "messages": "Account retrieved successfully"
+                        }
+                        """
+                                    ),
+                                    @ExampleObject(
+                                            name = "username_not_exists",
+                                            summary = "Username doesn't exist",
+                                            value = """
+                        {
+                            "success": true,
+                            "code": "SUCCESS",
+                            "content": {
+                                "existed": false
+                            },
+                            "messages": "Account retrieved successfully"
+                        }
+                        """
+                                    )
+                            }
+                    )
+            )
+    })
+    @GetMapping("check-username")
+    public ResponseEntity<ResponseObject<Map<String, Boolean>>> checkUsernameExisted(@RequestParam String username) {
+        var response = accountService.checkUsernameExisted(username);
+        return ResponseEntity.ok(new ResponseObject.Builder<Map<String, Boolean>>()
+                .success(true)
+                .code("SUCCESS")
+                .content(Map.of("existed", response))
+                .messages("Account retrieved successfully")
+                .build());
+    }
+
+    @PutMapping("password")
+>>>>>>> 644b29bb29325c5f33ef47e964a21213396462ca
     public ResponseEntity<ResponseObject<Void>> updatePassword(
             @PathVariable String id,
             @Valid @RequestBody UpdatePasswordRequest request) {

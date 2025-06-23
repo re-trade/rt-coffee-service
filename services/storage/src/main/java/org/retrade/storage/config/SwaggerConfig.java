@@ -79,7 +79,7 @@ public class SwaggerConfig {
     };
     private List<Server> getServerList() {
         List<Server> serverList = new ArrayList<>();
-        if (contextPath.equals("/")) {
+        if (contextPath.equals("/api/storage/v1")) {
             var productionServer = new Server();
             productionServer.setUrl(String.format("https://%s%s", hostConfig.getBaseHost(), hostConfig.getSwaggerContextPath()));
             productionServer.setDescription("Production Server");

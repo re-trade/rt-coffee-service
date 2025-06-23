@@ -77,4 +77,34 @@ public class ProductDocument {
         @Field(type = FieldType.Keyword)
         private String type;
     }
+<<<<<<< HEAD
+=======
+
+    public static ProductDocument wrapEntityToDocument(ProductEntity productEntity) {
+        var seller = productEntity.getSeller();
+        return ProductDocument.builder()
+                .id(productEntity.getId())
+                .name(productEntity.getName())
+                .sellerId(seller.getId())
+                .sellerShopName(seller.getShopName())
+                .addressLine(seller.getAddressLine())
+                .ward(seller.getWard())
+                .district(seller.getDistrict())
+                .state(seller.getState())
+                .shortDescription(productEntity.getShortDescription())
+                .description(productEntity.getDescription())
+                .brand(productEntity.getBrand())
+                .discount(productEntity.getDiscount())
+                .model(productEntity.getModel())
+                .currentPrice(productEntity.getCurrentPrice())
+                .categories(productEntity.getCategories().stream().map(item -> ProductDocument.CategoryInfo.builder()
+                        .id(item.getId())
+                        .name(item.getName())
+                        .build()).collect(Collectors.toSet()))
+                .verified(productEntity.getVerified())
+                .createdAt(productEntity.getCreatedDate() != null ? productEntity.getCreatedDate() : null)
+                .updatedAt(productEntity.getUpdatedDate() != null ? productEntity.getUpdatedDate() : null)
+                .build();
+    }
+>>>>>>> 644b29bb29325c5f33ef47e964a21213396462ca
 }

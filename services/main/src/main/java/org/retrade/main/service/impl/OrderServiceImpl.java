@@ -11,10 +11,7 @@ import org.retrade.common.model.exception.ActionFailedException;
 import org.retrade.common.model.exception.ValidationException;
 import org.retrade.main.client.VoucherGrpcClient;
 import org.retrade.main.model.dto.request.CreateOrderRequest;
-import org.retrade.main.model.dto.response.OrderComboResponse;
-import org.retrade.main.model.dto.response.OrderDestinationResponse;
-import org.retrade.main.model.dto.response.OrderItemResponse;
-import org.retrade.main.model.dto.response.OrderResponse;
+import org.retrade.main.model.dto.response.*;
 import org.retrade.main.model.entity.*;
 import org.retrade.main.repository.*;
 import org.retrade.main.service.CartService;
@@ -40,7 +37,6 @@ public class OrderServiceImpl implements OrderService {
     private final OrderItemRepository orderItemRepository;
     private final OrderComboRepository orderComboRepository;
     private final OrderStatusRepository orderStatusRepository;
-    private final OrderHistoryRepository orderHistoryRepository;
     private final ProductRepository productRepository;
     private final CustomerRepository customerRepository;
     private final CustomerContactRepository customerContactRepository;
@@ -50,7 +46,15 @@ public class OrderServiceImpl implements OrderService {
     private final AuthUtils authUtils;
 
     private static final BigDecimal TAX_RATE = new BigDecimal("0.10");
+<<<<<<< HEAD
     private static final Double DEFAULT_SHIPPING_COST = 25000.0;
+=======
+    
+    @Override
+    @Transactional(rollbackFor = {ActionFailedException.class, Exception.class})
+    public OrderResponse createOrder(CreateOrderRequest request) {
+        log.info("Creating order for products: {}", request.getProductIds());
+>>>>>>> 644b29bb29325c5f33ef47e964a21213396462ca
 
     @Override
     @Transactional(rollbackFor = {ActionFailedException.class, Exception.class}, propagation = Propagation.REQUIRED)
@@ -65,6 +69,7 @@ public class OrderServiceImpl implements OrderService {
         BigDecimal subtotal = calculateSubtotal(products, request.getProductIds());
         BigDecimal taxTotal = calculateTax(subtotal);
         BigDecimal discountTotal = BigDecimal.ZERO;
+<<<<<<< HEAD
         BigDecimal grandTotal = subtotal.add(taxTotal).subtract(discountTotal)
                 .add(BigDecimal.valueOf(DEFAULT_SHIPPING_COST));
         OrderEntity order = createOrderEntity(customer, subtotal, taxTotal, discountTotal, grandTotal, orderDestinationEntity);
@@ -72,9 +77,45 @@ public class OrderServiceImpl implements OrderService {
         List<OrderComboEntity> orderCombos = createOrderCombos(savedOrder, productsBySeller);
         createOrderItems(savedOrder, products, orderCombos);
         createOrderHistory(savedOrder, "Order created", customer.getId());
+=======
+        
+        if (StringUtils.hasText(request.getVoucherCode())) {
+            voucherValidation = validateVoucher(request.getVoucherCode(), customer.getId(), subtotal, request.getProductIds());
+            if (voucherValidation.getValid()) {
+                discountTotal = BigDecimal.valueOf(voucherValidation.getDiscountAmount());
+            } else {
+                throw new ValidationException("Voucher validation failed: " + voucherValidation.getMessage());
+            }
+        }
+        var totalDiscountPercent = calculateProductDiscountTotal(products);
+        var totalDiscount = subtotal.multiply(new BigDecimal(totalDiscountPercent)).setScale(2, RoundingMode.HALF_UP);
+
+        BigDecimal grandTotal = subtotal.add(taxTotal).subtract(discountTotal).subtract(totalDiscount);
+
+        OrderEntity order = createOrderEntity(customer, subtotal, taxTotal, discountTotal, grandTotal);
+        OrderEntity savedOrder;
+        OrderDestinationEntity orderDestination;
+        try {
+            savedOrder = orderRepository.save(order);
+            orderDestinationEntity.setOrder(savedOrder);
+            orderDestination = orderDestinationRepository.save(orderDestinationEntity);
+        } catch (Exception e) {
+            throw new ActionFailedException("Failed to save order destination", e);
+        }
+        List<OrderComboEntity> orderCombos = createOrderCombos(productsBySeller, orderDestination);
+        
+        createOrderItems(savedOrder, products, orderCombos);
+        
+        if (voucherValidation != null && voucherValidation.getValid()) {
+            applyVoucher(request.getVoucherCode(), customer.getId(), savedOrder.getId(), grandTotal);
+        }
+
+
+>>>>>>> 644b29bb29325c5f33ef47e964a21213396462ca
         cartService.clearCart();
         return mapToOrderResponse(savedOrder);
     }
+<<<<<<< HEAD
 
     private void createOrderHistory(OrderEntity order, String notes, String createdBy) {
         OrderHistoryEntity history = OrderHistoryEntity.builder()
@@ -86,6 +127,8 @@ public class OrderServiceImpl implements OrderService {
 
         orderHistoryRepository.save(history);
     }
+=======
+>>>>>>> 644b29bb29325c5f33ef47e964a21213396462ca
 
     @Override
     public OrderResponse getOrderById(String orderId) {
@@ -103,6 +146,27 @@ public class OrderServiceImpl implements OrderService {
         return orders.stream()
                 .map(this::mapToOrderResponse)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PaginationWrapper<List<CustomerOrderComboResponse>> getCustomerOrderCombos(QueryWrapper queryWrapper) {
+        var account = authUtils.getUserAccountFromAuthentication();
+        var customerEntity = account.getCustomer();
+        if (customerEntity == null) {
+            throw new ValidationException("User is not a customer");
+        }
+        return orderComboRepository.query(queryWrapper, (param) -> (root, query, criteriaBuilder) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            predicates.add(criteriaBuilder.equal(root.get("orderDestination").get("order").get("customer"),customerEntity));
+            return getOrderComboPredicate(param, root, criteriaBuilder, predicates);
+        }, (items) -> {
+            var list = items.map(this::wrapCustomerOrderComboResponse).stream().toList();
+            return new PaginationWrapper.Builder<List<CustomerOrderComboResponse>>()
+                    .setPaginationInfo(items)
+                    .setData(list)
+                    .build();
+        });
     }
 
     @Override
@@ -133,9 +197,6 @@ public class OrderServiceImpl implements OrderService {
             combo.setOrderStatus(newStatus);
             orderComboRepository.save(combo);
         }
-
-        createOrderHistory(order, notes != null ? notes : "Status updated to " + newStatus.getName(), customerEntity.getLastName());
-
         return mapToOrderResponse(order);
     }
 
@@ -153,10 +214,36 @@ public class OrderServiceImpl implements OrderService {
             combo.setOrderStatus(cancelledStatus);
             orderComboRepository.save(combo);
         }
-
-        createOrderHistory(order, "Order cancelled: " + (reason != null ? reason : "No reason provided"), customerEntity.getLastName());
+    }
+    @Override
+    @Transactional(readOnly = true)
+    public PaginationWrapper<List<CustomerOrderComboResponse>> getSellerOrderCombos(QueryWrapper queryFieldWrapper) {
+        var account = authUtils.getUserAccountFromAuthentication();
+        var seller = account.getSeller();
+        if (seller == null) {
+            throw new ValidationException("User is not a seller");
+        }
+        return orderComboRepository.query(queryFieldWrapper, (param) -> (root, query, criteriaBuilder) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            predicates.add(criteriaBuilder.equal(root.get("seller"), seller));
+            predicates.add(criteriaBuilder.notEqual(root.get("orderStatus").get("code"), "PENDING"));
+            return getOrderComboPredicate(param, root, criteriaBuilder, predicates);
+        }, (items) -> {
+            var list = items.map(this::wrapCustomerOrderComboResponse).stream().toList();
+            return new PaginationWrapper.Builder<List<CustomerOrderComboResponse>>()
+                    .setPaginationInfo(items)
+                    .setData(list)
+                    .build();
+        });
     }
 
+    @Transactional(readOnly = true)
+    @Override
+    public CustomerOrderComboResponse getSellerOrderComboById(String comboId) {
+        var combo = orderComboRepository.findById(comboId)
+                .orElseThrow(() -> new ValidationException("Order combo not found with ID: " + comboId));
+        return wrapCustomerOrderComboResponse(combo);
+    }
     private CustomerEntity getCurrentCustomerAccount() {
         var account = authUtils.getUserAccountFromAuthentication();
         var customerEntity = account.getCustomer();
@@ -244,7 +331,7 @@ public class OrderServiceImpl implements OrderService {
                 .subtotal(subtotal)
                 .taxTotal(taxTotal)
                 .discountTotal(discountTotal)
-                .shippingCost(DEFAULT_SHIPPING_COST)
+                .shippingCost(0.0)
                 .grandTotal(grandTotal)
                 .orderDestination(orderDestination)
                 .build();
@@ -305,7 +392,8 @@ public class OrderServiceImpl implements OrderService {
                     .shortDescription(product.getShortDescription())
                     .backgroundUrl(product.getThumbnail())
                     .basePrice(product.getCurrentPrice())
-                    .unit("pcs")
+                    .discount(product.getDiscount())
+                    .unit("vnd")
                     .build();
             orderItemRepository.save(orderItem);
         }
@@ -366,6 +454,14 @@ public class OrderServiceImpl implements OrderService {
                 .addressLine(destination.getAddressLine())
                 .build();
     }
+
+    private Double calculateProductDiscountTotal(List<ProductEntity> productEntities) {
+        return productEntities.stream()
+                .mapToDouble(ProductEntity::getDiscount)
+                .average()
+                .orElse(0.0);
+    }
+
 
     private List<OrderItemResponse> mapToOrderItemResponses(OrderEntity order) {
         if (order == null) {
@@ -447,6 +543,52 @@ public class OrderServiceImpl implements OrderService {
                 .build();
     }
 
+    private CustomerOrderComboResponse wrapCustomerOrderComboResponse(OrderComboEntity combo) {
+        var orderItems = combo.getOrderItems();
+        var seller = combo.getSeller();
+        var orderStatus = combo.getOrderStatus();
+        var orderDestination = combo.getOrderDestination();
+        var orderDestinationResponse = wrapOrderDestinationResponse(orderDestination);
+        var orderItemResponses = wrapCustomerOrderItemResponse(orderItems);
+        return CustomerOrderComboResponse.builder()
+                .comboId(combo.getId())
+                .sellerId(seller.getId())
+                .sellerAvatarUrl(seller.getAvatarUrl())
+                .sellerName(seller.getShopName())
+                .grandPrice(combo.getGrandPrice())
+                .orderStatusId(orderStatus.getId())
+                .orderStatus(orderStatus.getName())
+                .items(orderItemResponses)
+                .destination(orderDestinationResponse)
+                .build();
+    }
+
+    private OrderDestinationResponse wrapOrderDestinationResponse(OrderDestinationEntity orderDestination) {
+        return OrderDestinationResponse.builder()
+                .customerName(orderDestination.getCustomerName())
+                .phone(orderDestination.getPhone())
+                .state(orderDestination.getState())
+                .country(orderDestination.getCountry())
+                .district(orderDestination.getDistrict())
+                .ward(orderDestination.getWard())
+                .addressLine(orderDestination.getAddressLine())
+                .build();
+    }
+
+    private Set<CustomerOrderItemResponse> wrapCustomerOrderItemResponse(Set<OrderItemEntity> orderItems) {
+        if (orderItems.isEmpty()) {
+            return Collections.emptySet();
+        }
+        return orderItems.stream().map(item -> CustomerOrderItemResponse.builder()
+                .itemId(item.getId())
+                .itemThumbnail(item.getBackgroundUrl())
+                .itemName(item.getProductName())
+                .productId(item.getProduct().getId())
+                .basePrice(item.getBasePrice())
+                .discount(item.getDiscount())
+                .build()).collect(Collectors.toSet());
+    }
+
     private Predicate getPredicate(Map<String, QueryFieldWrapper> param, Root<OrderEntity> root, CriteriaBuilder criteriaBuilder, List<Predicate> predicates) {
         if (param != null && !param.isEmpty()) {
             Predicate[] defaultPredicates = orderRepository.createDefaultPredicate(criteriaBuilder, root, param);
@@ -454,4 +596,17 @@ public class OrderServiceImpl implements OrderService {
         }
         return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
     }
+<<<<<<< HEAD
 }
+=======
+
+    private Predicate getOrderComboPredicate(Map<String, QueryFieldWrapper> param, Root<OrderComboEntity> root, CriteriaBuilder criteriaBuilder, List<Predicate> predicates) {
+        if (param != null && !param.isEmpty()) {
+            Predicate[] defaultPredicates = orderComboRepository.createDefaultPredicate(criteriaBuilder, root, param);
+            predicates.addAll(Arrays.asList(defaultPredicates));
+        }
+        return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
+    }
+
+}
+>>>>>>> 644b29bb29325c5f33ef47e964a21213396462ca

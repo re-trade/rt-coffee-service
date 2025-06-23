@@ -1,5 +1,6 @@
 package org.retrade.main.service;
 
+import org.retrade.main.model.dto.request.ApproveSellerRequest;
 import org.retrade.main.model.dto.request.SellerRegisterRequest;
 import org.retrade.main.model.dto.request.SellerUpdateRequest;
 import org.retrade.main.model.dto.response.SellerBaseResponse;
@@ -11,6 +12,8 @@ import java.util.Optional;
 
 public interface SellerService {
     SellerRegisterResponse createSeller(SellerRegisterRequest request);
+
+    void approveSeller(ApproveSellerRequest request);
 
     SellerRegisterResponse cccdSubmit(String front, String back);
 
