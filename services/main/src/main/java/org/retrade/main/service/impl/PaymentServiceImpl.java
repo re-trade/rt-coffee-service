@@ -89,7 +89,7 @@ public class PaymentServiceImpl implements PaymentService {
             var order = paymentEntity.getOrder();
             if (paymentCallback.isStatus()) {
                 paymentEntity.setPaymentStatus(PaymentStatusEnum.PAID);
-                var orderStatus = orderStatusRepository.findByCode("WAIT_FOR_CONFIRMATION")
+                var orderStatus = orderStatusRepository.findByCode("PAYMENT_CONFIRMATION")
                         .orElseThrow(() -> new ValidationException("Not found order status"));
                 var orderCombos = orderComboRepository.findByOrderItems_Order_Id(order.getId());
                 orderCombos.forEach(orderCombo -> {
