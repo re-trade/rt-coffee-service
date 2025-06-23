@@ -1,5 +1,7 @@
 package org.retrade.main.model.dto.request;
 
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -27,4 +29,8 @@ public class UpdateCustomerProfileRequest {
     @NotEmpty(message = "Avatar url is required")
     @NotNull(message = "Avatar url cannot be null")
     private String avatarUrl;
+    @Min(value = 0, message = "Gender must be between 0 and 2")
+    @NotNull(message = "Gender cannot be null")
+    @Max(value = 2, message = "Gender must be between 0 and 2")
+    private Integer gender;
 }

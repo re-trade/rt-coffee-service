@@ -13,7 +13,10 @@ import lombok.NoArgsConstructor;
 public class SellerUpdateRequest {
     private String shopName;
     private String description;
-    private String address;
+    private String addressLine;
+    private String district;
+    private String ward;
+    private String state;
     private String avatarUrl;
     private String email;
     private String background;
