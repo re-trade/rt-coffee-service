@@ -13,10 +13,14 @@ public class NetUtils {
         return ipAddress != null ? ipAddress : "Invalid IP";
     }
     public String generateCallbackUrl(HttpServletRequest request, String uri) {
+        String contextPath = request.getContextPath();
+        String host = request.getServerName();
+        int port = request.getServerPort();
         String scheme = request.getScheme();
-        String serverName = request.getServerName();
-        int serverPort = request.getServerPort();
-        return serverPort == 80 || serverPort == 443
-                ? scheme + "://" + serverName + uri : scheme + "://" + serverName + ":" + serverPort + uri;
+        String baseUrl = (port == 80 || port == 443)
+                ? String.format("%s://%s", scheme, host)
+                : String.format("%s://%s:%d", scheme, host, port);
+        return baseUrl + contextPath + uri;
     }
+
 }
