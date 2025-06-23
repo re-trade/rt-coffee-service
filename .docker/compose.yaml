@@ -18,7 +18,7 @@ services:
       RABBITMQ_PORT: 5672
       RABBITMQ_USERNAME: ${RABBITMQ_USERNAME}
       RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
-      CONTEXT_PATH: /
+      CONTEXT_PATH: /api/main/v1
       PORT: 8080
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
@@ -65,8 +65,6 @@ services:
       - "traefik.docker.network=retrade-network"
       - "traefik.constraint-label=retrade-service"
       - "traefik.http.routers.main-service.rule=PathPrefix(`/api/main/v1/`)"
-      - "traefik.http.middlewares.strip-main-prefix.stripprefix.prefixes=/api/main/v1"
-      - "traefik.http.routers.main-service.middlewares=strip-main-prefix"
       - "traefik.http.routers.main-service.entrypoints=web"
       - "traefik.http.services.main-service.loadbalancer.server.port=8080"
 
@@ -89,7 +87,7 @@ services:
       RABBITMQ_PORT: 5672
       RABBITMQ_USERNAME: ${RABBITMQ_USERNAME}
       RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
-      CONTEXT_PATH: /
+      CONTEXT_PATH: /api/feedback-notification/v1
       ORIGIN_ALLOWS: ${ORIGIN_ALLOWS}
       BASE_HOST: ${BASE_HOST}
       FRONTEND_URL: ${FRONTEND_URL}
@@ -104,8 +102,6 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.feedback-service.rule=PathPrefix(`/api/feedback-notification/v1/`)"
       - "traefik.http.routers.feedback-service.entrypoints=web"
-      - "traefik.http.middlewares.strip-feedback-notification-prefix.stripprefix.prefixes=/api/feedback-notification/v1"
-      - "traefik.http.routers.feedback-service.middlewares=strip-feedback-notification-prefix"
       - "traefik.docker.network=retrade-network"
       - "traefik.constraint-label=retrade-service"
       - "traefik.http.services.feedback-service.loadbalancer.server.port=8080"
@@ -129,7 +125,7 @@ services:
       RABBITMQ_PORT: 5672
       RABBITMQ_USERNAME: ${RABBITMQ_USERNAME}
       RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
-      CONTEXT_PATH: /
+      CONTEXT_PATH: /api/storage/v1
       PORT: 8080
       ORIGIN_ALLOWS: ${ORIGIN_ALLOWS}
       BASE_HOST: ${BASE_HOST}
@@ -150,8 +146,6 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.storage-service.rule=PathPrefix(`/api/storage/v1/`)"
-      - "traefik.http.middlewares.strip-storage-prefix.stripprefix.prefixes=/api/storage/v1"
-      - "traefik.http.routers.storage-service.middlewares=strip-storage-prefix"
       - "traefik.http.routers.storage-service.entrypoints=web"
       - "traefik.docker.network=retrade-network"
       - "traefik.constraint-label=retrade-service"
@@ -176,7 +170,7 @@ services:
       RABBITMQ_PORT: 5672
       RABBITMQ_USERNAME: ${RABBITMQ_USERNAME}
       RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
-      CONTEXT_PATH: /
+      CONTEXT_PATH: /api/voucher/v1
       PORT: 8080
       ORIGIN_ALLOWS: ${ORIGIN_ALLOWS}
       BASE_HOST: ${BASE_HOST}
@@ -200,8 +194,6 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.voucher-service.rule=PathPrefix(`/api/voucher/v1/`)"
-      - "traefik.http.middlewares.strip-voucher-prefix.stripprefix.prefixes=/api/voucher/v1"
-      - "traefik.http.routers.voucher-service.middlewares=strip-voucher-prefix"
       - "traefik.http.routers.voucher-service.entrypoints=web"
       - "traefik.docker.network=retrade-network"
       - "traefik.constraint-label=retrade-service"
