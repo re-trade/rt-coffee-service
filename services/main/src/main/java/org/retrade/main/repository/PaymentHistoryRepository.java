@@ -2,6 +2,7 @@ package org.retrade.main.repository;
 
 import org.retrade.common.repository.BaseJpaRepository;
 import org.retrade.main.model.constant.PaymentStatusEnum;
+import org.retrade.main.model.entity.CustomerEntity;
 import org.retrade.main.model.entity.OrderEntity;
 import org.retrade.main.model.entity.PaymentHistoryEntity;
 import org.retrade.main.model.entity.PaymentMethodEntity;
@@ -17,4 +18,5 @@ public interface PaymentHistoryRepository extends BaseJpaRepository<PaymentHisto
     List<PaymentHistoryEntity> findByPaymentStatus(PaymentStatusEnum paymentStatus);
     Optional<PaymentHistoryEntity> findByPaymentCode(String paymentCode);
     List<PaymentHistoryEntity> findByOrderAndPaymentStatus(OrderEntity order, PaymentStatusEnum paymentStatus);
+    List<PaymentHistoryEntity> findByCustomer(CustomerEntity customer);
 }
