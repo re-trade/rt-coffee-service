@@ -212,6 +212,13 @@ public class OrderServiceImpl implements OrderService {
         });
     }
 
+    @Transactional(readOnly = true)
+    @Override
+    public CustomerOrderComboResponse getSellerOrderComboById(String comboId) {
+        var combo = orderComboRepository.findById(comboId)
+                .orElseThrow(() -> new ValidationException("Order combo not found with ID: " + comboId));
+        return wrapCustomerOrderComboResponse(combo);
+    }
     private CustomerEntity getCurrentCustomerAccount() {
         var account = authUtils.getUserAccountFromAuthentication();
         var customerEntity = account.getCustomer();
