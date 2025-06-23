@@ -21,7 +21,7 @@ public interface PaymentService {
 
     PaginationWrapper<List<PaymentMethodResponse>> getPaymentMethods (QueryWrapper queryWrapper);
 
-    List<PaymentHistoryResponse> getPaymentHistoryrsByCustomerId(String customerId);
-    List<PaymentHistoryResponse> getPaymentHistoryByCurrentCustomer();
+    List<PaymentHistoryResponse> getPaymentHistoriesByCustomerId(String customerId);
+    List<PaymentHistoryResponse> getPaymentHistoriesByCurrentCustomer();
 
 }

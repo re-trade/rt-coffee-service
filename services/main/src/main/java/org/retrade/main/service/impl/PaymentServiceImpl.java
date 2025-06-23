@@ -141,7 +141,7 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     @Override
-    public List<PaymentHistoryResponse> getPaymentHistoryrsByCustomerId(String customerId) {
+    public List<PaymentHistoryResponse> getPaymentHistoriesByCustomerId(String customerId) {
         CustomerEntity customer = customerRepository.findById(customerId)
                 .orElseThrow(() -> new ValidationException("Customer not found with ID: " + customerId));
 
@@ -152,7 +152,7 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     @Override
-    public List<PaymentHistoryResponse> getPaymentHistoryByCurrentCustomer() {
+    public List<PaymentHistoryResponse> getPaymentHistoriesByCurrentCustomer() {
         CustomerEntity customer = getCurrentCustomerAccount();
 
         List<PaymentHistoryEntity> payments = paymentHistoryRepository.findByCustomer(customer);
