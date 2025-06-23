@@ -2,7 +2,6 @@ package org.retrade.main.repository;
 
 import org.retrade.common.repository.BaseJpaRepository;
 import org.retrade.main.model.entity.CategoryEntity;
-import org.retrade.main.model.entity.SellerEntity;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Repository;
 
@@ -19,14 +18,6 @@ public interface CategoryRepository extends BaseJpaRepository<CategoryEntity, St
     List<CategoryEntity> findByCategoryParent(CategoryEntity parent);
     
     List<CategoryEntity> findByCategoryParentIsNull();
-    
-    List<CategoryEntity> findByType(String type);
-    
-    List<CategoryEntity> findBySeller(SellerEntity seller);
-    
-    List<CategoryEntity> findBySellerAndVisible(SellerEntity seller, Boolean visible);
-    
-    List<CategoryEntity> findByVisibleAndType(Boolean visible, String type);
     
     List<CategoryEntity> findByNameContainingIgnoreCase(String name);
     

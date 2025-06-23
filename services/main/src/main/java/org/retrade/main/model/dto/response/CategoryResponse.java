@@ -19,8 +19,6 @@ public class CategoryResponse {
     private String description;
     private String parentId;
     private String parentName;
-    private String sellerId;
-    private String sellerShopName;
     private Boolean visible;
     private String type;
     private List<CategoryResponse> children;

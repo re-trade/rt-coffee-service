@@ -23,15 +23,8 @@ public class CategoryEntity extends BaseSQLEntity {
     @JoinColumn(name = "parrent_id")
     private CategoryEntity categoryParent;
 
-    @ManyToOne(targetEntity = SellerEntity.class, fetch = FetchType.EAGER)
-    @JoinColumn(name = "seller_id")
-    private SellerEntity seller;
-
     @Column(name = "visible", nullable = false)
     private Boolean visible;
-
-    @Column(name = "type", nullable = false, length = 20)
-    private String type;
 
     @Column(name = "enabled", nullable = false)
     private Boolean enabled;

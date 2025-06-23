@@ -3,6 +3,7 @@ package org.retrade.main.model.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import org.retrade.common.model.entity.BaseSQLEntity;
+import org.retrade.main.model.constant.EProductStatus;
 
 import java.math.BigDecimal;
 import java.util.Set;
@@ -44,6 +45,9 @@ public class ProductEntity extends BaseSQLEntity {
     private Set<String> tags;
     @Column(name = "verified", nullable = false)
     private Boolean verified;
+    @Enumerated(EnumType.ORDINAL)
+    @Column(name = "enabled", nullable = false, columnDefinition = "SMALLINT DEFAULT 0")
+    private EProductStatus status;
     @OneToMany(fetch = FetchType.EAGER, cascade = {CascadeType.PERSIST}, mappedBy = "product")
     private Set<ProductPriceHistoryEntity> productPriceHistories;
 }

@@ -263,6 +263,8 @@ public class CartServiceImpl implements CartService {
                         .productName("Product not found")
                         .totalPrice(BigDecimal.ZERO)
                         .addedAt(cartItem.getAddedAt())
+                        .discount(0.0)
+                        .description("N/A")
                         .productAvailable(false)
                         .build();
             }
@@ -273,6 +275,8 @@ public class CartServiceImpl implements CartService {
                     .productBrand(product.getBrand())
                     .totalPrice(product.getCurrentPrice())
                     .addedAt(cartItem.getAddedAt())
+                    .discount(product.getDiscount())
+                    .description(product.getDescription() != null ? product.getDescription() : "N/A")
                     .productAvailable(true)
                     .build();
         }).collect(Collectors.toSet());

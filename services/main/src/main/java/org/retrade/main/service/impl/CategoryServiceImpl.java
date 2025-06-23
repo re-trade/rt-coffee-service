@@ -8,7 +8,9 @@ import lombok.RequiredArgsConstructor;
 import org.retrade.common.model.dto.request.QueryFieldWrapper;
 import org.retrade.common.model.dto.request.QueryWrapper;
 import org.retrade.common.model.dto.response.PaginationWrapper;
+import org.retrade.common.model.exception.ActionFailedException;
 import org.retrade.common.model.exception.ValidationException;
+import org.retrade.main.model.dto.request.CategoryRequest;
 import org.retrade.main.model.dto.response.CategoryResponse;
 import org.retrade.main.model.entity.CategoryEntity;
 import org.retrade.main.repository.CategoryRepository;
@@ -22,6 +24,49 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class CategoryServiceImpl implements CategoryService {
     private final CategoryRepository categoryRepository;
+
+    @Override
+    public CategoryResponse createCategory(CategoryRequest request) {
+        if (categoryExists(request.getName())) {
+            throw new ValidationException("Category already exists with name: " + request.getName());
+        }
+        CategoryEntity category = CategoryEntity.builder()
+                .name(request.getName())
+                .description(request.getDescription())
+                .visible(request.getVisible() != null ? request.getVisible() : true)
+                .enabled(true)
+                .build();
+        if (request.getCategoryParentId() != null) {
+            var categoryParent = getCategoryEntityById(request.getCategoryParentId());
+            category.setCategoryParent(categoryParent);
+        }
+        try {
+            category = categoryRepository.save(category);
+            return mapToCategoryResponse(category);
+        } catch (Exception ex) {
+            throw new ActionFailedException("Failed to create category", ex);
+        }
+    }
+
+    @Override
+    public CategoryResponse updateCategory(String id, CategoryRequest request) {
+        CategoryEntity category = getCategoryEntityById(id);
+        if (request.getName() != null && !request.getName().equals(category.getName())) {
+            if (categoryExists(request.getName())) {
+                throw new ValidationException("Category already exists with name: " + request.getName());
+            }
+            category.setName(request.getName());
+        }
+        if (request.getDescription() != null) {
+            category.setDescription(request.getDescription());
+        }
+        try {
+            category = categoryRepository.save(category);
+            return mapToCategoryResponse(category);
+        } catch (Exception ex) {
+            throw new ActionFailedException("Failed to update category", ex);
+        }
+    }
 
     @Override
     public CategoryResponse getCategoryById(String id) {
@@ -131,7 +176,6 @@ public class CategoryServiceImpl implements CategoryService {
         if (categoryNames == null || categoryNames.isEmpty()) {
             return true;
         }
-
         for (String categoryName : categoryNames) {
             if (categoryExists(categoryName)) {
                 return false;
@@ -167,18 +211,12 @@ public class CategoryServiceImpl implements CategoryService {
                 .name(category.getName())
                 .description(category.getDescription())
                 .visible(category.getVisible())
-                .type(category.getType())
                 .createdAt(category.getCreatedDate().toLocalDateTime())
                 .updatedAt(category.getUpdatedDate().toLocalDateTime());
 
         if (category.getCategoryParent() != null) {
             builder.parentId(category.getCategoryParent().getId())
                    .parentName(category.getCategoryParent().getName());
-        }
-
-        if (category.getSeller() != null) {
-            builder.sellerId(category.getSeller().getId())
-                   .sellerShopName(category.getSeller().getShopName());
         }
 
         List<CategoryEntity> children = categoryRepository.findByCategoryParent(category);
@@ -200,4 +238,6 @@ public class CategoryServiceImpl implements CategoryService {
         }
         return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
     }
+
+
 }

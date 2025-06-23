@@ -4,14 +4,19 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import org.retrade.common.model.dto.request.QueryWrapper;
 import org.retrade.common.model.dto.response.ResponseObject;
 import org.retrade.main.model.dto.request.PaymentInitRequest;
+import org.retrade.main.model.dto.response.PaymentMethodResponse;
 import org.retrade.main.service.PaymentService;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
+import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -69,4 +74,20 @@ public class PaymentController {
                 .build()
         );
     }
+
+    @GetMapping("methods")
+    public ResponseEntity<ResponseObject<List<PaymentMethodResponse>>> getPaymentMethods(@RequestParam(required = false, name = "q") String search, @PageableDefault Pageable pageable) {
+        var query = QueryWrapper.builder()
+                .search(search)
+                .wrapSort(pageable)
+                .build();
+        var result = paymentService.getPaymentMethods(query);
+        return ResponseEntity.status(HttpStatus.OK).body(new ResponseObject.Builder<List<PaymentMethodResponse>>()
+                .success(true)
+                .code("SUCCESS")
+                .unwrapPaginationWrapper(result)
+                .messages("Methods retrieved successfully")
+                .build());
+    }
+
 }

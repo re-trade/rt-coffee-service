@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.retrade.main.model.constant.EProductStatus;
 
 import java.math.BigDecimal;
 import java.util.Set;
@@ -53,4 +54,6 @@ public class CreateProductRequest {
     private Set<String> categoryIds;
     private Set<String> keywords;
     private Set<String> tags;
+    @NotNull(message = "Current status is required")
+    private EProductStatus status;
 }

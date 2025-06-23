@@ -71,8 +71,15 @@ public class ElasticsearchMigrationService {
                     .index(PRODUCT_INDEX)
                     .mappings(m -> m
                             .properties("id", p -> p.keyword(k -> k))
-                            .properties("name", p -> p.text(t -> t.analyzer("standard")))
+                            .properties("name", p -> p.text(t -> t
+                                    .analyzer("standard")
+                                    .fields("keyword", f -> f.keyword(k -> k.ignoreAbove(256)))
+                            ))
                             .properties("sellerId", p -> p.keyword(k -> k))
+                            .properties("sellerShopName", p -> p.text(t -> t
+                                    .analyzer("standard")
+                                    .fields("keyword", f -> f.keyword(k -> k.ignoreAbove(256)))
+                            ))
                             .properties("shortDescription", p -> p.text(t -> t.analyzer("standard")))
                             .properties("description", p -> p.text(t -> t.analyzer("standard")))
                             .properties("brand", p -> p.keyword(k -> k))
@@ -80,21 +87,28 @@ public class ElasticsearchMigrationService {
                             .properties("currentPrice", p -> p.double_(d -> d))
                             .properties("discount", p -> p.double_(d -> d))
                             .properties("verified", p -> p.boolean_(b -> b))
+                            .properties("addressLine", p -> p.text(t -> t.analyzer("standard")))
+                            .properties("state", p -> p.keyword(k -> k))
+                            .properties("district", p -> p.keyword(k -> k))
+                            .properties("ward", p -> p.keyword(k -> k))
                             .properties("createdAt", p -> p.date(d -> d))
                             .properties("updatedAt", p -> p.date(d -> d))
                             .properties("categories", p -> p.nested(n -> n
                                     .properties("id", cp -> cp.keyword(k -> k))
-                                    .properties("name", cp -> cp.keyword(k -> k))
-                                    .properties("type", cp -> cp.keyword(k -> k))
+                                    .properties("name", cp -> cp.text(t -> t
+                                            .analyzer("standard")
+                                            .fields("keyword", f -> f.keyword(k -> k.ignoreAbove(256)))
+                                    ))
                             ))
                     )
                     .settings(s -> s
                             .numberOfShards("1")
                             .numberOfReplicas("0")
+                            .maxResultWindow(50000)
                     )
             );
             elasticsearchClient.indices().create(request);
-            log.info("Successfully created product index");
+            log.info("Successfully created product index with optimized settings");
         } catch (Exception e) {
             log.error("Failed to create product index", e);
             throw new RuntimeException("Failed to create product index", e);
@@ -199,11 +213,11 @@ public class ElasticsearchMigrationService {
                     try {
                         ProductDocument existingDoc = productElasticsearchRepository.findById(product.getId()).orElse(null);
                         if (existingDoc == null) {
-                            ProductDocument newDoc = convertToProductDocument(product);
+                            ProductDocument newDoc = ProductDocument.wrapEntityToDocument(product);
                             productElasticsearchRepository.save(newDoc);
                             totalUpdated++;
                         } else if (shouldUpdateDocument(product, existingDoc)) {
-                            ProductDocument updatedDoc = convertToProductDocument(product);
+                            ProductDocument updatedDoc = ProductDocument.wrapEntityToDocument(product);
                             productElasticsearchRepository.save(updatedDoc);
                             totalUpdated++;
                         }
@@ -240,31 +254,7 @@ public class ElasticsearchMigrationService {
 
     private List<ProductDocument> convertToProductDocuments(List<ProductEntity> products) {
         return products.stream()
-                .map(this::convertToProductDocument)
+                .map(ProductDocument::wrapEntityToDocument)
                 .collect(Collectors.toList());
-    }
-
-    private ProductDocument convertToProductDocument(ProductEntity product) {
-        return ProductDocument.builder()
-                .id(product.getId())
-                .name(product.getName())
-                .sellerId(product.getSeller().getId())
-                .shortDescription(product.getShortDescription())
-                .description(product.getDescription())
-                .brand(product.getBrand())
-                .discount(product.getDiscount())
-                .model(product.getModel())
-                .currentPrice(product.getCurrentPrice())
-                .categories(product.getCategories().stream()
-                        .map(item -> ProductDocument.CategoryInfo.builder()
-                                .id(item.getId())
-                                .name(item.getName())
-                                .type(item.getType())
-                                .build())
-                        .collect(Collectors.toSet()))
-                .verified(product.getVerified())
-                .createdAt(product.getCreatedDate() != null ? product.getCreatedDate() : null)
-                .updatedAt(product.getUpdatedDate() != null ? product.getUpdatedDate() : null)
-                .build();
     }
 }

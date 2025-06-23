@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.retrade.main.model.entity.ProductEntity;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.elasticsearch.annotations.DateFormat;
 import org.springframework.data.elasticsearch.annotations.Document;
@@ -13,6 +14,7 @@ import org.springframework.data.elasticsearch.annotations.FieldType;
 import java.math.BigDecimal;
 import java.util.Date;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Data
 @Builder
@@ -51,6 +53,18 @@ public class ProductDocument {
     @Field(type = FieldType.Double)
     private BigDecimal currentPrice;
 
+    @Field(type = FieldType.Text, analyzer = "standard")
+    private String addressLine;
+
+    @Field(type = FieldType.Text, analyzer = "standard")
+    private String state;
+
+    @Field(type = FieldType.Text, analyzer = "standard")
+    private String district;
+
+    @Field(type = FieldType.Text, analyzer = "standard")
+    private String ward;
+
     @Field(type = FieldType.Nested)
     private Set<CategoryInfo> categories;
 
@@ -76,5 +90,32 @@ public class ProductDocument {
 
         @Field(type = FieldType.Keyword)
         private String type;
+    }
+
+    public static ProductDocument wrapEntityToDocument(ProductEntity productEntity) {
+        var seller = productEntity.getSeller();
+        return ProductDocument.builder()
+                .id(productEntity.getId())
+                .name(productEntity.getName())
+                .sellerId(seller.getId())
+                .sellerShopName(seller.getShopName())
+                .addressLine(seller.getAddressLine())
+                .ward(seller.getWard())
+                .district(seller.getDistrict())
+                .state(seller.getState())
+                .shortDescription(productEntity.getShortDescription())
+                .description(productEntity.getDescription())
+                .brand(productEntity.getBrand())
+                .discount(productEntity.getDiscount())
+                .model(productEntity.getModel())
+                .currentPrice(productEntity.getCurrentPrice())
+                .categories(productEntity.getCategories().stream().map(item -> ProductDocument.CategoryInfo.builder()
+                        .id(item.getId())
+                        .name(item.getName())
+                        .build()).collect(Collectors.toSet()))
+                .verified(productEntity.getVerified())
+                .createdAt(productEntity.getCreatedDate() != null ? productEntity.getCreatedDate() : null)
+                .updatedAt(productEntity.getUpdatedDate() != null ? productEntity.getUpdatedDate() : null)
+                .build();
     }
 }
