@@ -60,7 +60,7 @@ public class PaymentServiceImpl implements PaymentService {
         } catch (Exception ex) {
             throw new ValidationException("Have a problem when init payment", ex);
         }
-        var paymentHandler = getPaymentHandler(paymentInitRequest.getPaymentMethodId());
+        var paymentHandler = getPaymentHandler(paymentMethodEntity);
         if (paymentHandler.isPresent()) {
             var paymentLink =  paymentHandler.get().initPayment(
                     orderEntity.getGrandTotal().intValue(),
@@ -89,7 +89,7 @@ public class PaymentServiceImpl implements PaymentService {
             var order = paymentEntity.getOrder();
             if (paymentCallback.isStatus()) {
                 paymentEntity.setPaymentStatus(PaymentStatusEnum.PAID);
-                var orderStatus = orderStatusRepository.findByCode("WAIT_FOR_CONFIRMATION")
+                var orderStatus = orderStatusRepository.findByCode("PAYMENT_CONFIRMATION")
                         .orElseThrow(() -> new ValidationException("Not found order status"));
                 var orderCombos = orderComboRepository.findByOrderItems_Order_Id(order.getId());
                 orderCombos.forEach(orderCombo -> {

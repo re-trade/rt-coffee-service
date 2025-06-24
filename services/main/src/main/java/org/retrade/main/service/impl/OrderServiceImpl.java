@@ -212,6 +212,43 @@ public class OrderServiceImpl implements OrderService {
         });
     }
 
+    @Transactional(readOnly = true)
+    @Override
+    public CustomerOrderComboResponse getSellerOrderComboById(String comboId) {
+        var account = authUtils.getUserAccountFromAuthentication();
+        var combo = getOrderComboById(comboId);
+        var seller = account.getSeller();
+        if (seller == null) {
+            throw new ValidationException("User is not a seller");
+        }
+        var orderSeller = combo.getSeller();
+        if (!seller.getId().equals(orderSeller.getId())) {
+            throw new ValidationException("You are not the owner");
+        }
+        return wrapCustomerOrderComboResponse(combo);
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public CustomerOrderComboResponse getCustomerOrderComboById(String comboId) {
+        var account = authUtils.getUserAccountFromAuthentication();
+        var combo = getOrderComboById(comboId);
+        var customer = account.getCustomer();
+        if (customer == null) {
+            throw new ValidationException("User is not a customer");
+        }
+        var comboCustomer = combo.getOrderDestination().getOrder().getCustomer();
+        if (!customer.getId().equals(comboCustomer.getId())) {
+            throw new ValidationException("You are not the owner");
+        }
+        return wrapCustomerOrderComboResponse(combo);
+    }
+
+    private OrderComboEntity getOrderComboById(String comboId) {
+        return orderComboRepository.findById(comboId)
+                .orElseThrow(() -> new ValidationException("Order combo not found with ID: " + comboId));
+    }
+
     private CustomerEntity getCurrentCustomerAccount() {
         var account = authUtils.getUserAccountFromAuthentication();
         var customerEntity = account.getCustomer();

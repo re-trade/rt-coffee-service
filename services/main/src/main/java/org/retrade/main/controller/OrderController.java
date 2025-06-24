@@ -194,6 +194,31 @@ public class OrderController {
                 .build());
     }
 
+
+    @PreAuthorize("hasRole('ROLE_CUSTOMER')")
+    @GetMapping("customer/combo/{id}")
+    public ResponseEntity<ResponseObject<CustomerOrderComboResponse>> getCustomerOrderCombosById(@PathVariable String id) {
+        var order = orderService.getCustomerOrderComboById(id);
+        return ResponseEntity.ok(new ResponseObject.Builder<CustomerOrderComboResponse>()
+                .success(true)
+                .code("SUCCESS")
+                .content(order)
+                .messages("Orders retrieved successfully")
+                .build());
+    }
+
+    @PreAuthorize("hasRole('ROLE_SELLER')")
+    @GetMapping("seller/combo/{id}")
+    public ResponseEntity<ResponseObject<CustomerOrderComboResponse>> getSellerOrderCombosById(@PathVariable String id) {
+        var order = orderService.getSellerOrderComboById(id);
+        return ResponseEntity.ok(new ResponseObject.Builder<CustomerOrderComboResponse>()
+                .success(true)
+                .code("SUCCESS")
+                .content(order)
+                .messages("Orders retrieved successfully")
+                .build());
+    }
+
     @PreAuthorize("hasRole('ROLE_SELLER')")
     @GetMapping("seller")
     public ResponseEntity<ResponseObject<List<CustomerOrderComboResponse>>> getOrderCombosBySeller(@RequestParam(required = false, name = "q") String q,
