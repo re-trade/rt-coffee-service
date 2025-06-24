@@ -219,6 +219,17 @@ public class OrderServiceImpl implements OrderService {
                 .orElseThrow(() -> new ValidationException("Order combo not found with ID: " + comboId));
         return wrapCustomerOrderComboResponse(combo);
     }
+
+    @Override
+    public List<OrderResponse> getOrdersByCurrentCustomer() {
+        CustomerEntity customer = getCurrentCustomerAccount();
+
+        List<OrderEntity> orders = orderRepository.findByCustomer(customer);
+        return orders.stream()
+                .map(this::mapToOrderResponse)
+                .collect(Collectors.toList());
+    }
+
     private CustomerEntity getCurrentCustomerAccount() {
         var account = authUtils.getUserAccountFromAuthentication();
         var customerEntity = account.getCustomer();

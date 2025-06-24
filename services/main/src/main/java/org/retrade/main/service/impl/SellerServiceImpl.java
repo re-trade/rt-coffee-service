@@ -183,6 +183,30 @@ public class SellerServiceImpl implements SellerService {
         return Optional.of(new SellerWrapperBase(sellerId, account.getEmail(), account.getUsername()));
     }
 
+    @Override
+    public SellerBaseResponse banSeller(String sellerId) {
+        var roles = authUtils.getRolesFromAuthUser();
+        if (!roles.contains("ROLE_ADMIN")) {
+            throw new ValidationException("User does not have permission to approve seller");
+        }
+        SellerEntity seller = sellerRepository.findById(sellerId)
+                .orElseThrow(() -> new ValidationException("Seller not found with ID: " + sellerId));
+        seller.setVerified(false);
+        return wrapSellerBaseResponse(seller);
+    }
+
+    @Override
+    public SellerBaseResponse unbanSeller(String sellerId) {
+        var roles = authUtils.getRolesFromAuthUser();
+        if (!roles.contains("ROLE_ADMIN")) {
+            throw new ValidationException("User does not have permission to approve seller");
+        }
+        SellerEntity seller = sellerRepository.findById(sellerId)
+                .orElseThrow(() -> new ValidationException("Seller not found with ID: " + sellerId));
+        seller.setVerified(true);
+        return wrapSellerBaseResponse(seller);
+    }
+
     private SellerBaseResponse wrapSellerBaseResponse(SellerEntity sellerEntity) {
         return SellerBaseResponse.builder()
                 .id(sellerEntity.getId())

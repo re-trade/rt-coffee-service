@@ -29,4 +29,6 @@ public interface OrderService {
 
     @Transactional(readOnly = true)
     CustomerOrderComboResponse getSellerOrderComboById(String comboId);
+
+    List<OrderResponse> getOrdersByCurrentCustomer();
 }

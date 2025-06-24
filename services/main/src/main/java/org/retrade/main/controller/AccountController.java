@@ -185,4 +185,26 @@ public class AccountController {
                 .messages("Accounts retrieved successfully")
                 .build());
     }
+
+    @PutMapping("{id}/ban-customer")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    public ResponseEntity<ResponseObject<Void>> banSeller(@PathVariable String id) {
+        accountService.banCustomer(id);
+        return ResponseEntity.ok(new ResponseObject.Builder<Void>()
+                .success(true)
+                .code("SUCCESS")
+                .messages("ban customer with" + id + "successfully")
+                .build());
+    }
+    @PutMapping("{id}/unban-customer")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    public ResponseEntity<ResponseObject<Void>> unbanSeller(@PathVariable String id) {
+        accountService.unbanCustomer(id);
+        return ResponseEntity.ok(new ResponseObject.Builder<Void>()
+                .success(true)
+                .code("SUCCESS")
+                .messages("unban customer with" + id + "successfully")
+                .build());
+    }
+
 }

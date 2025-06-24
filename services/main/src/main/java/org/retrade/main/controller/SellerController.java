@@ -12,6 +12,7 @@ import org.retrade.main.service.FileService;
 import org.retrade.main.service.SellerService;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -69,6 +70,28 @@ public class SellerController {
                 .success(true)
                 .code("SUCCESS")
                 .messages("Approve Seller Submit Successfully")
+                .build());
+    }
+
+    @PutMapping("{id}/ban-seller")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    public ResponseEntity<ResponseObject<Void>> banSeller(@PathVariable String id) {
+        sellerService.banSeller(id);
+        return ResponseEntity.ok(new ResponseObject.Builder<Void>()
+                .success(true)
+                .code("SUCCESS")
+                .messages("ban seller with" + id + "successfully")
+                .build());
+    }
+
+    @PutMapping("{id}/unban-seller")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    public ResponseEntity<ResponseObject<Void>> unbanSeller(@PathVariable String id) {
+        sellerService.banSeller(id);
+        return ResponseEntity.ok(new ResponseObject.Builder<Void>()
+                .success(true)
+                .code("SUCCESS")
+                .messages("ban seller with" + id + "successfully")
                 .build());
     }
 }
