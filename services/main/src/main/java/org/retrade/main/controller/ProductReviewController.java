@@ -1,13 +1,10 @@
 package org.retrade.main.controller;
 
-import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.retrade.common.model.dto.response.ResponseObject;
-import org.retrade.main.model.dto.request.CreateProductRequest;
 import org.retrade.main.model.dto.request.ProductReviewRequest;
-import org.retrade.main.model.dto.response.ProductResponse;
 import org.retrade.main.model.dto.response.ProductReviewResponse;
 import org.retrade.main.service.ProductReviewService;
 import org.springframework.http.ResponseEntity;
