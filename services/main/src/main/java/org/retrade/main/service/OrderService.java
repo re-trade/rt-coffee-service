@@ -29,4 +29,7 @@ public interface OrderService {
 
     @Transactional(readOnly = true)
     CustomerOrderComboResponse getSellerOrderComboById(String comboId);
+
+    @Transactional(readOnly = true)
+    CustomerOrderComboResponse getCustomerOrderComboById(String comboId);
 }
