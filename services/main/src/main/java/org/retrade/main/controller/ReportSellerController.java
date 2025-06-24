@@ -20,7 +20,7 @@ import java.util.List;
 @RestController
 @RequestMapping("report-seller")
 @RequiredArgsConstructor
-@Tag(name = "Registration", description = "User report product has buy endpoints")
+@Tag(name = "Report ", description = "User report product has buy endpoints")
 public class ReportSellerController {
     private final ReportSellerService reportSellerService;
 
@@ -69,7 +69,7 @@ public class ReportSellerController {
                 .wrapSort(pageable)
                 .build();
 
-        var result = reportSellerService.getAllReportBySellerId(sellerId ,queryWrapper);
+        var result = reportSellerService.getAllReportBySellerId(sellerId, queryWrapper);
 
         return ResponseEntity.ok(
                 new ResponseObject.Builder<List<ReportSellerResponse>>()
@@ -91,6 +91,30 @@ public class ReportSellerController {
                 .code("SUCCESS")
                 .content(result)
                 .messages("Get all report seller successfully")
+                .build());
+    }
+
+    @PatchMapping("{id}")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    public ResponseEntity<ResponseObject<ReportSellerResponse>> acceptReportSeller(@PathVariable String id,@RequestParam boolean accept) {
+        var result = reportSellerService.acceptReportSeller(id,accept);
+        return ResponseEntity.ok(new ResponseObject.Builder<ReportSellerResponse>()
+                .success(true)
+                .code("SUCCESS")
+                .content(result)
+                .messages("Accept report seller successfully")
+                .build());
+    }
+
+    @PutMapping("{id}")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    public ResponseEntity<ResponseObject<ReportSellerResponse>> processReportSeller(@PathVariable String id,@RequestParam String resolutionDetail) {
+        var result = reportSellerService.processReportSeller(id, resolutionDetail);
+        return ResponseEntity.ok(new ResponseObject.Builder<ReportSellerResponse>()
+                .success(true)
+                .code("SUCCESS")
+                .content(result)
+                .messages("Accept report seller successfully")
                 .build());
     }
 }

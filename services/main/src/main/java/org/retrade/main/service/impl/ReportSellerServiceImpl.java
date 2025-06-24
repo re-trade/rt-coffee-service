@@ -42,14 +42,11 @@ public class ReportSellerServiceImpl implements ReportSellerService {
             throw new ValidationException("Order does not contain product id: " + request.getProductId());
         }
 
-        SellerEntity sellerEntity = sellerRepository.findById(request.getSellerId())
-                .orElseThrow(() -> new ValidationException("Seller not found with id: " + request.getSellerId()));
-
         ReportSellerEntity reportSellerEntity = ReportSellerEntity.builder()
                 .typeReport(request.getTypeReport())
                 .content(request.getContent())
                 .orderCombo(orderComboEntity)
-                .seller(sellerEntity)
+                .seller(productEntity.getSeller())
                 .customer(customer)
                 .image(request.getImage())
                 .product(productEntity)
@@ -126,6 +123,46 @@ public class ReportSellerServiceImpl implements ReportSellerService {
                 .orderId(reportSellerEntity.getOrderCombo().getId())
                 .reportSellerId(reportSellerEntity.getId())
                 .build();
+    }
+
+    @Override
+    public ReportSellerResponse acceptReportSeller(String id, boolean accepted) {
+        ReportSellerEntity reportSellerEntity = reportSellerRepository.findById(id).orElseThrow(
+                () -> new ValidationException("Report not found with id: " + id)
+        );
+        if (accepted) {
+            reportSellerEntity.setResolutionStatus("ACCEPT");
+        }else {
+            reportSellerEntity.setResolutionStatus("REJECT");
+        }
+        try {
+            reportSellerRepository.save(reportSellerEntity);
+            return ReportSellerResponse.builder()
+                    .sellerId(reportSellerEntity.getSeller().getId())
+                    .typeReport(reportSellerEntity.getTypeReport())
+                    .content(reportSellerEntity.getContent())
+                    .image(reportSellerEntity.getImage())
+                    .createdAt(reportSellerEntity.getCreatedDate().toLocalDateTime())
+                    .productId(reportSellerEntity.getProduct().getId())
+                    .adminId(reportSellerEntity.getAccount() != null ? reportSellerEntity.getAccount().getId() : null)
+                    .customerId(reportSellerEntity.getCustomer().getId())
+                    .resolutionDetail(reportSellerEntity.getResolutionDetail())
+                    .resolutionStatus(reportSellerEntity.getResolutionStatus())
+                    .resolutionDate(reportSellerEntity.getResolutionDate() != null
+                            ? reportSellerEntity.getResolutionDate().toLocalDateTime()
+                            : null)
+                    .orderId(reportSellerEntity.getOrderCombo().getId())
+                    .reportSellerId(reportSellerEntity.getId())
+                    .build();
+        }catch (Exception e) {
+            throw new ValidationException("Failed to create report: " + e.getMessage());
+        }
+
+    }
+
+    @Override
+    public ReportSellerResponse processReportSeller(String id, String resolutionDetail) {
+        return null;
     }
 
 }

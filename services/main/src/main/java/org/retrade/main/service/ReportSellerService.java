@@ -16,4 +16,8 @@ public interface ReportSellerService {
     List<ReportSellerResponse> getAllReportBySellerId(String sellerId, QueryWrapper queryWrapper);
 
     ReportSellerResponse getReportDetail(String id);
+
+    ReportSellerResponse acceptReportSeller(String id, boolean accepted);
+
+    ReportSellerResponse processReportSeller(String id, String resolutionDetail);
 }
