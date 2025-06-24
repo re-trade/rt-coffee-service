@@ -25,6 +25,7 @@ import org.retrade.main.util.AuthUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.Optional;
 
 @Service
@@ -38,6 +39,9 @@ public class SellerServiceImpl implements SellerService {
 
     @Override
     public SellerRegisterResponse createSeller(SellerRegisterRequest request) {
+        if (sellerRepository.existsByIdentityNumberIgnoreCase(request.getIdentityNumber())) {
+            throw new ValidationException("This identity is existed");
+        }
         var accountEntity = authUtils.getUserAccountFromAuthentication();
         if (accountEntity.getCustomer() == null) {
             throw new ValidationException("Account must be a customer to create a seller");
@@ -57,6 +61,7 @@ public class SellerServiceImpl implements SellerService {
                 .background(request.getBackground())
                 .phoneNumber(request.getPhoneNumber())
                 .identityNumber(request.getIdentityNumber())
+                .balance(BigDecimal.ZERO)
                 .frontSideIdentityCard("example")
                 .backSideIdentityCard("example")
                 .identityVerified(IdentityVerifiedStatusEnum.INIT)
