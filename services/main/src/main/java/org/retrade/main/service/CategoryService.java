@@ -37,4 +37,6 @@ public interface CategoryService {
     List<String> getInvalidCategoryNames(Set<String> categoryNames);
     
     boolean categoryExists(String name);
+
+    List<CategoryResponse> getAllCategoriesNoPagination();
 }
