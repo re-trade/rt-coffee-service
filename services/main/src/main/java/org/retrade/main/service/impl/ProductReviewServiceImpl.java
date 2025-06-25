@@ -1,14 +1,20 @@
 package org.retrade.main.service.impl;
 
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Root;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.retrade.common.model.dto.request.QueryFieldWrapper;
 import org.retrade.common.model.dto.request.QueryWrapper;
 import org.retrade.common.model.dto.response.PaginationWrapper;
 import org.retrade.common.model.exception.ActionFailedException;
 import org.retrade.common.model.exception.ValidationException;
 import org.retrade.main.model.dto.request.CreateProductReviewRequest;
 import org.retrade.main.model.dto.request.UpdateProductReviewRequest;
+import org.retrade.main.model.dto.response.ProductResponse;
 import org.retrade.main.model.dto.response.ProductReviewResponse;
+import org.retrade.main.model.entity.CustomerEntity;
 import org.retrade.main.model.entity.OrderComboEntity;
 import org.retrade.main.model.entity.ProductEntity;
 import org.retrade.main.model.entity.ProductReviewEntity;
@@ -21,7 +27,12 @@ import org.springframework.stereotype.Service;
 
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+
+import static org.springframework.data.jpa.convert.QueryByExamplePredicateBuilder.getPredicate;
 
 @Service
 @Transactional
@@ -34,8 +45,7 @@ public class ProductReviewServiceImpl implements ProductReviewService {
     private final OrderComboRepository orderComboRepository;
     @Override
     public ProductReviewResponse createProductReview(CreateProductReviewRequest request) {
-        var account = authUtils.getUserAccountFromAuthentication();
-        var customer = account.getCustomer();
+        var customer = getCustomer();
         OrderComboEntity orderComboEntity = orderComboRepository.findById(request.getOrderId()).orElseThrow(
                 () -> new ValidationException("Order combo not found")
         );
@@ -56,17 +66,7 @@ public class ProductReviewServiceImpl implements ProductReviewService {
         productReviewEntity.setOrder(orderComboEntity);
         try {
             productReviewRepository.save(productReviewEntity);
-            return ProductReviewResponse.builder()
-                    .id(productReviewEntity.getId())
-                    .createdAt(productReviewEntity.getCreatedDate().toLocalDateTime())
-                    .updatedAt(productReviewEntity.getUpdatedDate().toLocalDateTime())
-                    .vote(productReviewEntity.getVote())
-                    .content(productReviewEntity.getContent())
-                    .authorId(productReviewEntity.getCustomer().getId())
-                    .orderId(productReviewEntity.getOrder().getId())
-                    .status(productReviewEntity.getStatus())
-                    .productId(productReviewEntity.getProduct().getId())
-                    .build();
+            return mapToProductReviewResponse(productReviewEntity);
         }catch (Exception e) {
             throw new ActionFailedException("Product review could not be saved " + e.getMessage());
         }
@@ -75,21 +75,91 @@ public class ProductReviewServiceImpl implements ProductReviewService {
 
     @Override
     public PaginationWrapper<List<ProductReviewResponse>> getProductReviewByProductId(String productId, QueryWrapper queryWrapper) {
-        return null;
+        ProductEntity productEntity = productRepository.findById(productId).orElseThrow(
+                () -> new ValidationException("Product not found")
+        );
+
+        return productReviewRepository.query(queryWrapper, (param) -> (root, query, criteriaBuilder) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            predicates.add(criteriaBuilder.equal(root.get("product"), productEntity));
+            return getPredicate(param, root, criteriaBuilder, predicates);
+        }, (items) -> {
+            var list = items.map(this::mapToProductReviewResponse).stream().toList();
+            return new PaginationWrapper.Builder<List<ProductReviewResponse>>()
+                    .setPaginationInfo(items)
+                    .setData(list)
+                    .build();
+        });
+    }
+    private ProductReviewResponse mapToProductReviewResponse(ProductReviewEntity entity) {
+        return ProductReviewResponse.builder()
+                .id(entity.getId())
+                .createdAt(entity.getCreatedDate().toLocalDateTime())
+                .updatedAt(entity.getUpdatedDate().toLocalDateTime())
+                .vote(entity.getVote())
+                .content(entity.getContent())
+                .authorId(entity.getCustomer().getId())
+                .orderId(entity.getOrder().getId())
+                .status(entity.getStatus())
+                .productId(entity.getProduct().getId())
+                .build();
+    }
+    private Predicate getPredicate(Map<String, QueryFieldWrapper> param, Root<ProductReviewEntity> root, CriteriaBuilder criteriaBuilder, List<Predicate> predicates) {
+        if (param != null && !param.isEmpty()) {
+            Predicate[] defaultPredicates = productReviewRepository.createDefaultPredicate(criteriaBuilder, root, param);
+            predicates.addAll(Arrays.asList(defaultPredicates));
+        }
+        return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
     }
 
     @Override
     public ProductReviewResponse getProductReviewDetails(String id) {
-        return null;
+        var productReviewEntity = productReviewRepository.findById(id).orElseThrow(
+                () -> new ValidationException("Product review not found")
+        );
+        return mapToProductReviewResponse(productReviewEntity);
     }
 
     @Override
     public ProductReviewResponse updateProductReview(String id, UpdateProductReviewRequest request) {
-        return null;
-    }
+        var customer = getCustomer();
 
+        var productReviewEntity = productReviewRepository.findById(id).orElseThrow(
+                () -> new ValidationException("Product review not found")
+        );
+        if(!customer.getId().equals(productReviewEntity.getCustomer().getId())) {
+            throw new ValidationException("Customer is not the same");
+        }
+        productReviewEntity.setVote(request.getVote());
+        productReviewEntity.setContent(request.getContent());
+        try {
+            productReviewRepository.save(productReviewEntity);
+            return mapToProductReviewResponse(productReviewEntity);
+        }catch (Exception e) {
+            throw new ValidationException("Product review could not be saved " + e.getMessage());
+        }
+
+    }
+    private CustomerEntity getCustomer(){
+        var account = authUtils.getUserAccountFromAuthentication();
+        return account.getCustomer();
+    }
     @Override
     public ProductReviewResponse deleteProductReview(String id) {
-        return null;
+        var customer = getCustomer();
+        var productReviewEntity = productReviewRepository.findById(id).orElseThrow(
+                () -> new ValidationException("Product review not found")
+        );
+        if(!customer.getId().equals(productReviewEntity.getCustomer().getId())) {
+            throw new ValidationException("Customer is not the same");
+        }
+        productReviewEntity.setStatus(false);
+        try {
+            productReviewRepository.save(productReviewEntity);
+            return mapToProductReviewResponse(productReviewEntity);
+        }catch (Exception e) {
+            throw new ValidationException("Product review could not be delete " + e.getMessage());
+        }
+
     }
 }
