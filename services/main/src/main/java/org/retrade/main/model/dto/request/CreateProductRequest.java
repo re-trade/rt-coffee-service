@@ -39,9 +39,6 @@ public class CreateProductRequest {
     @NotNull(message = "Brand cannot be null")
     private String brandId;
 
-    @Size(max = 50, message = "Discount must not exceed 50 characters")
-    private Double discount;
-
     @NotEmpty(message = "Model is required")
     @NotNull(message = "Model cannot be null")
     @Size(max = 128, message = "Model must not exceed 128 characters")

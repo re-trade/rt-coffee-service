@@ -44,9 +44,6 @@ public class UpdateProductRequest {
     @NotNull(message = "Condition is required")
     private ProductConditionEnum condition;
 
-    @Size(max = 50, message = "Discount must not exceed 50 characters")
-    private Double discount;
-
     @Size(max = 128, message = "Model must not exceed 128 characters")
     private String model;
 

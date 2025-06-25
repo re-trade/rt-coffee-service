@@ -30,6 +30,7 @@ import org.retrade.main.service.ProductService;
 import org.retrade.main.util.AuthUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.elasticsearch.client.elc.ElasticsearchAggregation;
 import org.springframework.data.elasticsearch.client.elc.NativeQuery;
 import org.springframework.data.elasticsearch.core.AggregationsContainer;
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
@@ -338,10 +339,13 @@ public class ProductServiceImpl implements ProductService {
 
     private Set<String> extractBucketKeys(AggregationsContainer<?> aggregations, String aggName) {
         Set<String> keys = new HashSet<>();
-
         if (aggregations != null) {
             @SuppressWarnings("unchecked")
-            Map<String, Aggregate> aggMap = (Map<String, Aggregate>) aggregations.aggregations();
+            var aggList = (List<ElasticsearchAggregation>) aggregations.aggregations();
+            Map<String, Aggregate> aggMap = new HashMap<>();
+            aggList.forEach(item -> {
+                aggMap.put(item.aggregation().getName(), item.aggregation().getAggregate());
+            });
 
             if (aggMap.containsKey(aggName)) {
                 Aggregate agg = aggMap.get(aggName);
@@ -360,7 +364,11 @@ public class ProductServiceImpl implements ProductService {
     private BigDecimal extractMin(AggregationsContainer<?> aggregations, String aggName) {
         if (aggregations != null) {
             @SuppressWarnings("unchecked")
-            Map<String, Aggregate> aggMap = (Map<String, Aggregate>) aggregations.aggregations();
+            var aggList = (List<ElasticsearchAggregation>) aggregations.aggregations();
+            Map<String, Aggregate> aggMap = new HashMap<>();
+            aggList.forEach(item -> {
+                aggMap.put(item.aggregation().getName(), item.aggregation().getAggregate());
+            });
 
             if (aggMap.containsKey(aggName)) {
                 Aggregate agg = aggMap.get(aggName);
@@ -377,7 +385,11 @@ public class ProductServiceImpl implements ProductService {
     private BigDecimal extractMax(AggregationsContainer<?> aggregations, String aggName) {
         if (aggregations != null) {
             @SuppressWarnings("unchecked")
-            Map<String, Aggregate> aggMap = (Map<String, Aggregate>) aggregations.aggregations();
+            var aggList = (List<ElasticsearchAggregation>) aggregations.aggregations();
+            Map<String, Aggregate> aggMap = new HashMap<>();
+            aggList.forEach(item -> {
+                aggMap.put(item.aggregation().getName(), item.aggregation().getAggregate());
+            });
 
             if (aggMap.containsKey(aggName)) {
                 Aggregate agg = aggMap.get(aggName);
