@@ -1,9 +1,9 @@
 package org.retrade.main.model.constant;
 
-public enum EProductStatus {
-    DRAFT,
-    INIT,
+public enum ProductStatusEnum {
     ACTIVE,
     INACTIVE,
-    SOLD,
+    DELETED,
+    INIT,
+    DRAFT
 }

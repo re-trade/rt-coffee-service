@@ -5,9 +5,11 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.retrade.main.model.constant.EProductStatus;
+import org.retrade.main.model.constant.ProductConditionEnum;
+import org.retrade.main.model.constant.ProductStatusEnum;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.Set;
 
 @Data
@@ -35,8 +37,7 @@ public class CreateProductRequest {
 
     @NotEmpty(message = "Brand is required")
     @NotNull(message = "Brand cannot be null")
-    @Size(max = 128, message = "Brand must not exceed 128 characters")
-    private String brand;
+    private String brandId;
 
     @Size(max = 50, message = "Discount must not exceed 50 characters")
     private Double discount;
@@ -50,9 +51,19 @@ public class CreateProductRequest {
     @DecimalMin(value = "0.0", inclusive = false, message = "Current price must be greater than 0")
     private BigDecimal currentPrice;
 
+    @NotNull(message = "Quantity is required")
+    @Min(value = 1, message = "Quantity must be at least 1")
+    private Integer quantity;
+
+    private LocalDate warrantyExpiryDate;
+
+    @NotNull(message = "Condition is required")
+    private ProductConditionEnum condition;
+
     private Set<String> categoryIds;
-    private Set<String> keywords;
+
     private Set<String> tags;
+
     @NotNull(message = "Current status is required")
-    private EProductStatus status;
+    private ProductStatusEnum status;
 }

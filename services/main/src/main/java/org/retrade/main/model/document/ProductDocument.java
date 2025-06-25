@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.retrade.main.model.constant.ProductConditionEnum;
 import org.retrade.main.model.entity.ProductEntity;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.elasticsearch.annotations.DateFormat;
@@ -22,7 +23,6 @@ import java.util.stream.Collectors;
 @AllArgsConstructor
 @Document(indexName = "products")
 public class ProductDocument {
-
     @Id
     private String id;
 
@@ -41,11 +41,14 @@ public class ProductDocument {
     @Field(type = FieldType.Text, analyzer = "standard")
     private String description;
 
+    @Field(type = FieldType.Text, analyzer = "standard")
+    private ProductConditionEnum condition;
+
     @Field(type = FieldType.Text, analyzer = "keyword")
     private String brand;
 
-    @Field(type = FieldType.Keyword)
-    private Double discount;
+    @Field(type = FieldType.Text, analyzer = "keyword")
+    private String brandId;
 
     @Field(type = FieldType.Text, analyzer = "keyword")
     private String model;
@@ -66,7 +69,7 @@ public class ProductDocument {
     private String ward;
 
     @Field(type = FieldType.Nested)
-    private Set<CategoryInfo> categories;
+    private Set<CategoryInfoDocument> categories;
 
     @Field(type = FieldType.Boolean)
     private Boolean verified;
@@ -77,27 +80,13 @@ public class ProductDocument {
     @Field(type = FieldType.Date, format = DateFormat.date_time)
     private Date updatedAt;
 
-    @Data
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class CategoryInfo {
-        @Field(type = FieldType.Keyword)
-        private String id;
-
-        @Field(type = FieldType.Text, analyzer = "standard")
-        private String name;
-
-        @Field(type = FieldType.Keyword)
-        private String type;
-    }
-
     public static ProductDocument wrapEntityToDocument(ProductEntity productEntity) {
         var seller = productEntity.getSeller();
         return ProductDocument.builder()
                 .id(productEntity.getId())
                 .name(productEntity.getName())
                 .sellerId(seller.getId())
+                .condition(productEntity.getCondition())
                 .sellerShopName(seller.getShopName())
                 .addressLine(seller.getAddressLine())
                 .ward(seller.getWard())
@@ -105,11 +94,10 @@ public class ProductDocument {
                 .state(seller.getState())
                 .shortDescription(productEntity.getShortDescription())
                 .description(productEntity.getDescription())
-                .brand(productEntity.getBrand())
-                .discount(productEntity.getDiscount())
+                .brand(productEntity.getBrand().getName())
                 .model(productEntity.getModel())
                 .currentPrice(productEntity.getCurrentPrice())
-                .categories(productEntity.getCategories().stream().map(item -> ProductDocument.CategoryInfo.builder()
+                .categories(productEntity.getCategories().stream().map(item -> CategoryInfoDocument.builder()
                         .id(item.getId())
                         .name(item.getName())
                         .build()).collect(Collectors.toSet()))

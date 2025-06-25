@@ -75,10 +75,8 @@ public class OrderServiceImpl implements OrderService {
                 throw new ValidationException("Voucher validation failed: " + voucherValidation.getMessage());
             }
         }
-        var totalDiscountPercent = calculateProductDiscountTotal(products);
-        var totalDiscount = subtotal.multiply(new BigDecimal(totalDiscountPercent)).setScale(2, RoundingMode.HALF_UP);
 
-        BigDecimal grandTotal = subtotal.add(taxTotal).subtract(discountTotal).subtract(totalDiscount);
+        BigDecimal grandTotal = subtotal.add(taxTotal).subtract(discountTotal);
 
         OrderEntity order = createOrderEntity(customer, subtotal, taxTotal, discountTotal, grandTotal);
         OrderEntity savedOrder;
@@ -390,7 +388,7 @@ public class OrderServiceImpl implements OrderService {
                     .shortDescription(product.getShortDescription())
                     .backgroundUrl(product.getThumbnail())
                     .basePrice(product.getCurrentPrice())
-                    .discount(product.getDiscount())
+//                    .discount(product.getDiscount())
                     .unit("vnd")
                     .build();
 
@@ -431,14 +429,6 @@ public class OrderServiceImpl implements OrderService {
                 .addressLine(destination.getAddressLine())
                 .build();
     }
-
-    private Double calculateProductDiscountTotal(List<ProductEntity> productEntities) {
-        return productEntities.stream()
-                .mapToDouble(ProductEntity::getDiscount)
-                .average()
-                .orElse(0.0);
-    }
-
 
     private List<OrderItemResponse> mapToOrderItemResponses(OrderEntity order) {
         List<OrderItemEntity> orderItems = orderItemRepository.findByOrder(order);

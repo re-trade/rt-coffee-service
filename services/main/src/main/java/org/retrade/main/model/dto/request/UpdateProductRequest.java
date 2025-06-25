@@ -1,14 +1,14 @@
 package org.retrade.main.model.dto.request;
 
-import jakarta.validation.constraints.DecimalMin;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.retrade.main.model.constant.ProductConditionEnum;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.Set;
 
 @Data
@@ -31,8 +31,18 @@ public class UpdateProductRequest {
 
     private Set<@Size(max = 256, message = "Image URL must not exceed 256 characters") String> productImages;
 
-    @Size(max = 128, message = "Brand must not exceed 128 characters")
-    private String brand;
+    @NotEmpty(message = "Brand is required")
+    @NotNull(message = "Brand cannot be null")
+    private String brandId;
+
+    @NotNull(message = "Quantity is required")
+    @Min(value = 1, message = "Quantity must be at least 1")
+    private Integer quantity;
+
+    private LocalDate warrantyExpiryDate;
+
+    @NotNull(message = "Condition is required")
+    private ProductConditionEnum condition;
 
     @Size(max = 50, message = "Discount must not exceed 50 characters")
     private Double discount;
@@ -44,8 +54,5 @@ public class UpdateProductRequest {
     private BigDecimal currentPrice;
 
     private Set<@NotBlank(message = "Category ID must not be blank") String> categoryIds;
-    private Set<@NotBlank(message = "Keyword must not be blank") String> keywords;
     private Set<@NotBlank(message = "Tag must not be blank") String> tags;
-
-    private Boolean verified;
 }
