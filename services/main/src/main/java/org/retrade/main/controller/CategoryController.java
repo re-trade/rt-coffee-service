@@ -73,6 +73,16 @@ public class CategoryController {
                 .unwrapPaginationWrapper(categories)
                 .build());
     }
+    @GetMapping("/all")
+    public ResponseEntity<ResponseObject<List<CategoryResponse>>> getAllCategoriesNoPagination(){
+        var response = categoryService.getAllCategoriesNoPagination();
+        return ResponseEntity.ok(new ResponseObject.Builder<List<CategoryResponse>>()
+                .success(true)
+                .code("CATEGORIES_RETRIEVED")
+                .messages("Categories retrieved successfully")
+                .content(response)
+                .build());
+    }
 
     @GetMapping("{id}")
     public ResponseEntity<ResponseObject<CategoryResponse>> getCategoryById(@PathVariable String id) {

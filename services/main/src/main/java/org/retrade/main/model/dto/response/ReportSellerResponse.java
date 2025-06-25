@@ -1,27 +1,36 @@
 package org.retrade.main.model.dto.response;
 
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.retrade.main.model.entity.AccountEntity;
-import org.retrade.main.model.entity.OrderComboEntity;
-import org.retrade.main.model.entity.SellerEntity;
 
-import java.security.Timestamp;
+import java.time.LocalDateTime;
+import java.util.Set;
 
 @Data
-@Builder
-@NoArgsConstructor
 @AllArgsConstructor
+@NoArgsConstructor
+@Builder
 public class ReportSellerResponse {
-    private SellerEntity seller;
+
+    private String reportSellerId;
+
+    private String customerId;
+
+    private String productId;
+    private String orderId;
+    private String sellerId;
+
     private String typeReport;
     private String content;
+    private String image;
+    private LocalDateTime createdAt;
+
     private String resolutionStatus;
     private String resolutionDetail;
-    private Timestamp resolutionDate;
-    private OrderComboEntity orderCombo;
-    private AccountEntity account;
-    private String image;
+    private LocalDateTime resolutionDate;
+    private String adminId;
+
 }
