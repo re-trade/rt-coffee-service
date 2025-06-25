@@ -18,4 +18,6 @@ public interface ProductReviewService {
     ProductReviewResponse updateProductReview(String id, UpdateProductReviewRequest request);
 
     ProductReviewResponse deleteProductReview(String id);
+
+    PaginationWrapper <List<ProductReviewResponse>> getProductReviewBySellerId(String sellerId, QueryWrapper queryWrapper);
 }

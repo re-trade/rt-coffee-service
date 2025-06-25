@@ -14,16 +14,16 @@ import org.retrade.main.model.dto.request.CreateProductReviewRequest;
 import org.retrade.main.model.dto.request.UpdateProductReviewRequest;
 import org.retrade.main.model.dto.response.ProductResponse;
 import org.retrade.main.model.dto.response.ProductReviewResponse;
-import org.retrade.main.model.entity.CustomerEntity;
-import org.retrade.main.model.entity.OrderComboEntity;
-import org.retrade.main.model.entity.ProductEntity;
-import org.retrade.main.model.entity.ProductReviewEntity;
+import org.retrade.main.model.entity.*;
 import org.retrade.main.repository.OrderComboRepository;
 import org.retrade.main.repository.ProductRepository;
 import org.retrade.main.repository.ProductReviewRepository;
+import org.retrade.main.repository.SellerRepository;
+import org.retrade.main.service.OrderService;
 import org.retrade.main.service.ProductReviewService;
 import org.retrade.main.util.AuthUtils;
 import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.GetMapping;
 
 
 import java.time.LocalDateTime;
@@ -43,6 +43,8 @@ public class ProductReviewServiceImpl implements ProductReviewService {
     private final AuthUtils authUtils;
     private final ProductRepository productRepository;
     private final OrderComboRepository orderComboRepository;
+    private final SellerRepository sellerRepository;
+
     @Override
     public ProductReviewResponse createProductReview(CreateProductReviewRequest request) {
         var customer = getCustomer();
@@ -67,7 +69,7 @@ public class ProductReviewServiceImpl implements ProductReviewService {
         try {
             productReviewRepository.save(productReviewEntity);
             return mapToProductReviewResponse(productReviewEntity);
-        }catch (Exception e) {
+        } catch (Exception e) {
             throw new ActionFailedException("Product review could not be saved " + e.getMessage());
         }
 
@@ -91,6 +93,7 @@ public class ProductReviewServiceImpl implements ProductReviewService {
                     .build();
         });
     }
+
     private ProductReviewResponse mapToProductReviewResponse(ProductReviewEntity entity) {
         return ProductReviewResponse.builder()
                 .id(entity.getId())
@@ -104,6 +107,7 @@ public class ProductReviewServiceImpl implements ProductReviewService {
                 .productId(entity.getProduct().getId())
                 .build();
     }
+
     private Predicate getPredicate(Map<String, QueryFieldWrapper> param, Root<ProductReviewEntity> root, CriteriaBuilder criteriaBuilder, List<Predicate> predicates) {
         if (param != null && !param.isEmpty()) {
             Predicate[] defaultPredicates = productReviewRepository.createDefaultPredicate(criteriaBuilder, root, param);
@@ -127,7 +131,7 @@ public class ProductReviewServiceImpl implements ProductReviewService {
         var productReviewEntity = productReviewRepository.findById(id).orElseThrow(
                 () -> new ValidationException("Product review not found")
         );
-        if(!customer.getId().equals(productReviewEntity.getCustomer().getId())) {
+        if (!customer.getId().equals(productReviewEntity.getCustomer().getId())) {
             throw new ValidationException("Customer is not the same");
         }
         productReviewEntity.setVote(request.getVote());
@@ -135,31 +139,91 @@ public class ProductReviewServiceImpl implements ProductReviewService {
         try {
             productReviewRepository.save(productReviewEntity);
             return mapToProductReviewResponse(productReviewEntity);
-        }catch (Exception e) {
+        } catch (Exception e) {
             throw new ValidationException("Product review could not be saved " + e.getMessage());
         }
 
     }
-    private CustomerEntity getCustomer(){
+
+    private CustomerEntity getCustomer() {
         var account = authUtils.getUserAccountFromAuthentication();
         return account.getCustomer();
     }
+
     @Override
     public ProductReviewResponse deleteProductReview(String id) {
         var customer = getCustomer();
         var productReviewEntity = productReviewRepository.findById(id).orElseThrow(
                 () -> new ValidationException("Product review not found")
         );
-        if(!customer.getId().equals(productReviewEntity.getCustomer().getId())) {
+        if (!customer.getId().equals(productReviewEntity.getCustomer().getId())) {
             throw new ValidationException("Customer is not the same");
         }
         productReviewEntity.setStatus(false);
         try {
             productReviewRepository.save(productReviewEntity);
             return mapToProductReviewResponse(productReviewEntity);
-        }catch (Exception e) {
+        } catch (Exception e) {
             throw new ValidationException("Product review could not be delete " + e.getMessage());
         }
 
+    }
+
+    @Override
+    public PaginationWrapper<List<ProductReviewResponse>> getProductReviewBySellerId(String sellerId, QueryWrapper queryWrapper) {
+//        SellerEntity sellerEntity = sellerRepository.findById(sellerId).orElseThrow(
+//                () -> new ValidationException("Seller not found")
+//        );
+//        return productReviewRepository.query(queryWrapper, (param) -> (root, query, criteriaBuilder) -> {
+//            List<Predicate> predicates = new ArrayList<>();
+//            predicates.add(criteriaBuilder.equal(root.get("seller"), sellerEntity));
+//            return getPredicate(param, root, criteriaBuilder, predicates);
+//        }, (items) -> {
+//            var list = items.map(this::mapToProductReviewResponse).stream().toList();
+//            return new PaginationWrapper.Builder<List<ProductReviewResponse>>()
+//                    .setPaginationInfo(items)
+//                    .setData(list)
+//                    .build();
+//        });
+        SellerEntity sellerEntity = sellerRepository.findById(sellerId)
+                .orElseThrow(() -> new ValidationException("Seller not found"));
+
+        List<ProductReviewEntity> productReviews = productReviewRepository.findAllBySellerWithProduct(sellerEntity);
+        List<ProductReviewResponse> reviewResponses = productReviews.stream()
+                .map(this::mapToProductReviewResponse)
+                .toList();
+        return new PaginationWrapper.Builder<List<ProductReviewResponse>>()
+                .setData(reviewResponses)
+                .build();
+
+    }
+
+    public void updateRatingProduct(String id) {
+        ProductEntity productEntity = productRepository.findById(id).orElseThrow(
+                () -> new ValidationException("Product not found")
+        );
+        var avgVote = productReviewRepository.calculateTotalRatingByProduct(productEntity);
+
+//        productEntity.setRatingValue(avgVote);
+//        try {
+//            productRepository.save(productEntity);
+//        } catch (Exception e) {
+//            throw new ActionFailedException("Product review could not be saved " + e.getMessage());
+//        }
+
+    }
+
+    public void updateRatingShop(String id) {
+        var sellerEntity = sellerRepository.findById(id).orElseThrow(
+                () -> new ValidationException("Seller not found")
+        );
+        var avgVote = productReviewRepository.calculateAverageRatingBySeller(sellerEntity);
+
+//        sellerEntity.setRatingValue(avgVote);
+//        try {
+//            sellerRepository.save(sellerEntity);
+//        } catch (Exception e) {
+//            throw new ActionFailedException("Seller review could not be saved " + e.getMessage());
+//        }
     }
 }

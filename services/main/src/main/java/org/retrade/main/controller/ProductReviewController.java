@@ -83,5 +83,21 @@ public class ProductReviewController {
                 .messages("Delete product review success")
                 .build());
     }
-
+    @GetMapping("seller/{sellerId}")
+    public ResponseEntity<ResponseObject<List<ProductReviewResponse>>> getAllShopReview(
+            @PathVariable String sellerId,
+            @RequestParam(required = false, name = "q") String search,
+            @PageableDefault(size = 10) Pageable pageable) {
+        var queryWrapper = new QueryWrapper.QueryWrapperBuilder()
+                .search(search)
+                .wrapSort(pageable)
+                .build();
+        var result = productReviewService.getProductReviewBySellerId(sellerId,queryWrapper);
+        return ResponseEntity.ok(new ResponseObject.Builder<List<ProductReviewResponse>>()
+                .success(true)
+                .code("SUCCESS")
+                .unwrapPaginationWrapper(result)
+                .messages("Create product review success")
+                .build());
+    }
 }
