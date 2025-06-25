@@ -205,6 +205,12 @@ public class CategoryServiceImpl implements CategoryService {
         return !categoryRepository.existsByName(name);
     }
 
+    @Override
+    public List<CategoryResponse> getAllCategoriesNoPagination() {
+          List<CategoryEntity>categoryEntity = categoryRepository.findAll();
+          return categoryEntity.stream().map(this::mapToCategoryResponse).collect(Collectors.toList());
+    }
+
     private CategoryResponse mapToCategoryResponse(CategoryEntity category) {
         CategoryResponse.CategoryResponseBuilder builder = CategoryResponse.builder()
                 .id(category.getId())

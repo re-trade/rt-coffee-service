@@ -36,10 +36,17 @@ public class ReportSellerEntity extends BaseSQLEntity {
     @JoinColumn(name = "oder_id",nullable = false)
     private OrderComboEntity orderCombo;
 
+    @ManyToOne(targetEntity =  ProductEntity.class, fetch = FetchType.EAGER, optional = false)
+    @JoinColumn(name = "product_id",nullable = false)
+    private ProductEntity product;
+
     @ManyToOne(targetEntity = AccountEntity.class, fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "admin_id", nullable = false)
     private AccountEntity account;
 
+    @ManyToOne(targetEntity = CustomerEntity.class, fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "customer_id", nullable = false)
+    private CustomerEntity customer;
 
     @Column(name="image")
     private String image;
