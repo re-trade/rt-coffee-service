@@ -34,7 +34,7 @@ public class ProductEntity extends BaseSQLEntity {
     @ManyToOne(targetEntity = BrandEntity.class, fetch = FetchType.EAGER, optional = false)
     @JoinColumn(name = "brand_id", nullable = false)
     private BrandEntity brand;
-    @Column(name = "quantity", nullable = false, columnDefinition = "SMALLINT DEFAULT 0")
+    @Column(name = "quantity", nullable = false, columnDefinition = "INTEGER DEFAULT 0")
     private Integer quantity;
     @Column(name = "warranty_expiry_date")
     private LocalDate warrantyExpiryDate;
