@@ -1,0 +1,103 @@
+package org.retrade.main.controller;
+
+import io.swagger.v3.oas.annotations.Parameter;
+import lombok.RequiredArgsConstructor;
+import org.retrade.common.model.dto.request.QueryWrapper;
+import org.retrade.common.model.dto.response.ResponseObject;
+import org.retrade.main.model.dto.request.CreateProductReviewRequest;
+import org.retrade.main.model.dto.request.UpdateProductReviewRequest;
+import org.retrade.main.model.dto.response.ProductResponse;
+import org.retrade.main.model.dto.response.ProductReviewResponse;
+import org.retrade.main.service.ProductReviewService;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("product-review")
+@RequiredArgsConstructor
+public class ProductReviewController {
+    private final ProductReviewService productReviewService;
+
+    @PostMapping
+    public ResponseEntity<ResponseObject<ProductReviewResponse>> createProductReview(@RequestBody CreateProductReviewRequest request) {
+        var result = productReviewService.createProductReview(request);
+        return ResponseEntity.ok(new ResponseObject.Builder<ProductReviewResponse>()
+                .success(true)
+                .code("SUCCESS")
+                .content(result)
+                .messages("Create product review success")
+                .build());
+    }
+
+    @GetMapping("product/{productId}")
+    public ResponseEntity<ResponseObject<List<ProductReviewResponse>>> getProductReviewByProductId(
+            @PathVariable String productId,
+            @RequestParam(required = false, name = "q") String search,
+            @PageableDefault(size = 10) Pageable pageable) {
+        var queryWrapper = new QueryWrapper.QueryWrapperBuilder()
+                .search(search)
+                .wrapSort(pageable)
+                .build();
+        var result = productReviewService.getProductReviewByProductId(productId,queryWrapper);
+        return ResponseEntity.ok(new ResponseObject.Builder<List<ProductReviewResponse>>()
+                .success(true)
+                .code("SUCCESS")
+                .unwrapPaginationWrapper(result)
+                .messages("Create product review success")
+                .build());
+    }
+    @GetMapping("{id}")
+    public ResponseEntity<ResponseObject<ProductReviewResponse>> getProductReviewDetails(@PathVariable String id){
+        var result = productReviewService.getProductReviewDetails(id);
+        return ResponseEntity.ok(new ResponseObject.Builder<ProductReviewResponse>()
+                .success(true)
+                .code("SUCCESS")
+                .content(result)
+                .messages("Get product details success")
+                .build());
+
+    }
+    @PutMapping("{id}")
+    public ResponseEntity<ResponseObject<ProductReviewResponse>> updateProductReview(
+            @PathVariable String id,
+            @RequestBody UpdateProductReviewRequest request){
+        var result = productReviewService.updateProductReview(id,request);
+        return ResponseEntity.ok(new ResponseObject.Builder<ProductReviewResponse>()
+                .success(true)
+                .code("SUCCESS")
+                .content(result)
+                .messages("Update product review success")
+                .build());
+    }
+    @DeleteMapping("{id}")
+    public ResponseEntity<ResponseObject<ProductReviewResponse>> deleteProductReview(@PathVariable String id){
+        var result = productReviewService.deleteProductReview(id);
+        return ResponseEntity.ok(new ResponseObject.Builder<ProductReviewResponse>()
+                .success(true)
+                .code("SUCCESS")
+                .content(result)
+                .messages("Delete product review success")
+                .build());
+    }
+    @GetMapping("seller/{sellerId}")
+    public ResponseEntity<ResponseObject<List<ProductReviewResponse>>> getAllShopReview(
+            @PathVariable String sellerId,
+            @RequestParam(required = false, name = "q") String search,
+            @PageableDefault(size = 10) Pageable pageable) {
+        var queryWrapper = new QueryWrapper.QueryWrapperBuilder()
+                .search(search)
+                .wrapSort(pageable)
+                .build();
+        var result = productReviewService.getProductReviewBySellerId(sellerId,queryWrapper);
+        return ResponseEntity.ok(new ResponseObject.Builder<List<ProductReviewResponse>>()
+                .success(true)
+                .code("SUCCESS")
+                .unwrapPaginationWrapper(result)
+                .messages("Create product review success")
+                .build());
+    }
+}

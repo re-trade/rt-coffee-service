@@ -49,4 +49,8 @@ public interface ProductRepository extends BaseJpaRepository<ProductEntity, Stri
     Set<String> findProductAncestryIds(@Param("productId") String productId);
 
 
+
+
+//    @Query("SELECT AVG(p.avgVote) FROM products p WHERE p.seller = :seller AND p.avgVote > 0")
+//    Double findAverageRatingBySeller(@Param("seller") SellerEntity seller);
 }
