@@ -22,4 +22,8 @@ public interface SellerService {
     void updateVerifiedSeller(CCCDVerificationResultMessage message);
 
     Optional<SellerWrapperBase> getSellerBaseInfoById(String sellerId);
+
+    SellerBaseResponse getSellerDetails(String id);
+
+    SellerBaseResponse getMySellers();
 }
