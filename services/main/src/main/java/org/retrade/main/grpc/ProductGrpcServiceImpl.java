@@ -224,7 +224,6 @@ public class ProductGrpcServiceImpl extends GrpcProductServiceGrpc.GrpcProductSe
                 .setDescription(product.getDescription() != null ? product.getDescription() : "")
                 .setThumbnail(product.getThumbnail() != null ? product.getThumbnail() : "")
                 .setBrand(product.getBrand())
-                .setDiscount(product.getDiscount() != null ? product.getDiscount() : 0)
                 .setModel(product.getModel())
                 .setCurrentPrice(product.getCurrentPrice().doubleValue())
                 .setVerified(product.getVerified() != null ? product.getVerified() : false);
@@ -234,9 +233,6 @@ public class ProductGrpcServiceImpl extends GrpcProductServiceGrpc.GrpcProductSe
         }
         if (product.getCategories() != null) {
             builder.addAllCategories(product.getCategories());
-        }
-        if (product.getKeywords() != null) {
-            builder.addAllKeywords(product.getKeywords());
         }
         if (product.getTags() != null) {
             builder.addAllTags(product.getTags());

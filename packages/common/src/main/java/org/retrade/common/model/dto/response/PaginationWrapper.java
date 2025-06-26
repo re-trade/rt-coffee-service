@@ -67,6 +67,13 @@ public class PaginationWrapper <T extends List<?>> {
             this.totalPages = page.getTotalPages();
             return this;
         }
+        public Builder<T> setPaginationInfoEmpty () {
+            this.page = 0;
+            this.size = 0;
+            this.totalElements = 0;
+            this.totalPages = 0;
+            return this;
+        }
         public PaginationWrapper<T> build() {
             return new PaginationWrapper<T>(this);
         }

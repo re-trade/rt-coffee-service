@@ -35,7 +35,9 @@ public interface CategoryService {
     boolean validateCategoryNames(Set<String> categoryNames);
     
     List<String> getInvalidCategoryNames(Set<String> categoryNames);
-    
+
+    PaginationWrapper<List<CategoryResponse>> getValidCategoriesOnTrees(QueryWrapper queryWrapper, Set<String> categoryIds);
+
     boolean categoryExists(String name);
 
     List<CategoryResponse> getAllCategoriesNoPagination();

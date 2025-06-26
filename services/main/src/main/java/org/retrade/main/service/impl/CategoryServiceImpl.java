@@ -16,6 +16,7 @@ import org.retrade.main.model.entity.CategoryEntity;
 import org.retrade.main.repository.CategoryRepository;
 import org.retrade.main.service.CategoryService;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -156,7 +157,6 @@ public class CategoryServiceImpl implements CategoryService {
                     .setData(list)
                     .build();
         });
-
     }
 
     @Override
@@ -198,6 +198,30 @@ public class CategoryServiceImpl implements CategoryService {
             }
         }
         return invalidCategories;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PaginationWrapper<List<CategoryResponse>> getValidCategoriesOnTrees(QueryWrapper queryWrapper, Set<String> categoryIds) {
+        var isSameRoot = categoryRepository.isSameRootCategory(categoryIds);
+        if (!isSameRoot) {
+            return new PaginationWrapper.Builder<List<CategoryResponse>>()
+                    .setPaginationInfoEmpty()
+                    .setData(Collections.emptyList())
+                    .build();
+        }
+        var ids = categoryRepository.findCategoryValidIdByCategoryIds(categoryIds);
+        return categoryRepository.query(queryWrapper, (param) -> (root, query, criteriaBuilder) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            predicates.add(root.get("id").in(ids));
+            return getPredicate(param, root, criteriaBuilder, predicates);
+        }, (items) -> {
+            var list = items.map(this::mapToCategoryResponse).stream().toList();
+            return new PaginationWrapper.Builder<List<CategoryResponse>>()
+                    .setPaginationInfo(items)
+                    .setData(list)
+                    .build();
+        });
     }
 
     @Override

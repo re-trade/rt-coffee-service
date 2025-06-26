@@ -18,6 +18,8 @@ public class SellerEntity extends BaseSQLEntity {
     private String shopName;
     @Column(name = "description", columnDefinition = "TEXT")
     private String description;
+    @Column(name = "avg_vote")
+    private Double avgVote;
     @Column(name = "address_line", length = 100, nullable = false)
     private String addressLine;
     @Column(name = "district", length = 50, nullable = false)
@@ -45,7 +47,7 @@ public class SellerEntity extends BaseSQLEntity {
     @Enumerated(EnumType.ORDINAL)
     @Column(name = "identity_verified", nullable = false, columnDefinition = "SMALLINT DEFAULT 0")
     private IdentityVerifiedStatusEnum identityVerified;
-    @Column(name = "balance", nullable = false , columnDefinition = "DEFAULT 0.00 NOT NULL")
+    @Column(name = "balance", nullable = false, columnDefinition = "DECIMAL(19,2) DEFAULT 0.00")
     private BigDecimal balance;
     @OneToOne(fetch = FetchType.EAGER, optional = false, targetEntity = AccountEntity.class)
     @JoinColumn(name = "account_id", nullable = false)

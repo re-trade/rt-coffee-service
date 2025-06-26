@@ -7,9 +7,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.retrade.common.model.dto.response.ResponseObject;
-import org.retrade.main.model.dto.request.AddToCartRequest;
+import org.retrade.main.model.dto.request.CartRequest;
 import org.retrade.main.model.dto.response.CartResponse;
-import org.retrade.main.model.dto.response.CartSummaryResponse;
 import org.retrade.main.service.CartService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -30,7 +29,7 @@ public class CartController {
     )
     @PostMapping("items")
     public ResponseEntity<ResponseObject<CartResponse>> addToCart(
-            @Parameter(description = "Product and quantity to add") @Valid @RequestBody AddToCartRequest request) {
+            @Parameter(description = "Product and quantity to add") @Valid @RequestBody CartRequest request) {
         var result = cartService.addToCart(request);
         return ResponseEntity.ok(new ResponseObject.Builder<CartResponse>()
                 .success(true)
@@ -40,10 +39,10 @@ public class CartController {
                 .build());
     }
 
-    @PutMapping("items/{productId}")
+    @PutMapping("items")
     public ResponseEntity<ResponseObject<CartResponse>> updateCartItem(
-            @PathVariable String productId) {
-        var result = cartService.updateCartItem(productId);
+            @Valid @RequestBody CartRequest request) {
+        var result = cartService.updateCartItem(request);
         return ResponseEntity.ok(new ResponseObject.Builder<CartResponse>()
                 .success(true)
                 .code("CART_ITEM_UPDATED")
@@ -77,17 +76,6 @@ public class CartController {
                 .code("CART_RETRIEVED")
                 .content(result)
                 .messages("Cart retrieved successfully")
-                .build());
-    }
-
-    @GetMapping("summary")
-    public ResponseEntity<ResponseObject<CartSummaryResponse>> getCartSummary() {
-        var result = cartService.getCartSummary();
-        return ResponseEntity.ok(new ResponseObject.Builder<CartSummaryResponse>()
-                .success(true)
-                .code("CART_SUMMARY_RETRIEVED")
-                .content(result)
-                .messages("Cart summary retrieved successfully")
                 .build());
     }
 

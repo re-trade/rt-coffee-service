@@ -10,19 +10,16 @@ import org.retrade.common.model.dto.request.QueryWrapper;
 import org.retrade.common.model.dto.response.PaginationWrapper;
 import org.retrade.common.model.exception.ActionFailedException;
 import org.retrade.common.model.exception.ValidationException;
-import org.retrade.main.client.VoucherGrpcClient;
 import org.retrade.main.model.dto.request.CreateOrderRequest;
+import org.retrade.main.model.dto.request.OrderItemRequest;
 import org.retrade.main.model.dto.response.*;
 import org.retrade.main.model.entity.*;
 import org.retrade.main.repository.*;
 import org.retrade.main.service.CartService;
 import org.retrade.main.service.OrderService;
 import org.retrade.main.util.AuthUtils;
-import org.retrade.proto.voucher.ApplyVoucherResponse;
-import org.retrade.proto.voucher.ValidateVoucherResponse;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -43,7 +40,6 @@ public class OrderServiceImpl implements OrderService {
     private final CustomerRepository customerRepository;
     private final CustomerContactRepository customerContactRepository;
     private final CartService cartService;
-    private final VoucherGrpcClient voucherGrpcClient;
     private final AuthUtils authUtils;
     
     private static final BigDecimal TAX_RATE = new BigDecimal("0.10");
@@ -51,34 +47,19 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Transactional(rollbackFor = {ActionFailedException.class, Exception.class})
     public OrderResponse createOrder(CreateOrderRequest request) {
-        log.info("Creating order for products: {}", request.getProductIds());
-
         CustomerEntity customer = getCurrentCustomerAccount();
         CustomerContactEntity contact = customerContactRepository.findById(request.getAddressId()).orElseThrow(() -> new ValidationException("Contact not found"));
         validateCreateOrderRequest(request);
         var orderDestinationEntity = wrapOrderDestination(contact);
-        List<ProductEntity> products = validateAndGetProducts(request.getProductIds());
+        List<ProductEntity> products = validateAndGetProducts(request.getItems());
         
         Map<SellerEntity, List<ProductEntity>> productsBySeller = groupProductsBySeller(products);
         
-        BigDecimal subtotal = calculateSubtotal(products, request.getProductIds());
+        BigDecimal subtotal = calculateSubtotal(products);
         BigDecimal taxTotal = calculateTax(subtotal);
-        
-        ValidateVoucherResponse voucherValidation = null;
         BigDecimal discountTotal = BigDecimal.ZERO;
-        
-        if (StringUtils.hasText(request.getVoucherCode())) {
-            voucherValidation = validateVoucher(request.getVoucherCode(), customer.getId(), subtotal, request.getProductIds());
-            if (voucherValidation.getValid()) {
-                discountTotal = BigDecimal.valueOf(voucherValidation.getDiscountAmount());
-            } else {
-                throw new ValidationException("Voucher validation failed: " + voucherValidation.getMessage());
-            }
-        }
-        var totalDiscountPercent = calculateProductDiscountTotal(products);
-        var totalDiscount = subtotal.multiply(new BigDecimal(totalDiscountPercent)).setScale(2, RoundingMode.HALF_UP);
 
-        BigDecimal grandTotal = subtotal.add(taxTotal).subtract(discountTotal).subtract(totalDiscount);
+        BigDecimal grandTotal = subtotal.add(taxTotal).subtract(discountTotal);
 
         OrderEntity order = createOrderEntity(customer, subtotal, taxTotal, discountTotal, grandTotal);
         OrderEntity savedOrder;
@@ -93,15 +74,9 @@ public class OrderServiceImpl implements OrderService {
         List<OrderComboEntity> orderCombos = createOrderCombos(productsBySeller, orderDestination);
         
         createOrderItems(savedOrder, products, orderCombos);
-        
-        if (voucherValidation != null && voucherValidation.getValid()) {
-            applyVoucher(request.getVoucherCode(), customer.getId(), savedOrder.getId(), grandTotal);
-        }
-
 
         cartService.clearCart();
 
-        log.info("Order created successfully with ID: {}", savedOrder.getId());
         return mapToOrderResponse(savedOrder);
     }
 
@@ -259,25 +234,28 @@ public class OrderServiceImpl implements OrderService {
     }
 
     private void validateCreateOrderRequest(CreateOrderRequest request) {
-        if (request.getProductIds().isEmpty()) {
+        if (request.getItems().isEmpty()) {
             throw new ValidationException("Product list cannot be empty");
         }
 
-        if (request.getProductIds().size() > 100) {
+        if (request.getItems().size() > 100) {
             throw new ValidationException("Cannot order more than 100 different products at once");
         }
     }
 
-    private List<ProductEntity> validateAndGetProducts(List<String> productIds) {
+    private List<ProductEntity> validateAndGetProducts(List<OrderItemRequest> items) {
         List<ProductEntity> products = new ArrayList<>();
         List<String> notFoundProducts = new ArrayList<>();
-
-        for (String productId : productIds) {
+        for (OrderItemRequest item : items) {
+            var productId = item.getProductId();
             Optional<ProductEntity> productOpt = productRepository.findById(productId);
             if (productOpt.isPresent()) {
                 ProductEntity product = productOpt.get();
                 if (!product.getVerified()) {
                     throw new ValidationException("Product " + productId + " is not verified and cannot be ordered");
+                }
+                if (product.getQuantity() < item.getQuantity()) {
+                    throw new ValidationException("Product " + productId + " has insufficient stock");
                 }
                 products.add(product);
             } else {
@@ -297,40 +275,16 @@ public class OrderServiceImpl implements OrderService {
                 .collect(Collectors.groupingBy(ProductEntity::getSeller));
     }
 
-    private BigDecimal calculateSubtotal(List<ProductEntity> products, List<String> productIds) {
-        Map<String, Long> productQuantities = productIds.stream()
-                .collect(Collectors.groupingBy(id -> id, Collectors.counting()));
-
+    private BigDecimal calculateSubtotal(List<ProductEntity> products) {
         return products.stream()
                 .map(product -> {
-                    Long quantity = productQuantities.get(product.getId());
-                    return product.getCurrentPrice().multiply(BigDecimal.valueOf(quantity));
+                    return product.getCurrentPrice().multiply(BigDecimal.valueOf(product.getQuantity()));
                 })
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
     private BigDecimal calculateTax(BigDecimal subtotal) {
         return subtotal.multiply(TAX_RATE).setScale(2, RoundingMode.HALF_UP);
-    }
-
-    private ValidateVoucherResponse validateVoucher(String voucherCode, String accountId, BigDecimal orderTotal, List<String> productIds) {
-        try {
-            return voucherGrpcClient.validateVoucher(voucherCode, accountId, orderTotal, productIds);
-        } catch (Exception e) {
-            log.error("Error validating voucher: {}", e.getMessage(), e);
-            throw new ActionFailedException("Failed to validate voucher", e);
-        }
-    }
-
-    private void applyVoucher(String voucherCode, String accountId, String orderId, BigDecimal orderTotal) {
-        try {
-            ApplyVoucherResponse response = voucherGrpcClient.applyVoucher(voucherCode, accountId, orderId, orderTotal);
-            if (!response.getSuccess()) {
-                log.warn("Failed to apply voucher {}: {}", voucherCode, response.getMessage());
-            }
-        } catch (Exception e) {
-            log.error("Error applying voucher: {}", e.getMessage(), e);
-        }
     }
 
     private OrderEntity createOrderEntity(CustomerEntity customer, BigDecimal subtotal, BigDecimal taxTotal,
@@ -390,7 +344,7 @@ public class OrderServiceImpl implements OrderService {
                     .shortDescription(product.getShortDescription())
                     .backgroundUrl(product.getThumbnail())
                     .basePrice(product.getCurrentPrice())
-                    .discount(product.getDiscount())
+                    .quantity(product.getQuantity())
                     .unit("vnd")
                     .build();
 
@@ -431,14 +385,6 @@ public class OrderServiceImpl implements OrderService {
                 .addressLine(destination.getAddressLine())
                 .build();
     }
-
-    private Double calculateProductDiscountTotal(List<ProductEntity> productEntities) {
-        return productEntities.stream()
-                .mapToDouble(ProductEntity::getDiscount)
-                .average()
-                .orElse(0.0);
-    }
-
 
     private List<OrderItemResponse> mapToOrderItemResponses(OrderEntity order) {
         List<OrderItemEntity> orderItems = orderItemRepository.findByOrder(order);
@@ -539,7 +485,7 @@ public class OrderServiceImpl implements OrderService {
                 .itemName(item.getProductName())
                 .productId(item.getProduct().getId())
                 .basePrice(item.getBasePrice())
-                .discount(item.getDiscount())
+                .quantity(item.getQuantity())
                 .build()).collect(Collectors.toSet());
     }
 

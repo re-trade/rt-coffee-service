@@ -26,7 +26,6 @@ public class OrderResponse {
     private BigDecimal discountTotal;
     private Double shippingCost;
     private BigDecimal grandTotal;
-    private VoucherApplicationResponse voucherApplication;
     private PaymentMethodResponse paymentMethod;
     private String status;
     private String notes;

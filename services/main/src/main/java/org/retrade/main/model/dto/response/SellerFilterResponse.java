@@ -5,16 +5,12 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.List;
-import java.util.Set;
-
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
-public class FiledAdvanceSearch {
-    List<CategoriesAdvanceSearch>  categoriesAdvanceSearch;
-    Set<String> brands;
-    Set<String> address;
-
+public class SellerFilterResponse {
+    private String sellerId;
+    private String sellerName;
+    private String sellerAvatarUrl;
 }
