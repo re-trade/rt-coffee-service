@@ -344,7 +344,7 @@ public class OrderServiceImpl implements OrderService {
                     .shortDescription(product.getShortDescription())
                     .backgroundUrl(product.getThumbnail())
                     .basePrice(product.getCurrentPrice())
-//                    .discount(product.getDiscount())
+                    .quantity(product.getQuantity())
                     .unit("vnd")
                     .build();
 
@@ -485,7 +485,7 @@ public class OrderServiceImpl implements OrderService {
                 .itemName(item.getProductName())
                 .productId(item.getProduct().getId())
                 .basePrice(item.getBasePrice())
-                .discount(item.getDiscount())
+                .quantity(item.getQuantity())
                 .build()).collect(Collectors.toSet());
     }
 
