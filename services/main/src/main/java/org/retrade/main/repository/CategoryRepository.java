@@ -13,17 +13,9 @@ import java.util.Set;
 public interface CategoryRepository extends BaseJpaRepository<CategoryEntity, String> {
     Optional<CategoryEntity> findByName(String name);
     
-    List<CategoryEntity> findByVisible(Boolean visible);
-    
     List<CategoryEntity> findByCategoryParent(CategoryEntity parent);
     
-    List<CategoryEntity> findByCategoryParentIsNull();
-    
-    List<CategoryEntity> findByNameContainingIgnoreCase(String name);
-    
     boolean existsByName(String name);
-    
-    boolean existsByNameAndIdNot(String name, String id);
 
     long countDistinctByIdIn(@NonNull Set<String> ids);
 

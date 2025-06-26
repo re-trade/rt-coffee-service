@@ -33,19 +33,20 @@ public interface ProductRepository extends BaseJpaRepository<ProductEntity, Stri
 
     @Query(
             value = """
-    WITH RECURSIVE product_chain AS (
-        SELECT id, product_parent_id
-        FROM products
-        WHERE id = :productId
-      UNION ALL
-        SELECT p.id, p.product_parent_id
-        FROM products p
-        JOIN product_chain pc ON p.id = pc.product_parent_id
-    )
-    SELECT id FROM product_chain;
+        WITH RECURSIVE product_chain AS (
+            SELECT p.id, p.product_parent_id
+            FROM main.products p
+            WHERE p.id = :productId
+          UNION ALL
+            SELECT p2.id, p2.product_parent_id
+            FROM main.products p2
+            JOIN product_chain pc ON p2.id = pc.product_parent_id
+        )
+        SELECT id FROM product_chain;
     """,
             nativeQuery = true
     )
     Set<String> findProductAncestryIds(@Param("productId") String productId);
+
 
 }

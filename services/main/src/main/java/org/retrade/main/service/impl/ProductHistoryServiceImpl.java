@@ -40,7 +40,16 @@ public class ProductHistoryServiceImpl implements ProductHistoryService {
     }
 
     private ProductHistoryResponse wrapProductHistoryResponse(ProductEntity productEntity) {
-        return ProductHistoryResponse.builder().build();
+        var seller = productEntity.getSeller();
+        return ProductHistoryResponse.builder()
+                .productId(productEntity.getId())
+                .productName(productEntity.getName())
+                .productThumbnail(productEntity.getThumbnail())
+                .productDescription(productEntity.getDescription())
+                .ownerId(seller.getId())
+                .ownerName(seller.getShopName())
+                .ownerAvatarUrl(seller.getAvatarUrl())
+                .build();
     }
 
 
