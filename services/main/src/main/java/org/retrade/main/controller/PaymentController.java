@@ -10,6 +10,7 @@ import org.retrade.common.model.dto.response.ResponseObject;
 import org.retrade.main.model.dto.request.PaymentInitRequest;
 import org.retrade.main.model.dto.response.PaymentHistoryResponse;
 import org.retrade.main.model.dto.response.PaymentMethodResponse;
+import org.retrade.main.model.dto.response.ProductResponse;
 import org.retrade.main.service.PaymentService;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
@@ -93,31 +94,23 @@ public class PaymentController {
                 .build());
     }
 
-    @PreAuthorize("hasRole('ROLE_CUSTOMER') or hasRole('ROLE_SELLER') or hasRole('ROLE_ADMIN')")
-    public ResponseEntity<ResponseObject<List<PaymentHistoryResponse>>> getPaymentHistoriesByCustomerId(
-            @Parameter(description = "Customer ID", required = true)
-            @PathVariable String customerId) {
+    @GetMapping("customer/{customerId}")
+    public ResponseEntity<ResponseObject<List<ProductResponse>>> getPaymentHistoryByCustomerId(
+            @PathVariable String customerId,
+            @RequestParam(required = false, name = "q") String search,
+            @PageableDefault(size = 10) Pageable pageable) {
 
-        List<PaymentHistoryResponse> payments = paymentService.getPaymentHistoriesByCustomerId(customerId);
+        var queryWrapper = new QueryWrapper.QueryWrapperBuilder()
+                .search(search)
+                .wrapSort(pageable)
+                .build();
 
-        return ResponseEntity.ok(new ResponseObject.Builder<List<PaymentHistoryResponse>>()
+        var result = paymentService.getPaymentHistoriesByCustomerId(customerId, queryWrapper);
+        return ResponseEntity.ok(new ResponseObject.Builder<List<ProductResponse>>()
                 .success(true)
                 .code("SUCCESS")
-                .content(payments)
-                .messages("Orders retrieved successfully")
-                .build());
-    }
-
-    @PreAuthorize("hasRole('ROLE_CUSTOMER')")
-    public ResponseEntity<ResponseObject<List<PaymentHistoryResponse>>> getPaymentHistoriesByCurrentCustomer() {
-
-        List<PaymentHistoryResponse> payments = paymentService.getPaymentHistoriesByCurrentCustomer();
-
-        return ResponseEntity.ok(new ResponseObject.Builder<List<PaymentHistoryResponse>>()
-                .success(true)
-                .code("SUCCESS")
-                .content(payments)
-                .messages("Orders retrieved successfully")
+                .unwrapPaginationWrapper(result)
+                .messages("Get Payment History successfully")
                 .build());
     }
 }

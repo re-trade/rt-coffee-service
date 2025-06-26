@@ -186,20 +186,20 @@ public class AccountController {
                 .build());
     }
 
-    @PutMapping("{id}/ban-customer")
-    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @PutMapping("{id}/disable-customer")
+    @PreAuthorize("hasRole('ROLE_CUSTOMER') or hasRole('ROLE_ADMIN')")
     public ResponseEntity<ResponseObject<Void>> banSeller(@PathVariable String id) {
-        accountService.banCustomer(id);
+        accountService.disableCustomerAccount(id);
         return ResponseEntity.ok(new ResponseObject.Builder<Void>()
                 .success(true)
                 .code("SUCCESS")
                 .messages("ban customer with" + id + "successfully")
                 .build());
     }
-    @PutMapping("{id}/unban-customer")
+    @PutMapping("{id}/enable-customer")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     public ResponseEntity<ResponseObject<Void>> unbanSeller(@PathVariable String id) {
-        accountService.unbanCustomer(id);
+        accountService.enableCustomerAccount(id);
         return ResponseEntity.ok(new ResponseObject.Builder<Void>()
                 .success(true)
                 .code("SUCCESS")

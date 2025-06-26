@@ -6,6 +6,7 @@ import org.retrade.common.model.dto.response.PaginationWrapper;
 import org.retrade.main.model.dto.request.PaymentInitRequest;
 import org.retrade.main.model.dto.response.PaymentHistoryResponse;
 import org.retrade.main.model.dto.response.PaymentMethodResponse;
+import org.retrade.main.model.dto.response.ProductResponse;
 import org.retrade.main.model.other.PaymentProviderCallbackWrapper;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,8 +21,13 @@ public interface PaymentService {
 
     PaginationWrapper<List<PaymentMethodResponse>> getPaymentMethods (QueryWrapper queryWrapper);
 
-    List<PaymentHistoryResponse> getPaymentHistoriesByCustomerId(String customerId);
+//    List<PaymentHistoryResponse> getPaymentHistoriesByCustomerId(String customerId);
+//
+//    List<PaymentHistoryResponse> getPaymentHistoriesByCurrentCustomer();
 
-    List<PaymentHistoryResponse> getPaymentHistoriesByCurrentCustomer();
+    PaginationWrapper<List<PaymentHistoryResponse>> getPaymentHistoriesByCustomerId(String customerId, QueryWrapper queryWrapper);
+
+    PaginationWrapper<List<PaymentHistoryResponse>> getPaymentHistoriesByCurrentCustomer(QueryWrapper queryWrapper);
+
 
 }

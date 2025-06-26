@@ -44,6 +44,7 @@ public class ProductReviewServiceImpl implements ProductReviewService {
         return ProductReviewResponse.builder()
                 .orderId(request.getOrderId())
                 .productId(request.getProductId())
+                .customerId(request.getCustomer().getId())
                 .vote(request.getVote())
                 .content(request.getContent())
                 .build();

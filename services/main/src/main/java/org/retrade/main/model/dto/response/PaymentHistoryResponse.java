@@ -1,6 +1,5 @@
 package org.retrade.main.model.dto.response;
 
-import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -17,8 +16,8 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 public class PaymentHistoryResponse {
-    private OrderEntity order;
-    private PaymentMethodEntity paymentMethod;
+    private String orderId;
+    private String paymentMethodName;
     private BigDecimal paymentTotal;
     private String paymentContent;
     private String paymentCode;

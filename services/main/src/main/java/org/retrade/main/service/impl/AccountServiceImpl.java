@@ -188,24 +188,33 @@ public class AccountServiceImpl implements AccountService {
     }
 
     @Override
-    public AccountResponse banCustomer(String customerId) {
+    public AccountResponse disableCustomerAccount(String customerId) {
         var roles = authUtils.getRolesFromAuthUser();
+
         if (!roles.contains("ROLE_ADMIN")) {
-            throw new ValidationException("User does not have permission to approve seller");
+            CustomerEntity currentCustomer = getCurrentCustomerAccount();
+
+            if (!currentCustomer.getId().equals(customerId)) {
+                throw new ValidationException("You do not have permission to disable this account");
+            }
         }
+
         CustomerEntity customer = customerRepository.findById(customerId)
                 .orElseThrow(() -> new ValidationException("Customer not found with ID: " + customerId));
+
         AccountEntity account = customer.getAccount();
         account.setLocked(true);
         account.setEnabled(false);
+
         return mapToAccountResponse(account);
     }
 
+
     @Override
-    public AccountResponse unbanCustomer(String customerId) {
+    public AccountResponse enableCustomerAccount(String customerId) {
         var roles = authUtils.getRolesFromAuthUser();
         if (!roles.contains("ROLE_ADMIN")) {
-            throw new ValidationException("User does not have permission to approve seller");
+            throw new ValidationException("Not have permission to approve seller");
         }
         CustomerEntity customer = customerRepository.findById(customerId)
                 .orElseThrow(() -> new ValidationException("Customer not found with ID: " + customerId));
@@ -213,6 +222,15 @@ public class AccountServiceImpl implements AccountService {
         account.setLocked(false);
         account.setEnabled(true);
         return mapToAccountResponse(account);
+    }
+
+    private CustomerEntity getCurrentCustomerAccount() {
+        var account = authUtils.getUserAccountFromAuthentication();
+        var customerEntity = account.getCustomer();
+        if (customerEntity == null) {
+            throw new ValidationException("User is not a customer");
+        }
+        return customerEntity;
     }
 
     private AccountResponse mapToAccountResponse(AccountEntity account) {

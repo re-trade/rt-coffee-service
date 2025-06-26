@@ -15,9 +15,11 @@ import org.retrade.main.model.constant.PaymentStatusEnum;
 import org.retrade.main.model.dto.request.PaymentInitRequest;
 import org.retrade.main.model.dto.response.PaymentHistoryResponse;
 import org.retrade.main.model.dto.response.PaymentMethodResponse;
+import org.retrade.main.model.dto.response.ProductResponse;
 import org.retrade.main.model.entity.CustomerEntity;
 import org.retrade.main.model.entity.PaymentHistoryEntity;
 import org.retrade.main.model.entity.PaymentMethodEntity;
+import org.retrade.main.model.entity.SellerEntity;
 import org.retrade.main.model.other.PaymentProviderCallbackWrapper;
 import org.retrade.main.repository.*;
 import org.retrade.main.service.PaymentService;
@@ -140,24 +142,41 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     @Override
-    public List<PaymentHistoryResponse> getPaymentHistoriesByCustomerId(String customerId) {
-        CustomerEntity customer = customerRepository.findById(customerId)
-                .orElseThrow(() -> new ValidationException("Customer not found with ID: " + customerId));
-
-        List<PaymentHistoryEntity> payments = paymentHistoryRepository.findByOrder_Customer(customer);
-        return payments.stream()
-                .map(this::mapToPaymentHistoryResponse)
-                .collect(Collectors.toList());
+    public PaginationWrapper<List<PaymentHistoryResponse>> getPaymentHistoriesByCustomerId(String customerId, QueryWrapper queryWrapper) {
+        var customer = customerRepository.findById(customerId)
+                .orElseThrow(() -> new ValidationException("Seller not found"));
+        return getPaymentHistorysByCustomer(customer, queryWrapper);
     }
 
     @Override
-    public List<PaymentHistoryResponse> getPaymentHistoriesByCurrentCustomer() {
-        CustomerEntity customer = getCurrentCustomerAccount();
+    public PaginationWrapper<List<PaymentHistoryResponse>> getPaymentHistoriesByCurrentCustomer(QueryWrapper queryWrapper) {
+        var customer = getCurrentCustomerAccount();
 
-        List<PaymentHistoryEntity> payments = paymentHistoryRepository.findByOrder_Customer(customer);
-        return payments.stream()
-                .map(this::mapToPaymentHistoryResponse)
-                .collect(Collectors.toList());
+        return getPaymentHistorysByCustomer(customer, queryWrapper);
+    }
+
+
+    private PaginationWrapper<List<PaymentHistoryResponse>> getPaymentHistorysByCustomer(CustomerEntity customer, QueryWrapper queryWrapper) {
+        return paymentHistoryRepository.query(queryWrapper, (param) -> (root, query, criteriaBuilder) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            predicates.add(criteriaBuilder.equal(root.get("order").get("customer"), customer));
+            return getPredicatePaymentHistory(param, root, criteriaBuilder, predicates);
+        }, (items) -> {
+            var list = items.map(this::mapToPaymentHistoryResponse).stream().toList();
+            return new PaginationWrapper.Builder<List<PaymentHistoryResponse>>()
+                    .setPaginationInfo(items)
+                    .setData(list)
+                    .build();
+        });
+    }
+
+
+    private Predicate getPredicatePaymentHistory(Map<String, QueryFieldWrapper> param, Root<PaymentHistoryEntity> root, CriteriaBuilder criteriaBuilder, List<Predicate> predicates) {
+        if (param != null && !param.isEmpty()) {
+            Predicate[] defaultPredicates = paymentHistoryRepository.createDefaultPredicate(criteriaBuilder, root, param);
+            predicates.addAll(Arrays.asList(defaultPredicates));
+        }
+        return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
     }
 
     private CustomerEntity getCurrentCustomerAccount() {
@@ -171,8 +190,8 @@ public class PaymentServiceImpl implements PaymentService {
 
     private PaymentHistoryResponse mapToPaymentHistoryResponse(PaymentHistoryEntity payment) {
         return PaymentHistoryResponse.builder()
-                .order(payment.getOrder())
-                .paymentCode(payment.getPaymentCode())
+                .orderId(payment.getOrder().getId())
+                .paymentMethodName(payment.getPaymentMethod().getName())
                 .paymentTotal(payment.getPaymentTotal())
                 .paymentContent(payment.getPaymentContent())
                 .paymentCode(payment.getPaymentCode())

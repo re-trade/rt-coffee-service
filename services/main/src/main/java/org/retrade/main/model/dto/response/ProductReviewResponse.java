@@ -13,7 +13,7 @@ import org.retrade.main.model.entity.CustomerEntity;
 public class ProductReviewResponse {
     String orderId;
     String productId;
-    private CustomerEntity customer;
+    private String customerId;
     private Double vote;
     private String content;
 }
