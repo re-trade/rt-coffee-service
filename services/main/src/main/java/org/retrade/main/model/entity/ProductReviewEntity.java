@@ -19,7 +19,7 @@ public class ProductReviewEntity extends BaseSQLEntity {
     private CustomerEntity customer;
     @ManyToOne(targetEntity = OrderEntity.class, fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "order_id", nullable = false)
-    private OrderEntity order;
+    private OrderComboEntity order;
     @Column(name = "vote", nullable = false)
     private Double vote;
     @Column(name = "content", nullable = false)

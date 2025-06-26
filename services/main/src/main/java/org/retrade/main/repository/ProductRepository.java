@@ -30,4 +30,8 @@ public interface ProductRepository extends BaseJpaRepository<ProductEntity, Stri
 
     @Query("SELECT p FROM products p JOIN p.categories c WHERE c.name = :categoryName")
     Page<ProductEntity> findByCategoryName(@Param("categoryName") String categoryName, Pageable pageable);
+
+
+//    @Query("SELECT AVG(p.avgVote) FROM products p WHERE p.seller = :seller AND p.avgVote > 0")
+//    Double findAverageRatingBySeller(@Param("seller") SellerEntity seller);
 }
