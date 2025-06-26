@@ -149,6 +149,8 @@ public class SellerServiceImpl implements SellerService {
             throw new ValidationException("Account is not a seller");
         }
         var sellerEntity = accountEntity.getSeller();
+        sellerEntity.setAvatarUrl(request.getAvatarUrl());
+        sellerEntity.setBackground(request.getBackground());
         sellerEntity.setShopName(request.getShopName());
         sellerEntity.setDescription(request.getDescription());
         sellerEntity.setAddressLine(request.getAddressLine());
