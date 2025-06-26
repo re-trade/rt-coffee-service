@@ -12,6 +12,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class SellerUpdateRequest {
     private String shopName;
+    private String avatarUrl;
+    private String background;
     private String description;
     private String addressLine;
     private String district;
