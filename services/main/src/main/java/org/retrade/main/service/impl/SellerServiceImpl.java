@@ -219,6 +219,10 @@ public class SellerServiceImpl implements SellerService {
                 .verified(sellerEntity.getVerified())
                 .createdAt(sellerEntity.getCreatedDate().toLocalDateTime())
                 .updatedAt(sellerEntity.getUpdatedDate().toLocalDateTime())
+                .addressLine(sellerEntity.getAddressLine())
+                .district(sellerEntity.getDistrict())
+                .ward(sellerEntity.getWard())
+                .state(sellerEntity.getState())
                 .build();
     }
 
