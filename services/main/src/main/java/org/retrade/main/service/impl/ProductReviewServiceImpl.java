@@ -22,6 +22,7 @@ import org.retrade.main.repository.SellerRepository;
 import org.retrade.main.service.OrderService;
 import org.retrade.main.service.ProductReviewService;
 import org.retrade.main.util.AuthUtils;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.GetMapping;
 
@@ -218,6 +219,7 @@ public class ProductReviewServiceImpl implements ProductReviewService {
                 () -> new ValidationException("Seller not found")
         );
         var avgVote = productReviewRepository.calculateAverageRatingBySeller(sellerEntity);
+//        var avgVoteProduct = productRepository.findAverageRatingBySeller(sellerEntity);
 
 //        sellerEntity.setRatingValue(avgVote);
 //        try {
@@ -226,4 +228,32 @@ public class ProductReviewServiceImpl implements ProductReviewService {
 //            throw new ActionFailedException("Seller review could not be saved " + e.getMessage());
 //        }
     }
+
+
+//    @Scheduled(cron = "0 0 2 * * *")
+//    @Transactional
+//    public void syncUpdatedRatings() {
+//        try {
+//            List<ProductEntity> updatedProducts = productReviewRepository.findProductsWithRecentReviews(lastSyncTime);
+//            for (ProductEntity product : updatedProducts) {
+//                Double avgRating = productReviewRepository.findAverageRatingByProduct(product);
+//                product.setProductRating(avgRating != null ? avgRating : 0.0);
+//                productRepository.save(product);
+//            }
+//
+//            // Cập nhật shop_rating cho các seller liên quan
+//            List<SellerEntity> updatedSellers = productReviewRepository.findSellersByProducts(updatedProducts);
+//            for (SellerEntity seller : updatedSellers) {
+//                Double avgShopRating = productReviewRepository.findAverageRatingBySeller(seller);
+//                seller.setShopRating(avgShopRating != null ? avgShopRating : 0.0);
+//                sellerRepository.save(seller);
+//            }
+//
+//            lastSyncTime = LocalDateTime.now();
+//            System.out.println("Rating synchronization completed at {}", lastSyncTime);
+//        } catch (Exception e) {
+//            System.out.println("Error during rating synchronization: {}"+ e.getMessage());
+//        }
+//    }
+
 }
