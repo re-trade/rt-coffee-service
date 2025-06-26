@@ -19,6 +19,8 @@ public class OrderItemEntity extends BaseSQLEntity {
     @ManyToOne(targetEntity = ProductEntity.class, optional = false, fetch = FetchType.EAGER)
     @JoinColumn(name = "product_id", nullable = false)
     private ProductEntity product;
+    @Column(name = "quantity", nullable = false, columnDefinition = "INTEGER DEFAULT 1 NOT NULL")
+    private Integer quantity;
     @ManyToOne(targetEntity = OrderComboEntity.class, optional = false, fetch = FetchType.EAGER)
     @JoinColumn(name = "order_combo_id", nullable = false)
     private OrderComboEntity orderCombo;

@@ -14,6 +14,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class CartItemEntity implements Serializable {
     private String productId;
+    private Integer quantity;
     private LocalDateTime addedAt;
     private LocalDateTime updatedAt;
 }

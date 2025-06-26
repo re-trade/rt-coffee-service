@@ -4,11 +4,10 @@ import lombok.RequiredArgsConstructor;
 import org.retrade.common.model.exception.ActionFailedException;
 import org.retrade.common.model.exception.ValidationException;
 import org.retrade.main.config.CartConfig;
-import org.retrade.main.model.dto.request.AddToCartRequest;
+import org.retrade.main.model.dto.request.CartRequest;
 import org.retrade.main.model.dto.response.CartGroupResponse;
 import org.retrade.main.model.dto.response.CartItemResponse;
 import org.retrade.main.model.dto.response.CartResponse;
-import org.retrade.main.model.dto.response.CartSummaryResponse;
 import org.retrade.main.model.entity.CartEntity;
 import org.retrade.main.model.entity.CartItemEntity;
 import org.retrade.main.model.entity.ProductEntity;
@@ -38,7 +37,7 @@ public class CartServiceImpl implements CartService {
 
     @Override
     @Transactional
-    public CartResponse addToCart(AddToCartRequest request) {
+    public CartResponse addToCart(CartRequest request) {
         String userId = getCurrentUserId();
 
         ProductEntity product = productRepository.findById(request.getProductId())
@@ -64,12 +63,14 @@ public class CartServiceImpl implements CartService {
 
         if (existingItem.isPresent()) {
             CartItemEntity item = existingItem.get();
+            item.setQuantity(item.getQuantity() + request.getQuantity());
             item.setUpdatedAt(LocalDateTime.now());
         } else {
             CartItemEntity newItem = CartItemEntity.builder()
                     .productId(request.getProductId())
                     .addedAt(LocalDateTime.now())
                     .updatedAt(LocalDateTime.now())
+                    .quantity(request.getQuantity())
                     .build();
 
             itemsInShop.add(newItem);
@@ -86,7 +87,7 @@ public class CartServiceImpl implements CartService {
 
     @Override
     @Transactional
-    public CartResponse updateCartItem(String productId) {
+    public CartResponse updateCartItem(CartRequest request) {
         String userId = getCurrentUserId();
 
         CartEntity cart = cartRepository.findByUserId(userId)
@@ -95,8 +96,9 @@ public class CartServiceImpl implements CartService {
         boolean updated = false;
         for (Set<CartItemEntity> shopItems : cart.getShopItems().values()) {
             for (CartItemEntity item : shopItems) {
-                if (item.getProductId().equals(productId)) {
+                if (item.getProductId().equals(request.getProductId())) {
                     item.setUpdatedAt(LocalDateTime.now());
+                    item.setQuantity(request.getQuantity());
                     updated = true;
                     break;
                 }
@@ -163,18 +165,6 @@ public class CartServiceImpl implements CartService {
                 .orElse(createEmptyCart(userId));
 
         return mapToCartResponse(cart);
-    }
-
-    @Override
-    public CartSummaryResponse getCartSummary() {
-        String userId = getCurrentUserId();
-
-        CartEntity cart = cartRepository.findByUserId(userId)
-                .orElse(createEmptyCart(userId));
-
-        return CartSummaryResponse.builder()
-                .uniqueProducts(cart.getShopItems().size())
-                .build();
     }
 
     @Override
@@ -265,6 +255,7 @@ public class CartServiceImpl implements CartService {
                         .addedAt(cartItem.getAddedAt())
                         .description("N/A")
                         .productAvailable(false)
+                        .quantity(0)
                         .build();
             }
             return CartItemResponse.builder()
@@ -276,6 +267,7 @@ public class CartServiceImpl implements CartService {
                     .addedAt(cartItem.getAddedAt())
                     .description(product.getDescription() != null ? product.getDescription() : "N/A")
                     .productAvailable(true)
+                    .quantity(cartItem.getQuantity())
                     .build();
         }).collect(Collectors.toSet());
     }
