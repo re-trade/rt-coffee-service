@@ -199,6 +199,15 @@ public class SellerServiceImpl implements SellerService {
         return wrapSellerBaseResponse(seller);
     }
 
+    @Override
+    public SellerBaseResponse getMySellers() {
+        var accountEntity = authUtils.getUserAccountFromAuthentication();
+        if (accountEntity.getSeller() == null) {
+            throw new ValidationException("Seller is not exist");
+        }
+        return wrapSellerBaseResponse(accountEntity.getSeller());
+    }
+
     private SellerBaseResponse wrapSellerBaseResponse(SellerEntity sellerEntity) {
         return SellerBaseResponse.builder()
                 .id(sellerEntity.getId())

@@ -82,4 +82,16 @@ public class SellerController {
                 .content(result)
                 .build());
     }
+
+    @GetMapping
+    public ResponseEntity<ResponseObject<SellerBaseResponse>> getMySellers() {
+
+        var result = sellerService.getMySellers();
+        return  ResponseEntity.ok(new ResponseObject.Builder<SellerBaseResponse>()
+                .success(true)
+                .code("SUCCESS")
+                .messages("Profile Seller get Successfully")
+                .content(result)
+                .build());
+    }
 }
