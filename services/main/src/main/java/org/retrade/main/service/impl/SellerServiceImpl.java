@@ -142,9 +142,6 @@ public class SellerServiceImpl implements SellerService {
     @Override
     public SellerBaseResponse updateSellerProfile(SellerUpdateRequest request) {
         var accountEntity = authUtils.getUserAccountFromAuthentication();
-        if (accountEntity.getCustomer() == null) {
-            throw new ValidationException("Account must be a customer to become a seller");
-        }
         if (accountEntity.getSeller() == null) {
             throw new ValidationException("Account is not a seller");
         }
