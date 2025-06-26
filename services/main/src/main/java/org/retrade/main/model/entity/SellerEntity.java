@@ -18,6 +18,8 @@ public class SellerEntity extends BaseSQLEntity {
     private String shopName;
     @Column(name = "description", columnDefinition = "TEXT")
     private String description;
+    @Column(name = "avg_vote")
+    private Double avgVote;
     @Column(name = "address_line", length = 100, nullable = false)
     private String addressLine;
     @Column(name = "district", length = 50, nullable = false)

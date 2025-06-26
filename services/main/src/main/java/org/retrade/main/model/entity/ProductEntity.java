@@ -29,6 +29,8 @@ public class ProductEntity extends BaseSQLEntity {
     private String thumbnail;
     @Column(name = "img_urls", length = 256)
     private Set<String> productImages;
+    @Column(name = "avg_vote", nullable = false, columnDefinition = "NUMERIC(5,2) DEFAULT 0.00")
+    private Double avgVote;
     @ManyToOne(targetEntity = BrandEntity.class, fetch = FetchType.EAGER, optional = false)
     @JoinColumn(name = "brand_id", nullable = false)
     private BrandEntity brand;

@@ -17,6 +17,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Set;
 
 @RestController
 @RequestMapping("categories")
@@ -103,6 +104,21 @@ public class CategoryController {
                 .code("CATEGORY_RETRIEVED")
                 .messages("Category retrieved successfully")
                 .content(category)
+                .build());
+    }
+
+    @GetMapping("/tree")
+    public ResponseEntity<ResponseObject<List<CategoryResponse>>> getCategoriesTrees(
+            @RequestParam(required = false, name = "q") String query,
+            @RequestParam Set<String> categoryIds,
+            @PageableDefault Pageable pageable) {
+        var wrapper = QueryWrapper.builder().wrapSort(pageable).search(query).build();
+        var response = categoryService.getValidCategoriesOnTrees(wrapper, categoryIds);
+        return ResponseEntity.ok(new ResponseObject.Builder<List<CategoryResponse>>()
+                .success(true)
+                .code("CATEGORIES_RETRIEVED")
+                .messages("Categories retrieved successfully")
+                .unwrapPaginationWrapper(response)
                 .build());
     }
 
