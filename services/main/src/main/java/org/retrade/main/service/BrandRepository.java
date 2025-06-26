@@ -1,4 +1,4 @@
-package org.retrade.main.service.impl;
+package org.retrade.main.service;
 
 import org.retrade.common.repository.BaseJpaRepository;
 import org.retrade.main.model.entity.BrandEntity;

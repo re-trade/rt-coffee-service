@@ -25,7 +25,11 @@ import org.retrade.main.model.entity.BrandEntity;
 import org.retrade.main.model.entity.CategoryEntity;
 import org.retrade.main.model.entity.ProductEntity;
 import org.retrade.main.model.entity.SellerEntity;
-import org.retrade.main.repository.*;
+import org.retrade.main.repository.CategoryRepository;
+import org.retrade.main.repository.ProductElasticsearchRepository;
+import org.retrade.main.repository.ProductRepository;
+import org.retrade.main.repository.SellerRepository;
+import org.retrade.main.service.BrandRepository;
 import org.retrade.main.service.ProductService;
 import org.retrade.main.util.AuthUtils;
 import org.springframework.data.domain.Page;
@@ -54,7 +58,6 @@ public class ProductServiceImpl implements ProductService {
     private final CategoryRepository categoryRepository;
     private final BrandRepository brandRepository;
     private final AuthUtils authUtils;
-    private final ProductPriceHistoryRepository productPriceHistoryRepository;
     private final BrandRepository brandEntityRepository;
 
     @Override
