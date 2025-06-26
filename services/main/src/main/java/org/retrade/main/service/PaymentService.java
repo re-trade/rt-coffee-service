@@ -4,7 +4,9 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.retrade.common.model.dto.request.QueryWrapper;
 import org.retrade.common.model.dto.response.PaginationWrapper;
 import org.retrade.main.model.dto.request.PaymentInitRequest;
+import org.retrade.main.model.dto.response.PaymentHistoryResponse;
 import org.retrade.main.model.dto.response.PaymentMethodResponse;
+import org.retrade.main.model.dto.response.ProductResponse;
 import org.retrade.main.model.other.PaymentProviderCallbackWrapper;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,4 +20,14 @@ public interface PaymentService {
     PaymentProviderCallbackWrapper handlePaymentCallback(HttpServletRequest request, String methodCode);
 
     PaginationWrapper<List<PaymentMethodResponse>> getPaymentMethods (QueryWrapper queryWrapper);
+
+//    List<PaymentHistoryResponse> getPaymentHistoriesByCustomerId(String customerId);
+//
+//    List<PaymentHistoryResponse> getPaymentHistoriesByCurrentCustomer();
+
+    PaginationWrapper<List<PaymentHistoryResponse>> getPaymentHistoriesByCustomerId(String customerId, QueryWrapper queryWrapper);
+
+    PaginationWrapper<List<PaymentHistoryResponse>> getPaymentHistoriesByCurrentCustomer(QueryWrapper queryWrapper);
+
+
 }

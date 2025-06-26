@@ -232,4 +232,17 @@ public class OrderController {
                 .messages("Orders retrieved successfully")
                 .build());
     }
+
+    @PreAuthorize("hasRole('ROLE_CUSTOMER')")
+    public ResponseEntity<ResponseObject<List<OrderResponse>>> getOrdersByCurrentCustomer() {
+
+        List<OrderResponse> orders = orderService.getOrdersByCurrentCustomer();
+
+        return ResponseEntity.ok(new ResponseObject.Builder<List<OrderResponse>>()
+                .success(true)
+                .code("SUCCESS")
+                .content(orders)
+                .messages("Orders retrieved successfully")
+                .build());
+    }
 }

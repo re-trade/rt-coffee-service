@@ -2,6 +2,7 @@ package org.retrade.main.repository;
 
 import org.retrade.common.repository.BaseJpaRepository;
 import org.retrade.main.model.entity.CategoryEntity;
+import org.retrade.main.model.entity.OrderEntity;
 import org.retrade.main.model.entity.ProductEntity;
 import org.retrade.main.model.entity.SellerEntity;
 import org.springframework.data.domain.Page;
@@ -30,4 +31,7 @@ public interface ProductRepository extends BaseJpaRepository<ProductEntity, Stri
 
     @Query("SELECT p FROM products p JOIN p.categories c WHERE c.name = :categoryName")
     Page<ProductEntity> findByCategoryName(@Param("categoryName") String categoryName, Pageable pageable);
+
+    @Query("SELECT oi.product FROM order_items oi WHERE oi.order = :order")
+    List<ProductEntity> findProductsByOrder(@Param("order") OrderEntity order);
 }
