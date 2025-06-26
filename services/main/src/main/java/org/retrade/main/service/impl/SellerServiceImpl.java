@@ -188,6 +188,26 @@ public class SellerServiceImpl implements SellerService {
         return Optional.of(new SellerWrapperBase(sellerId, account.getEmail(), account.getUsername()));
     }
 
+    @Override
+    public SellerBaseResponse getSellerDetails(String id) {
+        SellerEntity  seller = sellerRepository.findById(id).orElseThrow(
+                () -> new ValidationException("No such seller existed seller")
+        );
+        if(!seller.getVerified()){
+            throw new ValidationException("Seller is not verified");
+        }
+        return wrapSellerBaseResponse(seller);
+    }
+
+    @Override
+    public SellerBaseResponse getMySellers() {
+        var accountEntity = authUtils.getUserAccountFromAuthentication();
+        if (accountEntity.getSeller() == null) {
+            throw new ValidationException("Seller is not exist");
+        }
+        return wrapSellerBaseResponse(accountEntity.getSeller());
+    }
+
     private SellerBaseResponse wrapSellerBaseResponse(SellerEntity sellerEntity) {
         return SellerBaseResponse.builder()
                 .id(sellerEntity.getId())
