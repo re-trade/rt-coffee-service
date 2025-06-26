@@ -142,13 +142,12 @@ public class SellerServiceImpl implements SellerService {
     @Override
     public SellerBaseResponse updateSellerProfile(SellerUpdateRequest request) {
         var accountEntity = authUtils.getUserAccountFromAuthentication();
-        if (accountEntity.getCustomer() == null) {
-            throw new ValidationException("Account must be a customer to become a seller");
-        }
         if (accountEntity.getSeller() == null) {
             throw new ValidationException("Account is not a seller");
         }
         var sellerEntity = accountEntity.getSeller();
+        sellerEntity.setAvatarUrl(request.getAvatarUrl());
+        sellerEntity.setBackground(request.getBackground());
         sellerEntity.setShopName(request.getShopName());
         sellerEntity.setDescription(request.getDescription());
         sellerEntity.setAddressLine(request.getAddressLine());
@@ -220,6 +219,10 @@ public class SellerServiceImpl implements SellerService {
                 .verified(sellerEntity.getVerified())
                 .createdAt(sellerEntity.getCreatedDate().toLocalDateTime())
                 .updatedAt(sellerEntity.getUpdatedDate().toLocalDateTime())
+                .addressLine(sellerEntity.getAddressLine())
+                .district(sellerEntity.getDistrict())
+                .ward(sellerEntity.getWard())
+                .state(sellerEntity.getState())
                 .build();
     }
 
