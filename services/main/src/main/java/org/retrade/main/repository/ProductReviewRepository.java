@@ -19,7 +19,7 @@ public interface ProductReviewRepository extends BaseJpaRepository<ProductReview
 
     List<ProductReviewEntity> findByCustomer(CustomerEntity customer);
 
-    List<ProductReviewEntity> findByOrder(OrderEntity order);
+    List<ProductReviewEntity> findByOrder(OrderComboEntity order);
 
     Optional<ProductReviewEntity> findByProductAndCustomerAndOrder(ProductEntity product, CustomerEntity customer, OrderEntity order);
 
@@ -80,4 +80,5 @@ public interface ProductReviewRepository extends BaseJpaRepository<ProductReview
     @Query("SELECT DISTINCT p.seller FROM products p WHERE p IN :products")
     List<SellerEntity> findSellersByProducts(@Param("products") List<ProductEntity> products);
 
+    Object existsByOrder_Id(String orderId);
 }

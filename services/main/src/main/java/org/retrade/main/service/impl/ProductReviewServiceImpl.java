@@ -48,6 +48,10 @@ public class ProductReviewServiceImpl implements ProductReviewService {
         ProductEntity productEntity = productRepository.findById(request.getProductId()).orElseThrow(
                 () -> new ValidationException("Product not found")
         );
+        List<ProductReviewEntity> existingReviews = productReviewRepository.findByOrder(orderComboEntity);
+        if (!existingReviews.isEmpty()) {
+            throw new ValidationException("Product review already exists for this order");
+        }
         boolean containsProduct = orderComboEntity.getOrderItems().stream()
                 .anyMatch(orderItem -> orderItem.getProduct().getId().equals(productEntity.getId()));
         if (!containsProduct) {

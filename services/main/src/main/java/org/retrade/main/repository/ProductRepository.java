@@ -21,6 +21,7 @@ public interface ProductRepository extends BaseJpaRepository<ProductEntity, Stri
     @Query("SELECT p FROM products p JOIN p.categories c WHERE c.name = :categoryName")
     Page<ProductEntity> findByCategoryName(@Param("categoryName") String categoryName, Pageable pageable);
 
+
     @Query(
             value = """
         WITH RECURSIVE product_chain AS (
