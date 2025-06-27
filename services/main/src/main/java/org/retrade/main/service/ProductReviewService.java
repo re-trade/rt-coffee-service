@@ -4,20 +4,23 @@ import org.retrade.common.model.dto.request.QueryWrapper;
 import org.retrade.common.model.dto.response.PaginationWrapper;
 import org.retrade.main.model.dto.request.CreateProductReviewRequest;
 import org.retrade.main.model.dto.request.UpdateProductReviewRequest;
+import org.retrade.main.model.dto.response.ProductReviewBaseResponse;
 import org.retrade.main.model.dto.response.ProductReviewResponse;
 
 import java.util.List;
 
 public interface ProductReviewService {
-    ProductReviewResponse createProductReview(CreateProductReviewRequest request);
+    ProductReviewBaseResponse createProductReview(CreateProductReviewRequest request);
 
-    PaginationWrapper <List<ProductReviewResponse>> getProductReviewByProductId(String productId, QueryWrapper queryWrapper);
+    PaginationWrapper <List<ProductReviewBaseResponse>> getProductReviewByProductId(String productId, QueryWrapper queryWrapper);
 
-    ProductReviewResponse getProductReviewDetails(String id);
+    ProductReviewBaseResponse getProductReviewDetails(String id);
 
-    ProductReviewResponse updateProductReview(String id, UpdateProductReviewRequest request);
+    ProductReviewBaseResponse updateProductReview(String id, UpdateProductReviewRequest request);
 
-    ProductReviewResponse deleteProductReview(String id);
+    ProductReviewBaseResponse deleteProductReview(String id);
 
-    PaginationWrapper <List<ProductReviewResponse>> getProductReviewBySellerId(String sellerId, QueryWrapper queryWrapper);
+    PaginationWrapper <List<ProductReviewBaseResponse>> getProductReviewBySellerId(String sellerId, QueryWrapper queryWrapper);
+
+    PaginationWrapper <List<ProductReviewResponse>>  geAllProductReviewBySeller(QueryWrapper queryWrapper);
 }

@@ -4,6 +4,9 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.retrade.common.model.entity.BaseSQLEntity;
 
+import java.sql.Timestamp;
+import java.util.Set;
+
 @Getter
 @Setter
 @AllArgsConstructor
@@ -24,6 +27,16 @@ public class ProductReviewEntity extends BaseSQLEntity {
     private Double vote;
     @Column(name = "content", nullable = false)
     private String content;
-    @Column(name = "status", nullable = false)
+    @Column(name="image_review")
+    private Set<String> imageReview;
+    @Column(name = "status")
     private Boolean status;
+    @Column(name ="helpful")
+    private double helpful;
+    @Column(name = "reply_content")
+    private String replyContent;
+    @Column(name = "reply_created_date")
+    private Timestamp replyCreatedDate;
+    @Column(name = "reply_updated_date")
+    private Timestamp replyUpdatedDate;
 }
