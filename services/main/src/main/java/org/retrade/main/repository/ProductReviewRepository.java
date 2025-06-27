@@ -2,6 +2,8 @@ package org.retrade.main.repository;
 
 import org.retrade.common.repository.BaseJpaRepository;
 import org.retrade.main.model.entity.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -25,14 +27,21 @@ public interface ProductReviewRepository extends BaseJpaRepository<ProductReview
 
     List<ProductReviewEntity> findByProductAndStatusTrue(ProductEntity product);
 
-    @Query("""
+//    @Query("""
+//                SELECT r
+//                FROM product_reviews r
+//                JOIN FETCH r.product p
+//                WHERE p.seller = :sellerId AND r.status = true
+//            """)
+//    List<ProductReviewEntity> findAllBySellerAndStatusTrueWithProduct(@Param("seller") SellerEntity seller);
+
+        @Query("""
                 SELECT r
                 FROM product_reviews r
                 JOIN FETCH r.product p
                 WHERE p.seller = :sellerId AND r.status = true
             """)
-    List<ProductReviewEntity> findAllBySellerAndStatusTrueWithProduct(@Param("seller") SellerEntity seller);
-
+        Page<ProductReviewEntity> findAllBySellerAndStatusTrueWithProduct(@Param("seller") SellerEntity seller, Pageable pageable);
     @Query("""
                 SELECT r
                 FROM product_reviews r

@@ -256,6 +256,7 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public PaginationWrapper<List<ProductResponse>> getProductsByCategory(String categoryName, QueryWrapper queryWrapper) {
+
         Page<ProductEntity> productPage = productRepository.findByCategoryName(categoryName, queryWrapper.pagination());
         List<ProductResponse> productResponses = productPage.getContent()
                 .stream()

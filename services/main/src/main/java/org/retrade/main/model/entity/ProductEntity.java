@@ -25,6 +25,7 @@ public class ProductEntity extends BaseSQLEntity {
     private String description;
     @Column(name = "thumbnail", length = 256)
     private String thumbnail;
+
     private Set<String> productImages;
     @Column(name = "brand", length = 128, nullable = false)
     private String brand;

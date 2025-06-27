@@ -12,22 +12,19 @@ import org.retrade.common.model.exception.ActionFailedException;
 import org.retrade.common.model.exception.ValidationException;
 import org.retrade.main.model.dto.request.CreateProductReviewRequest;
 import org.retrade.main.model.dto.request.UpdateProductReviewRequest;
-import org.retrade.main.model.dto.response.ProductResponse;
-import org.retrade.main.model.dto.response.ProductReviewResponse;
+import org.retrade.main.model.dto.response.*;
 import org.retrade.main.model.entity.*;
 import org.retrade.main.repository.OrderComboRepository;
 import org.retrade.main.repository.ProductRepository;
 import org.retrade.main.repository.ProductReviewRepository;
 import org.retrade.main.repository.SellerRepository;
-import org.retrade.main.service.OrderService;
 import org.retrade.main.service.ProductReviewService;
 import org.retrade.main.util.AuthUtils;
-import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.data.domain.Page;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.GetMapping;
 
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -47,7 +44,7 @@ public class ProductReviewServiceImpl implements ProductReviewService {
     private final SellerRepository sellerRepository;
 
     @Override
-    public ProductReviewResponse createProductReview(CreateProductReviewRequest request) {
+    public ProductReviewBaseResponse createProductReview(CreateProductReviewRequest request) {
         var customer = getCustomer();
         OrderComboEntity orderComboEntity = orderComboRepository.findById(request.getOrderId()).orElseThrow(
                 () -> new ValidationException("Order combo not found")
@@ -69,7 +66,7 @@ public class ProductReviewServiceImpl implements ProductReviewService {
         productReviewEntity.setOrder(orderComboEntity);
         try {
             productReviewRepository.save(productReviewEntity);
-            return mapToProductReviewResponse(productReviewEntity);
+            return mapToProductReviewBaseResponse(productReviewEntity);
         } catch (Exception e) {
             throw new ActionFailedException("Product review could not be saved " + e.getMessage());
         }
@@ -77,7 +74,7 @@ public class ProductReviewServiceImpl implements ProductReviewService {
     }
 
     @Override
-    public PaginationWrapper<List<ProductReviewResponse>> getProductReviewByProductId(String productId, QueryWrapper queryWrapper) {
+    public PaginationWrapper<List<ProductReviewBaseResponse>> getProductReviewByProductId(String productId, QueryWrapper queryWrapper) {
         ProductEntity productEntity = productRepository.findById(productId).orElseThrow(
                 () -> new ValidationException("Product not found")
         );
@@ -87,16 +84,16 @@ public class ProductReviewServiceImpl implements ProductReviewService {
             predicates.add(criteriaBuilder.equal(root.get("product"), productEntity));
             return getPredicate(param, root, criteriaBuilder, predicates);
         }, (items) -> {
-            var list = items.map(this::mapToProductReviewResponse).stream().toList();
-            return new PaginationWrapper.Builder<List<ProductReviewResponse>>()
+            var list = items.map(this::mapToProductReviewBaseResponse).stream().toList();
+            return new PaginationWrapper.Builder<List<ProductReviewBaseResponse>>()
                     .setPaginationInfo(items)
                     .setData(list)
                     .build();
         });
     }
 
-    private ProductReviewResponse mapToProductReviewResponse(ProductReviewEntity entity) {
-        return ProductReviewResponse.builder()
+    private ProductReviewBaseResponse mapToProductReviewBaseResponse(ProductReviewEntity entity) {
+        return ProductReviewBaseResponse.builder()
                 .id(entity.getId())
                 .createdAt(entity.getCreatedDate().toLocalDateTime())
                 .updatedAt(entity.getUpdatedDate().toLocalDateTime())
@@ -118,15 +115,15 @@ public class ProductReviewServiceImpl implements ProductReviewService {
     }
 
     @Override
-    public ProductReviewResponse getProductReviewDetails(String id) {
+    public ProductReviewBaseResponse getProductReviewDetails(String id) {
         var productReviewEntity = productReviewRepository.findById(id).orElseThrow(
                 () -> new ValidationException("Product review not found")
         );
-        return mapToProductReviewResponse(productReviewEntity);
+        return mapToProductReviewBaseResponse(productReviewEntity);
     }
 
     @Override
-    public ProductReviewResponse updateProductReview(String id, UpdateProductReviewRequest request) {
+    public ProductReviewBaseResponse updateProductReview(String id, UpdateProductReviewRequest request) {
         var customer = getCustomer();
 
         var productReviewEntity = productReviewRepository.findById(id).orElseThrow(
@@ -139,7 +136,7 @@ public class ProductReviewServiceImpl implements ProductReviewService {
         productReviewEntity.setContent(request.getContent());
         try {
             productReviewRepository.save(productReviewEntity);
-            return mapToProductReviewResponse(productReviewEntity);
+            return mapToProductReviewBaseResponse(productReviewEntity);
         } catch (Exception e) {
             throw new ValidationException("Product review could not be saved " + e.getMessage());
         }
@@ -151,8 +148,13 @@ public class ProductReviewServiceImpl implements ProductReviewService {
         return account.getCustomer();
     }
 
+    private SellerEntity getSeller() {
+        var account = authUtils.getUserAccountFromAuthentication();
+        return account.getSeller();
+    }
+
     @Override
-    public ProductReviewResponse deleteProductReview(String id) {
+    public ProductReviewBaseResponse deleteProductReview(String id) {
         var customer = getCustomer();
         var productReviewEntity = productReviewRepository.findById(id).orElseThrow(
                 () -> new ValidationException("Product review not found")
@@ -163,15 +165,61 @@ public class ProductReviewServiceImpl implements ProductReviewService {
         productReviewEntity.setStatus(false);
         try {
             productReviewRepository.save(productReviewEntity);
-            return mapToProductReviewResponse(productReviewEntity);
+            return mapToProductReviewBaseResponse(productReviewEntity);
         } catch (Exception e) {
             throw new ValidationException("Product review could not be delete " + e.getMessage());
         }
 
     }
+    @Override
+    public PaginationWrapper <List<ProductReviewResponse>> geAllProductReviewBySeller(QueryWrapper queryWrapper) {
+        var seller = getSeller();
+        Page<ProductReviewEntity> productReviewPage =productReviewRepository.findAllBySellerAndStatusTrueWithProduct(seller,queryWrapper.pagination());
+        List<ProductReviewResponse> reviewResponses = productReviewPage.getContent()
+                .stream()
+                .map(this::maptoProductReviewResponse)
+                .toList();
+        return new PaginationWrapper.Builder<List<ProductReviewResponse>>()
+                .setData(reviewResponses)
+                .setPaginationInfo(productReviewPage)
+                .build();
+    }
+
+    public ProductReviewResponse maptoProductReviewResponse(ProductReviewEntity entity) {
+
+        var author = AuthorBaseResponse.builder()
+                .authorId(entity.getCustomer().getId())
+                .firstName(entity.getCustomer().getFirstName())
+                .lastName(entity.getCustomer().getLastName())
+                .avatarUrl(entity.getCustomer().getAvatarUrl())
+                .build();
+        var product = ProductBaseResponse.builder()
+                .productId(entity.getProduct().getId())
+                .productName(entity.getProduct().getName())
+                .shortDescription(entity.getProduct().getDescription())
+                .price(entity.getProduct().getCurrentPrice())
+                .build();
+        var reply = ReplyBaseResponse.builder()
+                .content(entity.getReplyContent())
+                .createdAt(entity.getReplyCreatedDate().toLocalDateTime())
+                .updatedAt(entity.getReplyUpdatedDate().toLocalDateTime())
+                .build();
+        return ProductReviewResponse.builder()
+                .id(entity.getId())
+                .createdAt(entity.getCreatedDate().toLocalDateTime())
+                .updatedAt(entity.getUpdatedDate().toLocalDateTime())
+                .vote(entity.getVote())
+                .content(entity.getContent())
+                .author(author)
+                .orderId(entity.getOrder().getId())
+                .status(entity.getStatus())
+                .product(product)
+                .reply(reply)
+                .build();
+    }
 
     @Override
-    public PaginationWrapper<List<ProductReviewResponse>> getProductReviewBySellerId(String sellerId, QueryWrapper queryWrapper) {
+    public PaginationWrapper<List<ProductReviewBaseResponse>> getProductReviewBySellerId(String sellerId, QueryWrapper queryWrapper) {
 //        SellerEntity sellerEntity = sellerRepository.findById(sellerId).orElseThrow(
 //                () -> new ValidationException("Seller not found")
 //        );
@@ -190,10 +238,10 @@ public class ProductReviewServiceImpl implements ProductReviewService {
                 .orElseThrow(() -> new ValidationException("Seller not found"));
 
         List<ProductReviewEntity> productReviews = productReviewRepository.findAllBySellerWithProduct(sellerEntity);
-        List<ProductReviewResponse> reviewResponses = productReviews.stream()
-                .map(this::mapToProductReviewResponse)
+        List<ProductReviewBaseResponse> reviewResponses = productReviews.stream()
+                .map(this::mapToProductReviewBaseResponse)
                 .toList();
-        return new PaginationWrapper.Builder<List<ProductReviewResponse>>()
+        return new PaginationWrapper.Builder<List<ProductReviewBaseResponse>>()
                 .setData(reviewResponses)
                 .build();
 
