@@ -21,16 +21,12 @@ import org.retrade.main.repository.SellerRepository;
 import org.retrade.main.service.ProductReviewService;
 import org.retrade.main.util.AuthUtils;
 import org.springframework.data.domain.Page;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
-
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-
-import static org.springframework.data.jpa.convert.QueryByExamplePredicateBuilder.getPredicate;
 
 @Service
 @Transactional
@@ -65,7 +61,7 @@ public class ProductReviewServiceImpl implements ProductReviewService {
         productReviewEntity.setStatus(true);
         productReviewEntity.setOrder(orderComboEntity);
         try {
-            productReviewRepository.save(productReviewEntity);
+            productReviewEntity = productReviewRepository.save(productReviewEntity);
             return mapToProductReviewBaseResponse(productReviewEntity);
         } catch (Exception e) {
             throw new ActionFailedException("Product review could not be saved " + e.getMessage());
