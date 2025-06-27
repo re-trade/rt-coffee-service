@@ -33,7 +33,7 @@ public class ReportSellerEntity extends BaseSQLEntity {
     private Timestamp resolutionDate;
 
     @ManyToOne(targetEntity =  OrderComboEntity.class, fetch = FetchType.EAGER, optional = false)
-    @JoinColumn(name = "oder_id",nullable = false)
+    @JoinColumn(name = "order_id",nullable = false)
     private OrderComboEntity orderCombo;
 
     @ManyToOne(targetEntity =  ProductEntity.class, fetch = FetchType.EAGER, optional = false)

@@ -29,6 +29,25 @@ CREATE TABLE accounts
     CONSTRAINT pk_accounts PRIMARY KEY (id)
 );
 
+CREATE TABLE brand_categories
+(
+    brand_id    VARCHAR(255) NOT NULL,
+    category_id VARCHAR(255) NOT NULL,
+    CONSTRAINT pk_brand_categories PRIMARY KEY (brand_id, category_id)
+);
+
+CREATE TABLE brands
+(
+    id           VARCHAR(255)                NOT NULL,
+    created_date TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+    updated_date TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+    name         VARCHAR(255),
+    description  VARCHAR(255),
+    img_url      VARCHAR(255),
+    enabled      BOOLEAN,
+    CONSTRAINT pk_brands PRIMARY KEY (id)
+);
+
 CREATE TABLE categories
 (
     id           VARCHAR(255)                NOT NULL,
@@ -36,10 +55,8 @@ CREATE TABLE categories
     updated_date TIMESTAMP WITHOUT TIME ZONE NOT NULL,
     name         VARCHAR(100)                NOT NULL,
     description  TEXT,
-    parrent_id   VARCHAR(255),
-    seller_id    VARCHAR(255),
+    parent_id    VARCHAR(255),
     visible      BOOLEAN                     NOT NULL,
-    type         VARCHAR(20)                 NOT NULL,
     enabled      BOOLEAN                     NOT NULL,
     CONSTRAINT pk_categories PRIMARY KEY (id)
 );
@@ -85,18 +102,6 @@ CREATE TABLE customers_contacts
     CONSTRAINT pk_customers_contacts PRIMARY KEY (contacts_id, customers_id)
 );
 
-CREATE TABLE delivery_tracks
-(
-    id             VARCHAR(255)                NOT NULL,
-    created_date   TIMESTAMP WITHOUT TIME ZONE NOT NULL,
-    updated_date   TIMESTAMP WITHOUT TIME ZONE NOT NULL,
-    seller_id      VARCHAR(255)                NOT NULL,
-    order_combo_id VARCHAR(255)                NOT NULL,
-    status         BOOLEAN                     NOT NULL,
-    content        VARCHAR(255)                NOT NULL,
-    CONSTRAINT pk_delivery_tracks PRIMARY KEY (id)
-);
-
 CREATE TABLE login_sessions
 (
     id                 VARCHAR(255)                NOT NULL,
@@ -110,6 +115,17 @@ CREATE TABLE login_sessions
     user_agent         VARCHAR(255),
     login_time         TIMESTAMP WITHOUT TIME ZONE NOT NULL,
     CONSTRAINT pk_login_sessions PRIMARY KEY (id)
+);
+
+CREATE TABLE order_combo_deliveries
+(
+    id             VARCHAR(255)                NOT NULL,
+    created_date   TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+    updated_date   TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+    order_combo_id VARCHAR(255)                NOT NULL,
+    delivery_code  VARCHAR(255)                NOT NULL,
+    delivery_type  VARCHAR(255)                NOT NULL,
+    CONSTRAINT pk_order_combo_deliveries PRIMARY KEY (id)
 );
 
 CREATE TABLE order_combos
@@ -142,13 +158,14 @@ CREATE TABLE order_destinations
 
 CREATE TABLE order_histories
 (
-    id           VARCHAR(255)                NOT NULL,
-    created_date TIMESTAMP WITHOUT TIME ZONE NOT NULL,
-    updated_date TIMESTAMP WITHOUT TIME ZONE NOT NULL,
-    order_id     VARCHAR(255)                NOT NULL,
-    status       BOOLEAN                     NOT NULL,
-    notes        TEXT,
-    created_by   VARCHAR(255),
+    id             VARCHAR(255)                NOT NULL,
+    created_date   TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+    updated_date   TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+    order_combo_id VARCHAR(255)                NOT NULL,
+    seller_id      VARCHAR(255)                NOT NULL,
+    status         BOOLEAN                     NOT NULL,
+    notes          TEXT,
+    created_by     VARCHAR(255),
     CONSTRAINT pk_order_histories PRIMARY KEY (id)
 );
 
@@ -159,6 +176,7 @@ CREATE TABLE order_items
     updated_date      TIMESTAMP WITHOUT TIME ZONE NOT NULL,
     order_id          VARCHAR(255)                NOT NULL,
     product_id        VARCHAR(255)                NOT NULL,
+    quantity          INTEGER DEFAULT 1           NOT NULL,
     order_combo_id    VARCHAR(255)                NOT NULL,
     short_description TEXT                        NOT NULL,
     product_name      VARCHAR(128)                NOT NULL,
@@ -239,8 +257,7 @@ CREATE TABLE product_price_histories
     product_id   VARCHAR(255)                NOT NULL,
     old_price    DECIMAL                     NOT NULL,
     new_price    DECIMAL                     NOT NULL,
-    from_date    TIMESTAMP WITHOUT TIME ZONE NOT NULL,
-    to_date      TIMESTAMP WITHOUT TIME ZONE,
+    update_date  TIMESTAMP WITHOUT TIME ZONE NOT NULL,
     CONSTRAINT pk_product_price_histories PRIMARY KEY (id)
 );
 
@@ -260,24 +277,46 @@ CREATE TABLE product_reviews
 
 CREATE TABLE products
 (
+    id                   VARCHAR(255)                NOT NULL,
+    created_date         TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+    updated_date         TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+    name                 VARCHAR(255),
+    seller_id            VARCHAR(255)                NOT NULL,
+    short_description    TEXT                        NOT NULL,
+    description          TEXT                        NOT NULL,
+    thumbnail            VARCHAR(256),
+    img_urls             TEXT[],
+    avg_vote             numeric(5, 2) DEFAULT 0     NOT NULL,
+    brand_id             VARCHAR(255)                NOT NULL,
+    quantity             INTEGER       DEFAULT 0     NOT NULL,
+    warranty_expiry_date date,
+    condition            SMALLINT      DEFAULT 0     NOT NULL,
+    model                VARCHAR(128)                NOT NULL,
+    current_price        DECIMAL                     NOT NULL,
+    tags                 TEXT[],
+    verified             BOOLEAN                     NOT NULL,
+    status               SMALLINT      DEFAULT 0     NOT NULL,
+    product_parent_id    VARCHAR(255),
+    CONSTRAINT pk_products PRIMARY KEY (id)
+);
+
+CREATE TABLE report_sellers
+(
     id                VARCHAR(255)                NOT NULL,
     created_date      TIMESTAMP WITHOUT TIME ZONE NOT NULL,
     updated_date      TIMESTAMP WITHOUT TIME ZONE NOT NULL,
-    name              VARCHAR(255),
     seller_id         VARCHAR(255)                NOT NULL,
-    short_description TEXT                        NOT NULL,
-    description       TEXT                        NOT NULL,
-    thumbnail         VARCHAR(256),
-    product_images    TEXT[],
-    brand             VARCHAR(128)                NOT NULL,
-    discount          numeric(5, 2) DEFAULT 0     NOT NULL,
-    model             VARCHAR(128)                NOT NULL,
-    current_price     DECIMAL                     NOT NULL,
-    keywords          TEXT[],
-    tags              TEXT[],
-    verified          BOOLEAN                     NOT NULL,
-    enabled           SMALLINT      DEFAULT 0     NOT NULL,
-    CONSTRAINT pk_products PRIMARY KEY (id)
+    type_report       TEXT                        NOT NULL,
+    content           TEXT                        NOT NULL,
+    resolution_status TEXT                        NOT NULL,
+    resolution_detail TEXT                        NOT NULL,
+    resolution_date   TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+    order_id           VARCHAR(255)                NOT NULL,
+    product_id        VARCHAR(255)                NOT NULL,
+    admin_id          VARCHAR(255)                NOT NULL,
+    customer_id       VARCHAR(255)                NOT NULL,
+    image             VARCHAR(255),
+    CONSTRAINT pk_report_sellers PRIMARY KEY (id)
 );
 
 CREATE TABLE roles
@@ -297,6 +336,7 @@ CREATE TABLE sellers
     updated_date             TIMESTAMP WITHOUT TIME ZONE NOT NULL,
     shop_name                VARCHAR(50)                 NOT NULL,
     description              TEXT,
+    avg_vote                 DOUBLE PRECISION,
     address_line             VARCHAR(100)                NOT NULL,
     district                 VARCHAR(50)                 NOT NULL,
     ward                     VARCHAR(50)                 NOT NULL,
@@ -310,7 +350,7 @@ CREATE TABLE sellers
     identity_number          VARCHAR(20)                 NOT NULL,
     verified                 BOOLEAN                     NOT NULL,
     identity_verified        SMALLINT       DEFAULT 0    NOT NULL,
-    balance                  numeric(19, 2) DEFAULT 0    NOT NULL,
+    balance                  DECIMAL(19, 2) DEFAULT 0    NOT NULL,
     account_id               VARCHAR(255)                NOT NULL,
     CONSTRAINT pk_sellers PRIMARY KEY (id)
 );
@@ -363,22 +403,13 @@ ALTER TABLE account_roles
     ADD CONSTRAINT FK_ACCOUNT_ROLES_ON_ROLE FOREIGN KEY (role_id) REFERENCES roles (id);
 
 ALTER TABLE categories
-    ADD CONSTRAINT FK_CATEGORIES_ON_PARRENT FOREIGN KEY (parrent_id) REFERENCES categories (id);
-
-ALTER TABLE categories
-    ADD CONSTRAINT FK_CATEGORIES_ON_SELLER FOREIGN KEY (seller_id) REFERENCES sellers (id);
+    ADD CONSTRAINT FK_CATEGORIES_ON_PARENT FOREIGN KEY (parent_id) REFERENCES categories (id);
 
 ALTER TABLE customers
     ADD CONSTRAINT FK_CUSTOMERS_ON_ACCOUNT FOREIGN KEY (account_id) REFERENCES accounts (id);
 
 ALTER TABLE customer_contacts
     ADD CONSTRAINT FK_CUSTOMER_CONTACTS_ON_CUSTOMER FOREIGN KEY (customer_id) REFERENCES customers (id);
-
-ALTER TABLE delivery_tracks
-    ADD CONSTRAINT FK_DELIVERY_TRACKS_ON_ORDER_COMBO FOREIGN KEY (order_combo_id) REFERENCES order_combos (id);
-
-ALTER TABLE delivery_tracks
-    ADD CONSTRAINT FK_DELIVERY_TRACKS_ON_SELLER FOREIGN KEY (seller_id) REFERENCES sellers (id);
 
 ALTER TABLE login_sessions
     ADD CONSTRAINT FK_LOGIN_SESSIONS_ON_ACCOUNT FOREIGN KEY (account_id) REFERENCES accounts (id);
@@ -395,11 +426,17 @@ ALTER TABLE order_combos
 ALTER TABLE order_combos
     ADD CONSTRAINT FK_ORDER_COMBOS_ON_SELLER FOREIGN KEY (seller_id) REFERENCES sellers (id);
 
+ALTER TABLE order_combo_deliveries
+    ADD CONSTRAINT FK_ORDER_COMBO_DELIVERIES_ON_ORDER_COMBO FOREIGN KEY (order_combo_id) REFERENCES order_combos (id);
+
 ALTER TABLE order_destinations
     ADD CONSTRAINT FK_ORDER_DESTINATIONS_ON_ORDER FOREIGN KEY (order_id) REFERENCES orders (id);
 
 ALTER TABLE order_histories
-    ADD CONSTRAINT FK_ORDER_HISTORIES_ON_ORDER FOREIGN KEY (order_id) REFERENCES orders (id);
+    ADD CONSTRAINT FK_ORDER_HISTORIES_ON_ORDER_COMBO FOREIGN KEY (order_combo_id) REFERENCES order_combos (id);
+
+ALTER TABLE order_histories
+    ADD CONSTRAINT FK_ORDER_HISTORIES_ON_SELLER FOREIGN KEY (seller_id) REFERENCES sellers (id);
 
 ALTER TABLE order_items
     ADD CONSTRAINT FK_ORDER_ITEMS_ON_ORDER FOREIGN KEY (order_id) REFERENCES orders (id);
@@ -417,6 +454,12 @@ ALTER TABLE payment_histories
     ADD CONSTRAINT FK_PAYMENT_HISTORIES_ON_PAYMENT_METHOD FOREIGN KEY (payment_method_id) REFERENCES payment_methods (id);
 
 ALTER TABLE products
+    ADD CONSTRAINT FK_PRODUCTS_ON_BRAND FOREIGN KEY (brand_id) REFERENCES brands (id);
+
+ALTER TABLE products
+    ADD CONSTRAINT FK_PRODUCTS_ON_PRODUCT_PARENT FOREIGN KEY (product_parent_id) REFERENCES products (id);
+
+ALTER TABLE products
     ADD CONSTRAINT FK_PRODUCTS_ON_SELLER FOREIGN KEY (seller_id) REFERENCES sellers (id);
 
 ALTER TABLE product_price_histories
@@ -426,13 +469,34 @@ ALTER TABLE product_reviews
     ADD CONSTRAINT FK_PRODUCT_REVIEWS_ON_CUSTOMER FOREIGN KEY (customer_id) REFERENCES customers (id);
 
 ALTER TABLE product_reviews
-    ADD CONSTRAINT FK_PRODUCT_REVIEWS_ON_ORDER FOREIGN KEY (order_id) REFERENCES orders (id);
+    ADD CONSTRAINT FK_PRODUCT_REVIEWS_ON_ORDER FOREIGN KEY (order_id) REFERENCES order_combos (id);
 
 ALTER TABLE product_reviews
     ADD CONSTRAINT FK_PRODUCT_REVIEWS_ON_PRODUCT FOREIGN KEY (product_id) REFERENCES products (id);
 
+ALTER TABLE report_sellers
+    ADD CONSTRAINT FK_REPORT_SELLERS_ON_ADMIN FOREIGN KEY (admin_id) REFERENCES accounts (id);
+
+ALTER TABLE report_sellers
+    ADD CONSTRAINT FK_REPORT_SELLERS_ON_CUSTOMER FOREIGN KEY (customer_id) REFERENCES customers (id);
+
+ALTER TABLE report_sellers
+    ADD CONSTRAINT FK_REPORT_SELLERS_ON_ODER FOREIGN KEY (order_id) REFERENCES order_combos (id);
+
+ALTER TABLE report_sellers
+    ADD CONSTRAINT FK_REPORT_SELLERS_ON_PRODUCT FOREIGN KEY (product_id) REFERENCES products (id);
+
+ALTER TABLE report_sellers
+    ADD CONSTRAINT FK_REPORT_SELLERS_ON_SELLER FOREIGN KEY (seller_id) REFERENCES sellers (id);
+
 ALTER TABLE sellers
     ADD CONSTRAINT FK_SELLERS_ON_ACCOUNT FOREIGN KEY (account_id) REFERENCES accounts (id);
+
+ALTER TABLE brand_categories
+    ADD CONSTRAINT fk_bracat_on_brand_entity FOREIGN KEY (brand_id) REFERENCES brands (id);
+
+ALTER TABLE brand_categories
+    ADD CONSTRAINT fk_bracat_on_category_entity FOREIGN KEY (category_id) REFERENCES categories (id);
 
 ALTER TABLE customers_contacts
     ADD CONSTRAINT fk_cuscon_on_customer_contact_entity FOREIGN KEY (contacts_id) REFERENCES customer_contacts (id);

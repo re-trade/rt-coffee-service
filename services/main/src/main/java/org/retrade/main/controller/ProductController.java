@@ -10,8 +10,7 @@ import org.retrade.common.model.dto.request.QueryWrapper;
 import org.retrade.common.model.dto.response.ResponseObject;
 import org.retrade.main.model.dto.request.CreateProductRequest;
 import org.retrade.main.model.dto.request.UpdateProductRequest;
-import org.retrade.main.model.dto.response.FiledAdvanceSearch;
-import org.retrade.main.model.dto.response.ProductListPriceHistoryResponse;
+import org.retrade.main.model.dto.response.FieldAdvanceSearch;
 import org.retrade.main.model.dto.response.ProductPriceHistoryResponse;
 import org.retrade.main.model.dto.response.ProductResponse;
 import org.retrade.main.service.ProductPriceHistoryService;
@@ -23,7 +22,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Set;
 
 @RestController
 @RequestMapping("products")
@@ -159,18 +157,6 @@ public class ProductController {
                 .build());
     }
 
-    @GetMapping("brand/{brand}")
-    public ResponseEntity<ResponseObject<List<ProductResponse>>> getProductsByBrand(
-            @PathVariable String brand) {
-        var result = productService.getProductsByBrand(brand);
-        return ResponseEntity.ok(new ResponseObject.Builder<List<ProductResponse>>()
-                .success(true)
-                .code("SUCCESS")
-                .content(result)
-                .messages("Products retrieved successfully")
-                .build());
-    }
-
     @GetMapping("search")
     public ResponseEntity<ResponseObject<List<ProductResponse>>> searchProductsByName(
             @PageableDefault Pageable pageable, @RequestParam(required = false, name = "q") String search
@@ -188,30 +174,15 @@ public class ProductController {
                 .build());
     }
 
-    @GetMapping("searchTest")
-    public ResponseEntity<ResponseObject<Set<String>>> getProductCategoriesByProductName(
-          @RequestParam(required = false, name = "q") String search
-    ) {
-        var queryWrapper = QueryWrapper.builder()
-                .search(search)
-                .build();
-        var result = productService.getCategoriesForFilter(queryWrapper);
-        return ResponseEntity.ok(new ResponseObject.Builder<Set<String>>()
-                .success(true)
-                .code("SUCCESS")
-                .content(result)
-                .messages("Products found successfully")
-                .build());
-    }
     @GetMapping("filter")
-    public ResponseEntity<ResponseObject<FiledAdvanceSearch>> getProductFilter(
+    public ResponseEntity<ResponseObject<FieldAdvanceSearch>> getProductFilter(
             @RequestParam(required = false, name = "q") String search
     ) {
         var queryWrapper = QueryWrapper.builder()
                 .search(search)
                 .build();
         var result = productService.filedAdvanceSearch(queryWrapper);
-        return ResponseEntity.ok(new ResponseObject.Builder<FiledAdvanceSearch>()
+        return ResponseEntity.ok(new ResponseObject.Builder<FieldAdvanceSearch>()
                 .success(true)
                 .code("SUCCESS")
                 .content(result)

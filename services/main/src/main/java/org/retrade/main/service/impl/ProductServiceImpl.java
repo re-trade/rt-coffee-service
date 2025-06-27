@@ -1,6 +1,9 @@
 package org.retrade.main.service.impl;
 
 import co.elastic.clients.elasticsearch._types.SortOrder;
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregate;
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
+import co.elastic.clients.elasticsearch._types.aggregations.StringTermsBucket;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch._types.query_dsl.TextQueryType;
 import jakarta.persistence.criteria.CriteriaBuilder;
@@ -12,27 +15,32 @@ import org.retrade.common.model.dto.request.QueryWrapper;
 import org.retrade.common.model.dto.response.PaginationWrapper;
 import org.retrade.common.model.exception.ActionFailedException;
 import org.retrade.common.model.exception.ValidationException;
-import org.retrade.main.model.constant.EProductStatus;
+import org.retrade.main.model.constant.ProductStatusEnum;
+import org.retrade.main.model.document.CategoryInfoDocument;
 import org.retrade.main.model.document.ProductDocument;
 import org.retrade.main.model.dto.request.CreateProductRequest;
 import org.retrade.main.model.dto.request.UpdateProductRequest;
-import org.retrade.main.model.dto.response.CategoriesAdvanceSearch;
-import org.retrade.main.model.dto.response.FiledAdvanceSearch;
-import org.retrade.main.model.dto.response.ProductPriceHistoryResponse;
-import org.retrade.main.model.dto.response.ProductResponse;
+import org.retrade.main.model.dto.response.*;
+import org.retrade.main.model.entity.BrandEntity;
 import org.retrade.main.model.entity.CategoryEntity;
 import org.retrade.main.model.entity.ProductEntity;
-import org.retrade.main.model.entity.ProductPriceHistoryEntity;
 import org.retrade.main.model.entity.SellerEntity;
-import org.retrade.main.repository.*;
+import org.retrade.main.repository.CategoryRepository;
+import org.retrade.main.repository.ProductElasticsearchRepository;
+import org.retrade.main.repository.ProductRepository;
+import org.retrade.main.repository.SellerRepository;
+import org.retrade.main.service.BrandRepository;
 import org.retrade.main.service.ProductService;
 import org.retrade.main.util.AuthUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.elasticsearch.client.elc.ElasticsearchAggregation;
 import org.springframework.data.elasticsearch.client.elc.NativeQuery;
+import org.springframework.data.elasticsearch.core.AggregationsContainer;
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 import org.springframework.data.elasticsearch.core.SearchHit;
 import org.springframework.data.elasticsearch.core.SearchHits;
+import org.springframework.data.elasticsearch.core.query.FetchSourceFilter;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -48,8 +56,9 @@ public class ProductServiceImpl implements ProductService {
     private final ElasticsearchOperations elasticsearchOperations;
     private final SellerRepository sellerRepository;
     private final CategoryRepository categoryRepository;
+    private final BrandRepository brandRepository;
     private final AuthUtils authUtils;
-    private final ProductPriceHistoryRepository productPriceHistoryRepository;
+    private final BrandRepository brandEntityRepository;
 
     @Override
     @Transactional(rollbackFor = {ActionFailedException.class, Exception.class})
@@ -61,27 +70,27 @@ public class ProductServiceImpl implements ProductService {
             throw new ValidationException("Seller profile not found");
         }
         validateCategories(request.getCategoryIds());
-
         var product = ProductEntity.builder()
                 .name(request.getName())
                 .seller(seller)
+                .quantity(request.getQuantity() != null ? request.getQuantity() : 1)
+                .warrantyExpiryDate(request.getWarrantyExpiryDate())
+                .condition(request.getCondition())
                 .shortDescription(request.getShortDescription())
                 .description(request.getDescription())
                 .thumbnail(request.getThumbnail())
                 .productImages(request.getProductImages())
-                .brand(request.getBrand())
-                .discount(request.getDiscount())
+                .brand(convertBrandIdToEntity(request.getBrandId()))
                 .model(request.getModel())
                 .currentPrice(request.getCurrentPrice())
                 .categories(convertCategoryIdsToEntities(request.getCategoryIds()))
-                .keywords(request.getKeywords())
                 .tags(request.getTags())
-                .status(EProductStatus.INIT)
+                .status(request.getStatus() != null ? request.getStatus() : ProductStatusEnum.DRAFT)
                 .verified(false)
                 .build();
 
         if (request.getStatus() != null) {
-            var enumSet = Set.of(EProductStatus.DRAFT, EProductStatus.INIT);
+            var enumSet = Set.of(ProductStatusEnum.DRAFT, ProductStatusEnum.INIT);
             if (!enumSet.contains(request.getStatus())) {
                 throw new ValidationException("Invalid product status");
             }
@@ -90,7 +99,6 @@ public class ProductServiceImpl implements ProductService {
         try {
             var savedProduct = productRepository.save(product);
             saveProductDocument(savedProduct);
-            implementProductPriceHistory(savedProduct,BigDecimal.ZERO) ;
             return mapToProductResponse(savedProduct);
         } catch (Exception ex) {
             throw new ActionFailedException("Failed to create product", ex);
@@ -114,18 +122,18 @@ public class ProductServiceImpl implements ProductService {
         product.setDescription(request.getDescription());
         product.setThumbnail(request.getThumbnail());
         product.setProductImages(request.getProductImages());
-        product.setBrand(request.getBrand());
-        product.setDiscount(request.getDiscount());
+        product.setBrand(convertBrandIdToEntity(request.getBrandId()));
         product.setModel(request.getModel());
         product.setCurrentPrice(request.getCurrentPrice());
         validateCategories(request.getCategoryIds());
         product.setCategories(convertCategoryIdsToEntities(request.getCategoryIds()));
-        product.setKeywords(request.getKeywords());
         product.setTags(request.getTags());
+        product.setQuantity(request.getQuantity() != null ? request.getQuantity() : 1);
+        product.setWarrantyExpiryDate(request.getWarrantyExpiryDate());
+        product.setCondition(request.getCondition());
         try {
             var updatedProduct = productRepository.save(product);
             saveProductDocument(updatedProduct, id);
-            implementProductPriceHistory(updatedProduct, product.getCurrentPrice());
             return mapToProductResponse(updatedProduct);
         } catch (Exception ex) {
             throw new ActionFailedException("Failed to update product", ex);
@@ -187,22 +195,6 @@ public class ProductServiceImpl implements ProductService {
             throw new ValidationException("Seller profile not found");
         }
         return getProductsBySeller(seller, queryWrapper);
-    }
-
-    @Override
-    public List<ProductResponse> getProductsByBrand(String brand) {
-        List<ProductEntity> products = productRepository.findByBrand(brand);
-        return products.stream()
-                .map(this::mapToProductResponse)
-                .toList();
-    }
-
-    @Override
-    public List<ProductResponse> searchProductsByName(String name) {
-        List<ProductEntity> products = productRepository.findByNameContainingIgnoreCase(name);
-        return products.stream()
-                .map(this::mapToProductResponse)
-                .toList();
     }
 
     @Override
@@ -294,51 +286,125 @@ public class ProductServiceImpl implements ProductService {
     }
 
 
-
     @Override
-    public Set<String> getCategoriesForFilter(QueryWrapper queryWrapper) {
-        PaginationWrapper<List<ProductResponse>> listProduct = searchProductByKeyword(queryWrapper);
-        List<ProductResponse> productResponses = listProduct.getData();
-
-        return productResponses.stream()
-                .filter(Objects::nonNull)
-                .flatMap(p -> p.getCategories().stream())
-                .collect(Collectors.toSet());
-    }
-
-
-    @Override
-    public FiledAdvanceSearch filedAdvanceSearch(QueryWrapper queryWrapper) {
+    public FieldAdvanceSearch filedAdvanceSearch(QueryWrapper queryWrapper) {
         QueryFieldWrapper keyword = queryWrapper.search().remove("keyword");
 
         if (keyword == null) {
-            return FiledAdvanceSearch.builder()
+            return FieldAdvanceSearch.builder()
                     .brands(Collections.emptySet())
-                    .address(Collections.emptySet())
+                    .states(Collections.emptySet())
+                    .sellers(Collections.emptySet())
+                    .minPrice(BigDecimal.ZERO)
+                    .maxPrice(BigDecimal.ZERO)
                     .categoriesAdvanceSearch(Collections.emptyList())
                     .build();
         }
 
-        var searchHits = queryElasticSearchByKeyword(keyword, queryWrapper.pagination());
+        AggregationsContainer<?> aggregations = aggregateFilterFields(keyword.getValue().toString());
 
-        Set<String> brands = searchHits.stream()
-                .map(SearchHit::getContent)
-                .map(ProductDocument::getBrand)
-                .filter(Objects::nonNull)
+        Set<String> brandIds = extractBucketKeys(aggregations, "brandIds");
+        Set<String> sellerIds = extractBucketKeys(aggregations, "sellerIds");
+        Set<String> categoryIds = extractBucketKeys(aggregations, "categoryIds");
+        Set<String> states = extractBucketKeys(aggregations, "states");
+
+        BigDecimal minPrice = extractMin(aggregations, "minPrice");
+        BigDecimal maxPrice = extractMax(aggregations, "maxPrice");
+
+        Set<BrandResponse> brands = brandRepository.findAllById(brandIds).stream()
+                .map(b -> BrandResponse.builder()
+                        .id(b.getId())
+                        .name(b.getName())
+                        .imgUrl(b.getImgUrl())
+                        .build())
                 .collect(Collectors.toSet());
 
-        Set<CategoriesAdvanceSearch> categorySet = searchHits.stream()
-                .map(SearchHit::getContent)
-                .filter(doc -> doc.getCategories() != null)
-                .flatMap(doc -> doc.getCategories().stream())
-                .map(cat -> new CategoriesAdvanceSearch(cat.getId(), cat.getName()))
+        Set<SellerFilterResponse> sellers = sellerRepository.findAllById(sellerIds).stream()
+                .map(s -> SellerFilterResponse.builder()
+                        .sellerId(s.getId())
+                        .sellerName(s.getShopName())
+                        .sellerAvatarUrl(s.getAvatarUrl())
+                        .build())
                 .collect(Collectors.toSet());
 
-        return FiledAdvanceSearch.builder()
+        List<CategoriesAdvanceSearch> categories = categoryRepository.findAllById(categoryIds).stream()
+                .map(c -> new CategoriesAdvanceSearch(c.getId(), c.getName()))
+                .toList();
+
+        return FieldAdvanceSearch.builder()
                 .brands(brands)
-                .address(Collections.emptySet())
-                .categoriesAdvanceSearch(new ArrayList<>(categorySet))
+                .sellers(sellers)
+                .states(states)
+                .minPrice(minPrice)
+                .maxPrice(maxPrice)
+                .categoriesAdvanceSearch(categories)
                 .build();
+    }
+
+    private Set<String> extractBucketKeys(AggregationsContainer<?> aggregations, String aggName) {
+        Set<String> keys = new HashSet<>();
+        if (aggregations != null) {
+            @SuppressWarnings("unchecked")
+            var aggList = (List<ElasticsearchAggregation>) aggregations.aggregations();
+            Map<String, Aggregate> aggMap = new HashMap<>();
+            aggList.forEach(item -> {
+                aggMap.put(item.aggregation().getName(), item.aggregation().getAggregate());
+            });
+
+            if (aggMap.containsKey(aggName)) {
+                Aggregate agg = aggMap.get(aggName);
+                if (agg.isSterms()) {
+                    List<StringTermsBucket> buckets = agg.sterms().buckets().array();
+                    for (StringTermsBucket bucket : buckets) {
+                        keys.add(bucket.key().stringValue());
+                    }
+                }
+            }
+        }
+
+        return keys;
+    }
+
+    private BigDecimal extractMin(AggregationsContainer<?> aggregations, String aggName) {
+        if (aggregations != null) {
+            @SuppressWarnings("unchecked")
+            var aggList = (List<ElasticsearchAggregation>) aggregations.aggregations();
+            Map<String, Aggregate> aggMap = new HashMap<>();
+            aggList.forEach(item -> {
+                aggMap.put(item.aggregation().getName(), item.aggregation().getAggregate());
+            });
+
+            if (aggMap.containsKey(aggName)) {
+                Aggregate agg = aggMap.get(aggName);
+                if (agg.isMin()) {
+                    double value = agg.min().value();
+                    return BigDecimal.valueOf(value);
+                }
+            }
+        }
+
+        return BigDecimal.ZERO;
+    }
+
+    private BigDecimal extractMax(AggregationsContainer<?> aggregations, String aggName) {
+        if (aggregations != null) {
+            @SuppressWarnings("unchecked")
+            var aggList = (List<ElasticsearchAggregation>) aggregations.aggregations();
+            Map<String, Aggregate> aggMap = new HashMap<>();
+            aggList.forEach(item -> {
+                aggMap.put(item.aggregation().getName(), item.aggregation().getAggregate());
+            });
+
+            if (aggMap.containsKey(aggName)) {
+                Aggregate agg = aggMap.get(aggName);
+                if (agg.isMax()) {
+                    double value = agg.max().value();
+                    return BigDecimal.valueOf(value);
+                }
+            }
+        }
+
+        return BigDecimal.ZERO;
     }
 
 
@@ -348,6 +414,7 @@ public class ProductServiceImpl implements ProductService {
     }
 
     private ProductResponse mapToProductResponse(ProductEntity product) {
+        var brand = product.getBrand();
         return ProductResponse.builder()
                 .id(product.getId())
                 .name(product.getName())
@@ -357,12 +424,15 @@ public class ProductServiceImpl implements ProductService {
                 .description(product.getDescription())
                 .thumbnail(product.getThumbnail())
                 .productImages(product.getProductImages())
-                .brand(product.getBrand())
-                .discount(product.getDiscount())
+                .brand(brand != null ? brand.getName() : "N/A")
+                .brandId(brand != null ? brand.getId() : null)
+                .quantity(product.getQuantity())
+                .warrantyExpiryDate(product.getWarrantyExpiryDate())
+                .condition(product.getCondition())
+                .status(product.getStatus())
                 .model(product.getModel())
                 .currentPrice(product.getCurrentPrice())
                 .categories(convertCategoryEntitiesToNames(product.getCategories()))
-                .keywords(product.getKeywords())
                 .tags(product.getTags())
                 .verified(product.getVerified())
                 .createdAt(product.getCreatedDate() != null ? product.getCreatedDate().toLocalDateTime() : null)
@@ -433,6 +503,28 @@ public class ProductServiceImpl implements ProductService {
         return elasticsearchOperations.search(nativeQuery, ProductDocument.class);
     }
 
+    private AggregationsContainer<?> aggregateFilterFields(String keyword) {
+        NativeQuery query = NativeQuery.builder()
+                .withQuery(elasticSearchKeywordQueryBuild(keyword))
+                .withAggregation("brandIds", Aggregation.of(a -> a
+                        .terms(t -> t.field("brandId.keyword").size(50))))
+                .withAggregation("sellerIds", Aggregation.of(a -> a
+                        .terms(t -> t.field("sellerId.keyword").size(50))))
+                .withAggregation("categoryIds", Aggregation.of(a -> a
+                        .terms(t -> t.field("categories.id.keyword").size(50))))
+                .withAggregation("states", Aggregation.of(a -> a
+                        .terms(t -> t.field("state.keyword").size(50))))
+                .withAggregation("minPrice", Aggregation.of(a -> a
+                        .min(m -> m.field("currentPrice"))))
+                .withAggregation("maxPrice", Aggregation.of(a -> a
+                        .max(m -> m.field("currentPrice"))))
+                .withSourceFilter(new FetchSourceFilter(new String[]{}, new String[]{"*"}))
+                .build();
+
+        return elasticsearchOperations.search(query, ProductDocument.class).getAggregations();
+    }
+
+
     private Query elasticSearchKeywordQueryBuild(String keyword) {
         return Query.of(q -> q.bool(b -> b
                 .should(s -> s.multiMatch(m -> m
@@ -483,6 +575,10 @@ public class ProductServiceImpl implements ProductService {
         return categoryRepository.findByIdIn(categoryIds);
     }
 
+    private BrandEntity convertBrandIdToEntity(String id) {
+        return brandEntityRepository.findById(id).orElseThrow(() -> new ValidationException("Brand not found with id: " + id));
+    }
+
     private PaginationWrapper<List<ProductResponse>> getProductsBySeller(SellerEntity seller, QueryWrapper queryWrapper) {
         return productRepository.query(queryWrapper, (param) -> (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
@@ -503,11 +599,10 @@ public class ProductServiceImpl implements ProductService {
         productDoc.setSellerId(productEntity.getSeller().getId());
         productDoc.setShortDescription(productEntity.getShortDescription());
         productDoc.setDescription(productEntity.getDescription());
-        productDoc.setBrand(productEntity.getBrand());
-        productDoc.setDiscount(productEntity.getDiscount());
+        productDoc.setBrand(productEntity.getBrand().getName());
         productDoc.setModel(productEntity.getModel());
         productDoc.setCurrentPrice(productEntity.getCurrentPrice());
-        productDoc.setCategories(productEntity.getCategories().stream().map(item -> ProductDocument.CategoryInfo.builder()
+        productDoc.setCategories(productEntity.getCategories().stream().map(item -> CategoryInfoDocument.builder()
                 .id(item.getId())
                 .name(item.getName())
                 .build()).collect(Collectors.toSet()));
@@ -518,25 +613,5 @@ public class ProductServiceImpl implements ProductService {
     private void saveProductDocument(ProductEntity productEntity) {
         var product = ProductDocument.wrapEntityToDocument(productEntity);
         productSearchRepository.save(product);
-    }
-    public ProductPriceHistoryResponse implementProductPriceHistory(ProductEntity product, BigDecimal oldPrice) {
-        if(product.getCurrentPrice().equals(oldPrice)) {
-            throw new ValidationException("Current price is greater than old price");
-        }
-        ProductPriceHistoryEntity productPriceHistoryEntity = new ProductPriceHistoryEntity();
-        productPriceHistoryEntity.setId(product.getId());
-        productPriceHistoryEntity.setNewPrice(product.getCurrentPrice());
-        productPriceHistoryEntity.setOldPrice(oldPrice);
-        try{
-            productPriceHistoryRepository.save(productPriceHistoryEntity);
-            return ProductPriceHistoryResponse.builder()
-                    .newPrice(productPriceHistoryEntity.getNewPrice())
-                    .dateUpdate(productPriceHistoryEntity.getUpdatedDate().toLocalDateTime())
-                    .build();
-        }catch(Exception e) {
-            throw new ActionFailedException(e.getMessage());
-        }
-
-
     }
 }

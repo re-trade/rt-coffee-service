@@ -19,6 +19,8 @@ public class OrderItemEntity extends BaseSQLEntity {
     @ManyToOne(targetEntity = ProductEntity.class, optional = false, fetch = FetchType.EAGER)
     @JoinColumn(name = "product_id", nullable = false)
     private ProductEntity product;
+    @Column(name = "quantity", nullable = false, columnDefinition = "INTEGER DEFAULT 1 NOT NULL")
+    private Integer quantity;
     @ManyToOne(targetEntity = OrderComboEntity.class, optional = false, fetch = FetchType.EAGER)
     @JoinColumn(name = "order_combo_id", nullable = false)
     private OrderComboEntity orderCombo;
@@ -30,8 +32,6 @@ public class OrderItemEntity extends BaseSQLEntity {
     private String backgroundUrl;
     @Column(name = "base_price", nullable = false)
     private BigDecimal basePrice;
-    @Column(name = "discount", nullable = false, columnDefinition = "NUMERIC(5, 2) DEFAULT 0.00 NOT NULL")
-    private Double discount;
     @Column(name = "unit", nullable = false, length = 10)
     private String unit;
 }

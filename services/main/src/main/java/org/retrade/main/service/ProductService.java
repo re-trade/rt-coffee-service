@@ -4,11 +4,10 @@ import org.retrade.common.model.dto.request.QueryWrapper;
 import org.retrade.common.model.dto.response.PaginationWrapper;
 import org.retrade.main.model.dto.request.CreateProductRequest;
 import org.retrade.main.model.dto.request.UpdateProductRequest;
-import org.retrade.main.model.dto.response.FiledAdvanceSearch;
+import org.retrade.main.model.dto.response.FieldAdvanceSearch;
 import org.retrade.main.model.dto.response.ProductResponse;
 
 import java.util.List;
-import java.util.Set;
 
 public interface ProductService {
     ProductResponse createProduct(CreateProductRequest request);
@@ -25,9 +24,6 @@ public interface ProductService {
 
     PaginationWrapper<List<ProductResponse>> getMyProducts(QueryWrapper queryWrapper);
 
-    List<ProductResponse> getProductsByBrand(String brand);
-
-    List<ProductResponse> searchProductsByName(String name);
 
     PaginationWrapper<List<ProductResponse>> searchProductByKeyword(QueryWrapper queryWrapper);
 
@@ -39,7 +35,6 @@ public interface ProductService {
 
     void unverifyProduct(String id);
 
-    Set<String> getCategoriesForFilter(QueryWrapper queryWrapper);
 
-    FiledAdvanceSearch filedAdvanceSearch(QueryWrapper queryWrapper);
+    FieldAdvanceSearch filedAdvanceSearch(QueryWrapper queryWrapper);
 }

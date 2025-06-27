@@ -19,4 +19,5 @@ public class CustomerOrderItemResponse {
     private String productId;
     private BigDecimal basePrice;
     private Double discount;
+    private Integer quantity;
 }

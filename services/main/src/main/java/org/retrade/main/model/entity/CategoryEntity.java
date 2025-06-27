@@ -20,8 +20,14 @@ public class CategoryEntity extends BaseSQLEntity {
     private String description;
 
     @ManyToOne(targetEntity = CategoryEntity.class, fetch = FetchType.EAGER)
-    @JoinColumn(name = "parrent_id")
+    @JoinColumn(name = "parent_id")
     private CategoryEntity categoryParent;
+
+    @OneToMany(mappedBy = "categoryParent", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private Set<CategoryEntity> children;
+
+    @ManyToMany(fetch = FetchType.LAZY, mappedBy = "categories")
+    private Set<BrandEntity> brands;
 
     @Column(name = "visible", nullable = false)
     private Boolean visible;

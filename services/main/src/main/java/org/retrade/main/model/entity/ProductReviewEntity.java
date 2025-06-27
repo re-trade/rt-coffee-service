@@ -20,7 +20,7 @@ public class ProductReviewEntity extends BaseSQLEntity {
     @ManyToOne(targetEntity = CustomerEntity.class, fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "customer_id", nullable = false)
     private CustomerEntity customer;
-    @ManyToOne(targetEntity = OrderEntity.class, fetch = FetchType.LAZY, optional = false)
+    @ManyToOne(targetEntity = OrderComboEntity.class, fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "order_id", nullable = false)
     private OrderComboEntity order;
     @Column(name = "vote", nullable = false)
