@@ -41,4 +41,9 @@ public interface ProductRepository extends BaseJpaRepository<ProductEntity, Stri
 
     @Query("SELECT AVG(p.avgVote) FROM products p WHERE p.seller = :seller AND p.avgVote > 0")
     Double findAverageRatingBySeller(@Param("seller") SellerEntity seller);
+    // Lấy danh sách seller có sản phẩm liên quan
+    @Query("SELECT DISTINCT p.seller FROM products p WHERE p IN :products")
+    List<SellerEntity> findSellersByProducts(@Param("products") List<ProductEntity> products);
+
+
 }
