@@ -27,10 +27,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 @Service
 @Transactional
@@ -47,13 +46,17 @@ public class ProductReviewServiceImpl implements ProductReviewService {
 
     @Override
     public ProductReviewResponse createProductReview(CreateProductReviewRequest request) {
-        if(request.getVote()<=0){
+        if (request.getVote() <= 0) {
             throw new ValidationException("Vote should be greater than 0");
         }
         var customer = getCustomer();
         OrderComboEntity orderComboEntity = orderComboRepository.findById(request.getOrderId()).orElseThrow(
                 () -> new ValidationException("Order combo not found")
         );
+        var checkMyOrder = orderComboRepository.existsByOrderDestination_Order_CustomerAndId(customer, orderComboEntity.getId());
+        if (!checkMyOrder) {
+            throw new ValidationException("This not your order");
+        }
         ProductEntity productEntity = productRepository.findById(request.getProductId()).orElseThrow(
                 () -> new ValidationException("Product not found")
         );
@@ -66,13 +69,14 @@ public class ProductReviewServiceImpl implements ProductReviewService {
         if (!containsProduct) {
             throw new ValidationException("Order does not contain product id: " + request.getProductId());
         }
-        SellerEntity sellerEntity =productEntity.getSeller();
+        SellerEntity sellerEntity = productEntity.getSeller();
         ProductReviewEntity productReviewEntity = new ProductReviewEntity();
         productReviewEntity.setCustomer(customer);
         productReviewEntity.setProduct(productEntity);
         productReviewEntity.setSeller(sellerEntity);
         productReviewEntity.setVote(request.getVote());
         productReviewEntity.setContent(request.getContent());
+        productReviewEntity.setImageReview(request.getImageReview());
         productReviewEntity.setStatus(true);
         productReviewEntity.setOrderCombo(orderComboEntity);
         try {
@@ -104,7 +108,7 @@ public class ProductReviewServiceImpl implements ProductReviewService {
                     .build();
         });
     }
-    
+
 
     private Predicate getPredicate(Map<String, QueryFieldWrapper> param, Root<ProductReviewEntity> root, CriteriaBuilder criteriaBuilder, List<Predicate> predicates) {
         if (param != null && !param.isEmpty()) {
@@ -176,11 +180,12 @@ public class ProductReviewServiceImpl implements ProductReviewService {
         }
 
     }
+
     @Override
-    public PaginationWrapper <List<ProductReviewResponse>> geAllProductReviewBySeller(QueryWrapper queryWrapper) {
+    public PaginationWrapper<List<ProductReviewResponse>> geAllProductReviewBySeller(QueryWrapper queryWrapper) {
         var seller = getSeller();
         List<ProductReviewEntity> entities = productReviewRepository.findBySeller(seller);
-        Page<ProductReviewEntity> productReviewPage =productReviewRepository.findBySeller(seller,queryWrapper.pagination());
+        Page<ProductReviewEntity> productReviewPage = productReviewRepository.findBySeller(seller, queryWrapper.pagination());
         List<ProductReviewResponse> reviewResponses = productReviewPage.getContent()
                 .stream()
                 .map(this::maptoProductReviewResponse)
@@ -195,13 +200,13 @@ public class ProductReviewServiceImpl implements ProductReviewService {
 
         var author = AuthorBaseResponse.builder()
                 .authorId(entity.getCustomer().getId())
-                .firstName(entity.getCustomer().getFirstName())
-                .lastName(entity.getCustomer().getLastName())
+                .name(entity.getCustomer().getFirstName() + " " + entity.getCustomer().getLastName())
                 .avatarUrl(entity.getCustomer().getAvatarUrl())
                 .build();
         var product = ProductBaseResponse.builder()
                 .productId(entity.getProduct().getId())
                 .productName(entity.getProduct().getName())
+                .thumbnailUrl(entity.getProduct().getThumbnail())
                 .shortDescription(entity.getProduct().getDescription())
                 .price(entity.getProduct().getCurrentPrice())
                 .build();
@@ -242,6 +247,7 @@ public class ProductReviewServiceImpl implements ProductReviewService {
                 .build();
 
     }
+
     @Transactional
     public void updateRatingProduct(ProductEntity productEntity) {
         var avgVote = productReviewRepository.calculateTotalRatingByProduct(productEntity);
@@ -253,6 +259,7 @@ public class ProductReviewServiceImpl implements ProductReviewService {
         }
 
     }
+
     @Transactional
     public void updateRatingShop(SellerEntity sellerEntity) {
 
@@ -270,7 +277,7 @@ public class ProductReviewServiceImpl implements ProductReviewService {
         ProductReviewEntity productReview = productReviewRepository.findById(id).orElseThrow(
                 () -> new ValidationException("Product review not found"));
         var seller = getSeller();
-        if(!seller.equals(productReview.getSeller())) {
+        if (!seller.equals(productReview.getSeller())) {
             throw new ValidationException("Seller is not the same");
         }
         productReview.setReplyContent(content);
@@ -278,7 +285,7 @@ public class ProductReviewServiceImpl implements ProductReviewService {
         try {
             productReviewRepository.save(productReview);
             return maptoProductReviewResponse(productReview);
-        }catch (Exception e) {
+        } catch (Exception e) {
             throw new ValidationException("Product review could not be saved " + e.getMessage());
         }
     }
@@ -288,7 +295,7 @@ public class ProductReviewServiceImpl implements ProductReviewService {
         ProductReviewEntity productReview = productReviewRepository.findById(id).orElseThrow(
                 () -> new ValidationException("Product review not found"));
         var seller = getSeller();
-        if(!seller.equals(productReview.getSeller())) {
+        if (!seller.equals(productReview.getSeller())) {
             throw new ValidationException("Seller is not the same");
         }
         productReview.setReplyContent(content);
@@ -296,18 +303,20 @@ public class ProductReviewServiceImpl implements ProductReviewService {
         try {
             productReviewRepository.save(productReview);
             return maptoProductReviewResponse(productReview);
-        }catch (Exception e) {
+        } catch (Exception e) {
             throw new ValidationException("Product review could not be saved " + e.getMessage());
         }
     }
 
     @Override
-    public PaginationWrapper<List<ProductReviewResponse>> getAllProductReviewsBySellerAndSearch(Double vote, QueryWrapper queryWrapper) {
+    public PaginationWrapper<List<ProductReviewResponse>> getAllProductReviewsBySellerAndSearch(Double vote, String search, QueryWrapper queryWrapper) {
         if (queryWrapper == null || queryWrapper.pagination() == null) {
             throw new ValidationException("QueryWrapper or pagination cannot be null");
         }
-        String search = queryWrapper.search() != null && !queryWrapper.search().toString().isBlank()
-                ? queryWrapper.search().toString() : null;
+//        String search = queryWrapper.search() != null && !queryWrapper.search().toString().isBlank()
+//                ? queryWrapper.search().toString() : null;
+//        var search =queryWrapper.search().toString();
+
         SellerEntity seller = getSeller();
 
         if (vote != null && (vote <= 0 || vote > 5)) {
@@ -329,6 +338,58 @@ public class ProductReviewServiceImpl implements ProductReviewService {
         } catch (Exception e) {
             throw new ActionFailedException("Failed to fetch product reviews: " + e.getMessage());
         }
+    }
+
+    @Override
+    public ReviewStatsResponse getStatsSeller() {
+        var seller = getSeller();
+        long totalReviews = productReviewRepository.countTotalReviews(seller);
+        long repliedReviews = productReviewRepository.countRepliedReviews(seller);
+        List<Object[]> dist = productReviewRepository.getRatingDistribution(seller);
+        Map<Integer, Long> voteCountMap = dist.stream()
+                .collect(Collectors.toMap(
+                        row -> ((Number) row[0]).intValue(),
+                        row -> ((Number) row[1]).longValue()
+                ));
+        List<RatingDistribution> distribution = IntStream.rangeClosed(1, 5)
+                .mapToObj(vote -> {
+                    long count = voteCountMap.getOrDefault(vote, 0L);
+                    double percentage = totalReviews > 0
+                            ? Math.round((count * 1000.0) / totalReviews) / 10.0
+                            : 0.0;
+                    return new RatingDistribution(vote, count, percentage);
+                })
+                .sorted(Comparator.comparingInt(RatingDistribution::getVote).reversed()) // để vote từ 5 → 1
+                .toList();
+
+        var averageRating = seller.getAvgVote();
+        if (averageRating == null) {
+            averageRating = 0.0;
+        } else {
+            averageRating = Math.round(averageRating * 10.0) / 10.0;
+        }
+        long positiveReviews = distribution.stream()
+                .filter(d -> d.getVote() == 4 || d.getVote() == 5)
+                .mapToLong(RatingDistribution::getCount)
+                .sum();
+        var replyRate = 0.0;
+        var avgPositiveReviews = 0.0;
+        if (totalReviews > 0) {
+            replyRate = Math.round(((double) repliedReviews / totalReviews) * 1000.0) / 10.0;
+            avgPositiveReviews = Math.round(((double) positiveReviews / totalReviews) * 1000.0) / 10.0;
+        }
+
+
+        return ReviewStatsResponse.builder()
+                .totalReviews(totalReviews)
+                .averageRating(averageRating)
+                .repliedReviews(repliedReviews)
+                .replyRate(replyRate)
+                .totalPositiveReviews(positiveReviews)
+                .averagePositiveReviews(avgPositiveReviews)
+                .ratingDistribution(distribution)
+                .build();
+
     }
 
     @Scheduled(cron = "0 0 2 * * *")

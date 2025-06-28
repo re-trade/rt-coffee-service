@@ -6,6 +6,7 @@ import org.retrade.common.model.dto.response.ResponseObject;
 import org.retrade.main.model.dto.request.CreateProductReviewRequest;
 import org.retrade.main.model.dto.request.UpdateProductReviewRequest;
 import org.retrade.main.model.dto.response.ProductReviewResponse;
+import org.retrade.main.model.dto.response.ReviewStatsResponse;
 import org.retrade.main.service.ProductReviewService;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
@@ -117,7 +118,7 @@ public class ProductReviewController {
                 .build());
     }
     @PatchMapping("{id}/create-reply")
-    public ResponseEntity<ResponseObject<ProductReviewResponse>> createReplyProductReview(@PathVariable String id, @RequestParam String content){
+    public ResponseEntity<ResponseObject<ProductReviewResponse>> createReplyProductReview(@PathVariable String id, @RequestBody String content){
         var result = productReviewService.createReplyProductReview(id,content);
         return ResponseEntity.ok(new ResponseObject.Builder<ProductReviewResponse>()
                 .success(true)
@@ -147,13 +148,24 @@ public class ProductReviewController {
                 .wrapSort(pageable)
                 .build();
 
-        var result = productReviewService.getAllProductReviewsBySellerAndSearch(vote,queryWrapper);
+        var result = productReviewService.getAllProductReviewsBySellerAndSearch(vote,search,queryWrapper);
         return ResponseEntity.ok(new ResponseObject.Builder<List<ProductReviewResponse>>()
                 .success(true)
                 .code("SUCCESS")
                 .unwrapPaginationWrapper(result)
                 .messages("Get product review success")
                 .build());
+    }
+    @GetMapping("stats")
+    public ResponseEntity<ResponseObject<ReviewStatsResponse>> getStatsSeller(){
+        var result = productReviewService.getStatsSeller();
+        return ResponseEntity.ok(new ResponseObject.Builder<ReviewStatsResponse>()
+                .success(true)
+                .code("SUCCESS")
+                .content(result)
+                .messages("Get stats seller review success")
+                .build());
+
     }
 
 }

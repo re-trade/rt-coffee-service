@@ -5,6 +5,7 @@ import org.retrade.common.model.dto.response.PaginationWrapper;
 import org.retrade.main.model.dto.request.CreateProductReviewRequest;
 import org.retrade.main.model.dto.request.UpdateProductReviewRequest;
 import org.retrade.main.model.dto.response.ProductReviewResponse;
+import org.retrade.main.model.dto.response.ReviewStatsResponse;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.List;
@@ -28,5 +29,7 @@ public interface ProductReviewService {
 
     ProductReviewResponse updateReplyProductReview(String id, String content);
 
-    PaginationWrapper <List<ProductReviewResponse>> getAllProductReviewsBySellerAndSearch(Double vote, QueryWrapper queryWrapper);
+    PaginationWrapper <List<ProductReviewResponse>> getAllProductReviewsBySellerAndSearch(Double vote,String search, QueryWrapper queryWrapper);
+
+    ReviewStatsResponse getStatsSeller();
 }
