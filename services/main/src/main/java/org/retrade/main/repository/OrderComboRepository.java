@@ -1,10 +1,8 @@
 package org.retrade.main.repository;
 
 import org.retrade.common.repository.BaseJpaRepository;
-import org.retrade.main.model.entity.OrderComboEntity;
-import org.retrade.main.model.entity.OrderDestinationEntity;
-import org.retrade.main.model.entity.OrderStatusEntity;
-import org.retrade.main.model.entity.SellerEntity;
+import org.retrade.main.model.entity.*;
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -17,4 +15,5 @@ public interface OrderComboRepository extends BaseJpaRepository<OrderComboEntity
     List<OrderComboEntity> findBySellerAndOrderStatus(SellerEntity seller, OrderStatusEntity orderStatus);
     List<OrderComboEntity> findByOrderItems_Order_Id(String orderId);
 
+    boolean existsByOrderDestination_Order_CustomerAndId(@NonNull CustomerEntity customer, @NonNull String id);
 }
