@@ -116,8 +116,8 @@ public class ProductReviewController {
                 .messages("Get product review success")
                 .build());
     }
-    @PatchMapping("{id}")
-    public ResponseEntity<ResponseObject<ProductReviewResponse>> createReplyProductReview(@PathVariable String id, RequestParam content){
+    @PatchMapping("{id}/create-reply")
+    public ResponseEntity<ResponseObject<ProductReviewResponse>> createReplyProductReview(@PathVariable String id, @RequestParam String content){
         var result = productReviewService.createReplyProductReview(id,content);
         return ResponseEntity.ok(new ResponseObject.Builder<ProductReviewResponse>()
                 .success(true)
@@ -126,4 +126,34 @@ public class ProductReviewController {
                 .messages("Reply product review success")
                 .build());
     }
+
+    @PatchMapping("{id}/update-reply")
+    public ResponseEntity<ResponseObject<ProductReviewResponse>> updateReplyProductReview(@PathVariable String id, @RequestParam String content){
+        var result = productReviewService.updateReplyProductReview(id,content);
+        return ResponseEntity.ok(new ResponseObject.Builder<ProductReviewResponse>()
+                .success(true)
+                .code("SUCCESS")
+                .content(result)
+                .messages("Update reply product review success")
+                .build());
+    }
+    @GetMapping("search")
+    public ResponseEntity<ResponseObject<List<ProductReviewResponse>>> getAllProductReviewsBySellerAndSearch(
+            @RequestParam(required = false, name = "q") String search,
+            @RequestParam(required = false) Double vote,
+            @PageableDefault(size = 10) Pageable pageable) {
+        var queryWrapper = new QueryWrapper.QueryWrapperBuilder()
+                .search(search)
+                .wrapSort(pageable)
+                .build();
+
+        var result = productReviewService.getAllProductReviewsBySellerAndSearch(vote,queryWrapper);
+        return ResponseEntity.ok(new ResponseObject.Builder<List<ProductReviewResponse>>()
+                .success(true)
+                .code("SUCCESS")
+                .unwrapPaginationWrapper(result)
+                .messages("Get product review success")
+                .build());
+    }
+
 }

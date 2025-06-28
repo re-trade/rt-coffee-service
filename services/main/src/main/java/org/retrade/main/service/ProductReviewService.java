@@ -24,5 +24,9 @@ public interface ProductReviewService {
 
     PaginationWrapper <List<ProductReviewResponse>>  geAllProductReviewBySeller(QueryWrapper queryWrapper);
 
-    ProductReviewResponse createReplyProductReview(String id, RequestParam content);
+    ProductReviewResponse createReplyProductReview(String id, String content);
+
+    ProductReviewResponse updateReplyProductReview(String id, String content);
+
+    PaginationWrapper <List<ProductReviewResponse>> getAllProductReviewsBySellerAndSearch(Double vote, QueryWrapper queryWrapper);
 }

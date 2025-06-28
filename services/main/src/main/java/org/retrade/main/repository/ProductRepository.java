@@ -2,6 +2,7 @@ package org.retrade.main.repository;
 
 import org.retrade.common.repository.BaseJpaRepository;
 import org.retrade.main.model.entity.ProductEntity;
+import org.retrade.main.model.entity.ProductReviewEntity;
 import org.retrade.main.model.entity.SellerEntity;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -44,6 +45,9 @@ public interface ProductRepository extends BaseJpaRepository<ProductEntity, Stri
     // Lấy danh sách seller có sản phẩm liên quan
     @Query("SELECT DISTINCT p.seller FROM products p WHERE p IN :products")
     List<SellerEntity> findSellersByProducts(@Param("products") List<ProductEntity> products);
+
+
+
 
 
 }

@@ -31,8 +31,6 @@ public interface ProductReviewRepository extends BaseJpaRepository<ProductReview
 
     List<ProductReviewEntity> findByProductAndStatusTrue(ProductEntity product);
 
-//    @Query("SELECT AVG(p.avgVote) FROM products p WHERE p.seller = :seller AND p.avgVote > 0")
-//    Double calculateAverageRatingBySeller(@Param("seller") SellerEntity seller);
 
     @Query("SELECT AVG(p.vote) FROM product_reviews p WHERE p.product = :product AND p.vote > 0")
     Double calculateTotalRatingByProduct(@Param("product") ProductEntity product);
@@ -50,4 +48,31 @@ public interface ProductReviewRepository extends BaseJpaRepository<ProductReview
     @Query("SELECT AVG(r.vote) FROM product_reviews r WHERE r.product = :product AND r.status = true")
     Double findAverageRatingByProduct(@Param("product") ProductEntity product);
 
+    @Query("""
+    SELECT r
+    FROM product_reviews r
+    WHERE r.status = true
+      AND r.vote = :vote
+      AND r.seller = :seller
+""")
+    Page<ProductReviewEntity> findReviewsBySellerAndStatusIsTrueWithVote(
+            @Param("vote") double vote,
+            @Param("seller") SellerEntity seller,
+            Pageable pageable
+    );
+
+    @Query("""
+        SELECT r
+        FROM product_reviews r
+        WHERE r.status = true
+          AND r.seller = :seller
+          AND (:vote IS NULL OR r.vote = :vote)
+          AND (:keyword IS NULL OR LOWER(r.content) LIKE LOWER(CONCAT('%', :keyword, '%')))
+    """)
+    Page<ProductReviewEntity> findProductReviewsBySellerAndKeyword(
+            @Param("vote") Double vote,
+            @Param("seller") SellerEntity seller,
+            @Param("keyword") String keyword,
+            Pageable pageable
+    );
 }
