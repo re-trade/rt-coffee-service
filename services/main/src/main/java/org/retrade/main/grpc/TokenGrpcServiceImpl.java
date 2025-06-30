@@ -105,6 +105,58 @@ public class TokenGrpcServiceImpl extends GrpcTokenServiceGrpc.GrpcTokenServiceI
                         .setAddress(customer.getAddress())
                         .setAccountId(account.get().getId())
                         .setCustomerId(customer.getId())
+                        .setAvatarUrl(customer.getAvatarUrl() != null ? customer.getAvatarUrl() : "")
+                        .build())
+                .addErrorMessages("")
+                .build();
+        responseObserver.onNext(tokenRpcResponse);
+        responseObserver.onCompleted();
+    }
+
+    @Override
+    public void getSellerProfile(TokenRequest request, StreamObserver<GetSellerProfileResponse> responseObserver) {
+        Optional<UserClaims> userClaims = getUserClaimsFromJwt(request.getToken(), request.getType());
+        if (userClaims.isEmpty()) {
+            responseObserver.onNext(GetSellerProfileResponse.newBuilder()
+                    .setIsValid(false)
+                    .addErrorMessages("Token type is's supported")
+                    .build());
+            responseObserver.onCompleted();
+            return;
+        }
+        var result = userClaims.get();
+        var account = accountRepository.findByUsername(result.getUsername());
+        if (account.isEmpty()) {
+            responseObserver.onNext(GetSellerProfileResponse
+                    .newBuilder()
+                    .setIsValid(false)
+                    .addErrorMessages("Account does not exist")
+                    .build());
+            responseObserver.onCompleted();
+            return;
+        }
+        var seller = account.get().getSeller();
+        if (seller == null) {
+            responseObserver.onNext(GetSellerProfileResponse
+                    .newBuilder()
+                    .setIsValid(false)
+                    .addErrorMessages("Seller does not exist")
+                    .build());
+            responseObserver.onCompleted();
+            return;
+        }
+        GetSellerProfileResponse tokenRpcResponse = GetSellerProfileResponse.newBuilder()
+                .setIsValid(true)
+                .setUserInfo(SellerDetailInfo.newBuilder()
+                        .addAllRoles(Objects.requireNonNullElse(result.getRoles(), Collections.emptyList()))
+                        .setUsername(result.getUsername())
+                        .setEmail(account.get().getEmail())
+                        .setIsActive(account.get().isEnabled())
+                        .setIsVerified(!account.get().isLocked())
+                        .setSellerName(seller.getShopName())
+                        .setAvatarUrl(seller.getAvatarUrl() != null ? seller.getAvatarUrl() : "")
+                        .setAccountId(account.get().getId())
+                        .setSellerId(seller.getId())
                         .build())
                 .addErrorMessages("")
                 .build();
