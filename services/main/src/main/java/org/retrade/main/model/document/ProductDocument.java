@@ -7,15 +7,11 @@ import lombok.NoArgsConstructor;
 import org.retrade.main.model.constant.ProductConditionEnum;
 import org.retrade.main.model.entity.ProductEntity;
 import org.springframework.data.annotation.Id;
-import org.springframework.data.elasticsearch.annotations.DateFormat;
-import org.springframework.data.elasticsearch.annotations.Document;
-import org.springframework.data.elasticsearch.annotations.Field;
-import org.springframework.data.elasticsearch.annotations.FieldType;
+import org.springframework.data.elasticsearch.annotations.*;
 
 import java.math.BigDecimal;
 import java.util.Date;
-import java.util.Set;
-import java.util.stream.Collectors;
+import java.util.List;
 
 @Data
 @Builder
@@ -47,7 +43,7 @@ public class ProductDocument {
     @Field(type = FieldType.Text, analyzer = "keyword")
     private String brand;
 
-    @Field(type = FieldType.Text, analyzer = "keyword")
+    @Field(type = FieldType.Keyword)
     private String brandId;
 
     @Field(type = FieldType.Text, analyzer = "keyword")
@@ -59,7 +55,9 @@ public class ProductDocument {
     @Field(type = FieldType.Text, analyzer = "standard")
     private String addressLine;
 
-    @Field(type = FieldType.Text, analyzer = "standard")
+    @MultiField(mainField = @Field(type = FieldType.Text, analyzer = "standard"), otherFields = {
+            @InnerField(suffix = "keyword", type = FieldType.Keyword)
+    })
     private String state;
 
     @Field(type = FieldType.Text, analyzer = "standard")
@@ -69,7 +67,7 @@ public class ProductDocument {
     private String ward;
 
     @Field(type = FieldType.Nested)
-    private Set<CategoryInfoDocument> categories;
+    private List<CategoryInfoDocument> categories;
 
     @Field(type = FieldType.Boolean)
     private Boolean verified;
@@ -95,12 +93,13 @@ public class ProductDocument {
                 .shortDescription(productEntity.getShortDescription())
                 .description(productEntity.getDescription())
                 .brand(productEntity.getBrand().getName())
+                .brandId(productEntity.getBrand().getId())
                 .model(productEntity.getModel())
                 .currentPrice(productEntity.getCurrentPrice())
                 .categories(productEntity.getCategories().stream().map(item -> CategoryInfoDocument.builder()
                         .id(item.getId())
                         .name(item.getName())
-                        .build()).collect(Collectors.toSet()))
+                        .build()).toList())
                 .verified(productEntity.getVerified())
                 .createdAt(productEntity.getCreatedDate() != null ? productEntity.getCreatedDate() : null)
                 .updatedAt(productEntity.getUpdatedDate() != null ? productEntity.getUpdatedDate() : null)

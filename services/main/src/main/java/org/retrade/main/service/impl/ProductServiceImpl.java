@@ -305,7 +305,12 @@ public class ProductServiceImpl implements ProductService {
 
         Set<String> brandIds = extractBucketKeys(aggregations, "brandIds");
         Set<String> sellerIds = extractBucketKeys(aggregations, "sellerIds");
-        Set<String> categoryIds = extractBucketKeys(aggregations, "categoryIds");
+        Set<String> categoryIds = extractNestedBucketKeys(
+                aggregations,
+                "categoryIds",
+                "ids"
+        );
+
         Set<String> states = extractBucketKeys(aggregations, "states");
 
         BigDecimal minPrice = extractMin(aggregations, "minPrice");
@@ -343,27 +348,49 @@ public class ProductServiceImpl implements ProductService {
 
     private Set<String> extractBucketKeys(AggregationsContainer<?> aggregations, String aggName) {
         Set<String> keys = new HashSet<>();
-        if (aggregations != null) {
-            @SuppressWarnings("unchecked")
-            var aggList = (List<ElasticsearchAggregation>) aggregations.aggregations();
-            Map<String, Aggregate> aggMap = new HashMap<>();
-            aggList.forEach(item -> {
-                aggMap.put(item.aggregation().getName(), item.aggregation().getAggregate());
-            });
+        if (aggregations == null) return keys;
 
-            if (aggMap.containsKey(aggName)) {
-                Aggregate agg = aggMap.get(aggName);
+        @SuppressWarnings("unchecked")
+        List<ElasticsearchAggregation> aggList = (List<ElasticsearchAggregation>) aggregations.aggregations();
+        for (ElasticsearchAggregation aggregation : aggList) {
+            if (aggName.equals(aggregation.aggregation().getName())) {
+                Aggregate agg = aggregation.aggregation().getAggregate();
                 if (agg.isSterms()) {
-                    List<StringTermsBucket> buckets = agg.sterms().buckets().array();
-                    for (StringTermsBucket bucket : buckets) {
+                    for (StringTermsBucket bucket : agg.sterms().buckets().array()) {
                         keys.add(bucket.key().stringValue());
                     }
                 }
+                break;
             }
         }
-
         return keys;
     }
+
+
+    private Set<String> extractNestedBucketKeys(AggregationsContainer<?> aggregations, String nestedAggName, String termsAggName) {
+        Set<String> keys = new HashSet<>();
+        if (aggregations == null) return keys;
+
+        @SuppressWarnings("unchecked")
+        List<ElasticsearchAggregation> aggList = (List<ElasticsearchAggregation>) aggregations.aggregations();
+        for (ElasticsearchAggregation aggregation : aggList) {
+            if (nestedAggName.equals(aggregation.aggregation().getName())) {
+                Aggregate nested = aggregation.aggregation().getAggregate();
+                if (nested.isNested()) {
+                    Aggregate termsAgg = nested.nested().aggregations().get(termsAggName);
+                    if (termsAgg != null && termsAgg.isSterms()) {
+                        for (StringTermsBucket bucket : termsAgg.sterms().buckets().array()) {
+                            keys.add(bucket.key().stringValue());
+                        }
+                    }
+                }
+                break;
+            }
+        }
+        return keys;
+    }
+
+
 
     private BigDecimal extractMin(AggregationsContainer<?> aggregations, String aggName) {
         if (aggregations != null) {
@@ -506,12 +533,19 @@ public class ProductServiceImpl implements ProductService {
     private AggregationsContainer<?> aggregateFilterFields(String keyword) {
         NativeQuery query = NativeQuery.builder()
                 .withQuery(elasticSearchKeywordQueryBuild(keyword))
+
                 .withAggregation("brandIds", Aggregation.of(a -> a
-                        .terms(t -> t.field("brandId.keyword").size(50))))
+                        .terms(t -> t.field("brandId").size(50))))
+
                 .withAggregation("sellerIds", Aggregation.of(a -> a
-                        .terms(t -> t.field("sellerId.keyword").size(50))))
+                        .terms(t -> t.field("sellerId").size(50))))
+
                 .withAggregation("categoryIds", Aggregation.of(a -> a
-                        .terms(t -> t.field("categories.id.keyword").size(50))))
+                        .nested(n -> n.path("categories"))
+                        .aggregations("ids", a2 -> a2
+                                .terms(t -> t.field("categories.id").size(50))
+                        )
+                ))
                 .withAggregation("states", Aggregation.of(a -> a
                         .terms(t -> t.field("state.keyword").size(50))))
                 .withAggregation("minPrice", Aggregation.of(a -> a
@@ -523,6 +557,8 @@ public class ProductServiceImpl implements ProductService {
 
         return elasticsearchOperations.search(query, ProductDocument.class).getAggregations();
     }
+
+
 
 
     private Query elasticSearchKeywordQueryBuild(String keyword) {
@@ -545,9 +581,16 @@ public class ProductServiceImpl implements ProductService {
                         .query(keyword)
                         .type(TextQueryType.Phrase)
                 ))
+                .should(s -> s.nested(n -> n
+                        .path("categories")
+                        .query(nq -> nq
+                                .match(m -> m.field("categories.name").query(keyword))
+                        )
+                ))
                 .minimumShouldMatch("1")
         ));
     }
+
 
     private void validateCategories(Set<String> categoryIds) {
         if (categoryIds == null || categoryIds.isEmpty()) {
@@ -605,7 +648,7 @@ public class ProductServiceImpl implements ProductService {
         productDoc.setCategories(productEntity.getCategories().stream().map(item -> CategoryInfoDocument.builder()
                 .id(item.getId())
                 .name(item.getName())
-                .build()).collect(Collectors.toSet()));
+                .build()).toList());
         productDoc.setUpdatedAt(productEntity.getUpdatedDate() != null ? productEntity.getUpdatedDate() : null);
         productSearchRepository.save(productDoc);
     }
