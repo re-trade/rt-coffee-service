@@ -19,8 +19,8 @@ public class CartItemResponse {
     private String productThumbnail;
     private String productBrand;
     private BigDecimal totalPrice;
-    private Double discount;
     private String description;
+    private Integer quantity;
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime addedAt;
     private Boolean productAvailable;

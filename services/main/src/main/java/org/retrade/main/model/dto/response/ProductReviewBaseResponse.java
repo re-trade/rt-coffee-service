@@ -1,22 +1,19 @@
 package org.retrade.main.model.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.LocalDateTime;
 
 @Data
-@Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class ProductReviewResponse {
+@Builder
+public class ProductReviewBaseResponse {
     private String id;
-    private ProductBaseResponse product;
+    private String productId;
     private String content;
-    private AuthorBaseResponse author;
+    private String authorId;
     private double vote;
     private Boolean status;
     private String orderId;
@@ -24,5 +21,5 @@ public class ProductReviewResponse {
     private LocalDateTime createdAt;
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime updatedAt;
-    private ReplyBaseResponse reply;
+
 }

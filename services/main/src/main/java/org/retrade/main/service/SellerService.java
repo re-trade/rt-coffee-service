@@ -23,6 +23,10 @@ public interface SellerService {
 
     Optional<SellerWrapperBase> getSellerBaseInfoById(String sellerId);
 
+    SellerBaseResponse getSellerDetails(String id);
+
+    SellerBaseResponse getMySellers();
+
     SellerBaseResponse banSeller(String sellerId);
 
     SellerBaseResponse unbanSeller(String sellerId);

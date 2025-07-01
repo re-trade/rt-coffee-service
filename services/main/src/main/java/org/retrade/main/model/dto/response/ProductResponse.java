@@ -5,8 +5,11 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.retrade.main.model.constant.ProductConditionEnum;
+import org.retrade.main.model.constant.ProductStatusEnum;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Set;
 
@@ -23,12 +26,15 @@ public class ProductResponse {
     private String description;
     private String thumbnail;
     private Set<String> productImages;
+    private String brandId;
     private String brand;
-    private Double discount;
+    private Integer quantity;
+    private LocalDate warrantyExpiryDate;
     private String model;
     private BigDecimal currentPrice;
     private Set<String> categories;
-    private Set<String> keywords;
+    private ProductConditionEnum condition;
+    private ProductStatusEnum status;
     private Set<String> tags;
     private Boolean verified;
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")

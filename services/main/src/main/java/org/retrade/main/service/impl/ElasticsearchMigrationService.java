@@ -1,8 +1,6 @@
 package org.retrade.main.service.impl;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import co.elastic.clients.elasticsearch.indices.CreateIndexRequest;
-import co.elastic.clients.elasticsearch.indices.ExistsRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.retrade.main.model.document.ProductDocument;
@@ -14,6 +12,8 @@ import org.springframework.context.event.EventListener;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
+import org.springframework.data.elasticsearch.core.IndexOperations;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,6 +30,7 @@ public class ElasticsearchMigrationService {
 
     private final ElasticsearchClient elasticsearchClient;
     private final ProductRepository productRepository;
+    private final ElasticsearchOperations elasticsearchOperations;
     private final ProductElasticsearchRepository productElasticsearchRepository;
 
     private static final String PRODUCT_INDEX = "products";
@@ -57,8 +58,8 @@ public class ElasticsearchMigrationService {
 
     private boolean isIndexExists() {
         try {
-            ExistsRequest request = ExistsRequest.of(e -> e.index(PRODUCT_INDEX));
-            return elasticsearchClient.indices().exists(request).value();
+            IndexOperations indexOps = elasticsearchOperations.indexOps(ProductDocument.class);
+            return indexOps.exists();
         } catch (Exception e) {
             log.error("Error checking if index exists", e);
             return false;
@@ -67,48 +68,12 @@ public class ElasticsearchMigrationService {
 
     private void createIndex() {
         try {
-            CreateIndexRequest request = CreateIndexRequest.of(c -> c
-                    .index(PRODUCT_INDEX)
-                    .mappings(m -> m
-                            .properties("id", p -> p.keyword(k -> k))
-                            .properties("name", p -> p.text(t -> t
-                                    .analyzer("standard")
-                                    .fields("keyword", f -> f.keyword(k -> k.ignoreAbove(256)))
-                            ))
-                            .properties("sellerId", p -> p.keyword(k -> k))
-                            .properties("sellerShopName", p -> p.text(t -> t
-                                    .analyzer("standard")
-                                    .fields("keyword", f -> f.keyword(k -> k.ignoreAbove(256)))
-                            ))
-                            .properties("shortDescription", p -> p.text(t -> t.analyzer("standard")))
-                            .properties("description", p -> p.text(t -> t.analyzer("standard")))
-                            .properties("brand", p -> p.keyword(k -> k))
-                            .properties("model", p -> p.keyword(k -> k))
-                            .properties("currentPrice", p -> p.double_(d -> d))
-                            .properties("discount", p -> p.double_(d -> d))
-                            .properties("verified", p -> p.boolean_(b -> b))
-                            .properties("addressLine", p -> p.text(t -> t.analyzer("standard")))
-                            .properties("state", p -> p.keyword(k -> k))
-                            .properties("district", p -> p.keyword(k -> k))
-                            .properties("ward", p -> p.keyword(k -> k))
-                            .properties("createdAt", p -> p.date(d -> d))
-                            .properties("updatedAt", p -> p.date(d -> d))
-                            .properties("categories", p -> p.nested(n -> n
-                                    .properties("id", cp -> cp.keyword(k -> k))
-                                    .properties("name", cp -> cp.text(t -> t
-                                            .analyzer("standard")
-                                            .fields("keyword", f -> f.keyword(k -> k.ignoreAbove(256)))
-                                    ))
-                            ))
-                    )
-                    .settings(s -> s
-                            .numberOfShards("1")
-                            .numberOfReplicas("0")
-                            .maxResultWindow(50000)
-                    )
-            );
-            elasticsearchClient.indices().create(request);
-            log.info("Successfully created product index with optimized settings");
+            IndexOperations indexOps = elasticsearchOperations.indexOps(ProductDocument.class);
+            if (!indexOps.exists()) {
+                indexOps.create();
+                indexOps.putMapping(indexOps.createMapping(ProductDocument.class));
+                log.info("Successfully created product index using ProductDocument mappings");
+            }
         } catch (Exception e) {
             log.error("Failed to create product index", e);
             throw new RuntimeException("Failed to create product index", e);
