@@ -482,6 +482,8 @@ public class ProductServiceImpl implements ProductService {
         Set<Predicate> predicates = new HashSet<>();
         addCategoryPredicate(param.remove("categoryId"), root, predicates);
         addBrandPredicate(param.remove("brand"), root, criteriaBuilder, predicates);
+        addSellerPredicate(param.remove("seller"), root, criteriaBuilder, predicates);
+        addStatePredicate(param.remove("state"), root, criteriaBuilder, predicates);
         return predicates.toArray(new Predicate[0]);
     }
 
@@ -499,9 +501,26 @@ public class ProductServiceImpl implements ProductService {
         if (brand == null) return;
         Set<String> brandNames = extractStringValues(brand);
         if (!brandNames.isEmpty()) {
-            predicates.add(root.get("brand").in(brandNames));
+            predicates.add(root.get("brand").get("id").in(brandNames));
         }
     }
+
+    private void addSellerPredicate(QueryFieldWrapper seller, Root<ProductEntity> root, CriteriaBuilder criteriaBuilder, Set<Predicate> predicates) {
+        if (seller == null) return;
+        Set<String> sellerIds = extractStringValues(seller);
+        if (!sellerIds.isEmpty()) {
+            predicates.add(root.get("seller").get("id").in(sellerIds));
+        }
+    }
+
+    private void addStatePredicate(QueryFieldWrapper state, Root<ProductEntity> root, CriteriaBuilder criteriaBuilder, Set<Predicate> predicates) {
+        if (state == null) return;
+        Set<String> states = extractStringValues(state);
+        if (!states.isEmpty()) {
+            predicates.add(root.get("seller").get("state").in(states));
+        }
+    }
+
 
     private Set<String> extractStringValues(QueryFieldWrapper wrapper) {
         if (wrapper == null) return Set.of();
