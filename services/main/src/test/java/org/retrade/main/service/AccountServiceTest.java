@@ -104,7 +104,6 @@ class AccountServiceTest {
        account.setJoinInDate(LocalDateTime.now());
        account.setLastLogin(LocalDateTime.now());
 
-       // Sửa tên role thành ROLE_USER để tránh lỗi
        RoleEntity roleEntity = new RoleEntity();
        roleEntity.setName("ROLE_USER");
        roleEntity.setId("1");
@@ -126,7 +125,6 @@ class AccountServiceTest {
     void getMe_Success() {
         when(authUtils.getUserAccountFromAuthentication()).thenReturn(account);
 
-        // Debug để chắc chắn không null
         account.getAccountRoles().forEach(role -> {
             System.out.println("Enabled: " + role.getEnabled());
             System.out.println("RoleEntity: " + role.getRole());
@@ -335,18 +333,14 @@ class AccountServiceTest {
     void updateEmail_InvalidEmail() {
         // Arrange
         UpdateEmailRequest request = new UpdateEmailRequest("invalid-email", "currentPassword");
-
         // Act & Assert
         ValidationException exception = assertThrows(
                 ValidationException.class,
                 () -> accountService.updateEmail(request),
                 "Phải ném ValidationException khi email không hợp lệ"
         );
-
-        // Kiểm tra thông điệp lỗi
         assertEquals("Email input is not valid", exception.getMessage(), "Thông điệp lỗi phải khớp");
 
-        // Verify không có tương tác với authUtils hoặc accountRepository
         verifyNoInteractions(authUtils, accountRepository, passwordEncoder);
     }
 
