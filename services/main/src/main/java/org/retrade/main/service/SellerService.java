@@ -26,4 +26,8 @@ public interface SellerService {
     SellerBaseResponse getSellerDetails(String id);
 
     SellerBaseResponse getMySellers();
+
+    SellerBaseResponse banSeller(String sellerId);
+
+    SellerBaseResponse unbanSeller(String sellerId);
 }
