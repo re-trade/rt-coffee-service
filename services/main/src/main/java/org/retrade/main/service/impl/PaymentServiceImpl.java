@@ -13,12 +13,17 @@ import org.retrade.common.model.exception.ValidationException;
 import org.retrade.main.handler.PaymentHandler;
 import org.retrade.main.model.constant.PaymentStatusEnum;
 import org.retrade.main.model.dto.request.PaymentInitRequest;
+import org.retrade.main.model.dto.response.PaymentHistoryResponse;
 import org.retrade.main.model.dto.response.PaymentMethodResponse;
+import org.retrade.main.model.dto.response.ProductResponse;
+import org.retrade.main.model.entity.CustomerEntity;
 import org.retrade.main.model.entity.PaymentHistoryEntity;
 import org.retrade.main.model.entity.PaymentMethodEntity;
+import org.retrade.main.model.entity.SellerEntity;
 import org.retrade.main.model.other.PaymentProviderCallbackWrapper;
 import org.retrade.main.repository.*;
 import org.retrade.main.service.PaymentService;
+import org.retrade.main.util.AuthUtils;
 import org.retrade.main.util.RandomUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
@@ -28,6 +33,7 @@ import org.springframework.transaction.interceptor.TransactionAspectSupport;
 
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -40,6 +46,8 @@ public class PaymentServiceImpl implements PaymentService {
     private final OrderComboRepository orderComboRepository;
     @Value("${payment.callback}")
     private String callbackUrl;
+    private final AuthUtils authUtils;
+    private final CustomerRepository customerRepository;
 
     @Override
     @Transactional(rollbackFor = {ActionFailedException.class, ValidationException.class, Exception.class})
@@ -131,6 +139,65 @@ public class PaymentServiceImpl implements PaymentService {
                     .setData(list)
                     .build();
         });
+    }
+
+    @Override
+    public PaginationWrapper<List<PaymentHistoryResponse>> getPaymentHistoriesByCustomerId(String customerId, QueryWrapper queryWrapper) {
+        var customer = customerRepository.findById(customerId)
+                .orElseThrow(() -> new ValidationException("Seller not found"));
+        return getPaymentHistorysByCustomer(customer, queryWrapper);
+    }
+
+    @Override
+    public PaginationWrapper<List<PaymentHistoryResponse>> getPaymentHistoriesByCurrentCustomer(QueryWrapper queryWrapper) {
+        var customer = getCurrentCustomerAccount();
+
+        return getPaymentHistorysByCustomer(customer, queryWrapper);
+    }
+
+
+    private PaginationWrapper<List<PaymentHistoryResponse>> getPaymentHistorysByCustomer(CustomerEntity customer, QueryWrapper queryWrapper) {
+        return paymentHistoryRepository.query(queryWrapper, (param) -> (root, query, criteriaBuilder) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            predicates.add(criteriaBuilder.equal(root.get("order").get("customer"), customer));
+            return getPredicatePaymentHistory(param, root, criteriaBuilder, predicates);
+        }, (items) -> {
+            var list = items.map(this::mapToPaymentHistoryResponse).stream().toList();
+            return new PaginationWrapper.Builder<List<PaymentHistoryResponse>>()
+                    .setPaginationInfo(items)
+                    .setData(list)
+                    .build();
+        });
+    }
+
+
+    private Predicate getPredicatePaymentHistory(Map<String, QueryFieldWrapper> param, Root<PaymentHistoryEntity> root, CriteriaBuilder criteriaBuilder, List<Predicate> predicates) {
+        if (param != null && !param.isEmpty()) {
+            Predicate[] defaultPredicates = paymentHistoryRepository.createDefaultPredicate(criteriaBuilder, root, param);
+            predicates.addAll(Arrays.asList(defaultPredicates));
+        }
+        return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
+    }
+
+    private CustomerEntity getCurrentCustomerAccount() {
+        var account = authUtils.getUserAccountFromAuthentication();
+        var customerEntity = account.getCustomer();
+        if (customerEntity == null) {
+            throw new ValidationException("User is not a customer");
+        }
+        return customerEntity;
+    }
+
+    private PaymentHistoryResponse mapToPaymentHistoryResponse(PaymentHistoryEntity payment) {
+        return PaymentHistoryResponse.builder()
+                .orderId(payment.getOrder().getId())
+                .paymentMethodName(payment.getPaymentMethod().getName())
+                .paymentTotal(payment.getPaymentTotal())
+                .paymentContent(payment.getPaymentContent())
+                .paymentCode(payment.getPaymentCode())
+                .paymentStatus(payment.getPaymentStatus())
+                .paymentTime(payment.getPaymentTime())
+                .build();
     }
 
     private Predicate getPredicate(Map<String, QueryFieldWrapper> param, Root<PaymentMethodEntity> root, CriteriaBuilder criteriaBuilder, List<Predicate> predicates) {

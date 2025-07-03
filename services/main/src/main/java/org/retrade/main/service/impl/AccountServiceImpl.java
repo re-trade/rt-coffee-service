@@ -13,8 +13,10 @@ import org.retrade.main.model.dto.request.UpdatePasswordRequest;
 import org.retrade.main.model.dto.request.UpdateUsernameRequest;
 import org.retrade.main.model.dto.response.AccountResponse;
 import org.retrade.main.model.entity.AccountEntity;
+import org.retrade.main.model.entity.CustomerEntity;
 import org.retrade.main.model.message.EmailNotificationMessage;
 import org.retrade.main.repository.AccountRepository;
+import org.retrade.main.repository.CustomerRepository;
 import org.retrade.main.service.AccountService;
 import org.retrade.main.service.JwtService;
 import org.retrade.main.service.MessageProducerService;
@@ -36,6 +38,7 @@ public class AccountServiceImpl implements AccountService {
     private final AccountRepository accountRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuthUtils authUtils;
+    private final CustomerRepository customerRepository;
 
     @Override
     public AccountResponse getMe() {
@@ -182,6 +185,52 @@ public class AccountServiceImpl implements AccountService {
         } catch (Exception e) {
             throw new ActionFailedException("Error while updating email", e);
         }
+    }
+
+    @Override
+    public AccountResponse disableCustomerAccount(String customerId) {
+        var roles = authUtils.getRolesFromAuthUser();
+
+        if (!roles.contains("ROLE_ADMIN")) {
+            CustomerEntity currentCustomer = getCurrentCustomerAccount();
+
+            if (!currentCustomer.getId().equals(customerId)) {
+                throw new ValidationException("You do not have permission to disable this account");
+            }
+        }
+
+        CustomerEntity customer = customerRepository.findById(customerId)
+                .orElseThrow(() -> new ValidationException("Customer not found with ID: " + customerId));
+
+        AccountEntity account = customer.getAccount();
+        account.setLocked(true);
+        account.setEnabled(false);
+
+        return mapToAccountResponse(account);
+    }
+
+
+    @Override
+    public AccountResponse enableCustomerAccount(String customerId) {
+        var roles = authUtils.getRolesFromAuthUser();
+        if (!roles.contains("ROLE_ADMIN")) {
+            throw new ValidationException("Not have permission to approve seller");
+        }
+        CustomerEntity customer = customerRepository.findById(customerId)
+                .orElseThrow(() -> new ValidationException("Customer not found with ID: " + customerId));
+        AccountEntity account = customer.getAccount();
+        account.setLocked(false);
+        account.setEnabled(true);
+        return mapToAccountResponse(account);
+    }
+
+    private CustomerEntity getCurrentCustomerAccount() {
+        var account = authUtils.getUserAccountFromAuthentication();
+        var customerEntity = account.getCustomer();
+        if (customerEntity == null) {
+            throw new ValidationException("User is not a customer");
+        }
+        return customerEntity;
     }
 
     private AccountResponse mapToAccountResponse(AccountEntity account) {
