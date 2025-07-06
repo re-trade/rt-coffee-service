@@ -16,5 +16,6 @@ public class ProductBaseResponse {
     private String productName;
     private String shortDescription;
     private BigDecimal price;
+    private String thumbnailUrl;
 
 }

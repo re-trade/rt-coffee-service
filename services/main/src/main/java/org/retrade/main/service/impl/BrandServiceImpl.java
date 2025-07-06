@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -77,6 +78,12 @@ public class BrandServiceImpl implements BrandService {
                     .setData(list)
                     .build();
         });
+    }
+
+    @Override
+    public List<BrandResponse> getAllBrandNoPaging() {
+        List<BrandEntity> brandEntities = brandRepository.findAll();
+        return brandEntities.stream().map(this::mapToBrandResponse).collect(Collectors.toList());
     }
 
     private Predicate getPredicate(Map<String, QueryFieldWrapper> param, Root<BrandEntity> root, CriteriaBuilder criteriaBuilder, List<Predicate> predicates) {

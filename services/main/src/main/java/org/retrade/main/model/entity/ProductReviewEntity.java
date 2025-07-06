@@ -21,8 +21,11 @@ public class ProductReviewEntity extends BaseSQLEntity {
     @JoinColumn(name = "customer_id", nullable = false)
     private CustomerEntity customer;
     @ManyToOne(targetEntity = OrderComboEntity.class, fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "order_id", nullable = false)
-    private OrderComboEntity order;
+    @JoinColumn(name = "order_combo_id", nullable = false)
+    private OrderComboEntity orderCombo;
+    @ManyToOne(targetEntity = SellerEntity.class, fetch = FetchType.EAGER, optional = false)
+    @JoinColumn(name = "seller_id", nullable = false)
+    private SellerEntity seller;
     @Column(name = "vote", nullable = false)
     private Double vote;
     @Column(name = "content", nullable = false)
