@@ -55,7 +55,8 @@ services:
       MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
       MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
       MINIO_BUCKET_NAME: ${MINIO_BUCKET_NAME}
-
+      RECOMMENDATION_SERVICE_GRPC_HOST: go-recommender
+      RECOMMENDATION_SERVICE_GRPC_PORT: 8386
     profiles:
       - backend
       - prod

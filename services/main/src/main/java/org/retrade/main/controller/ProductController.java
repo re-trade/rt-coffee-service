@@ -174,6 +174,23 @@ public class ProductController {
                 .build());
     }
 
+    @GetMapping("similar")
+    public ResponseEntity<ResponseObject<List<ProductResponse>>> searchProductSimilar(
+            @PageableDefault Pageable pageable, @RequestParam(required = false, name = "q") String search
+    ) {
+        var queryWrapper = QueryWrapper.builder()
+                .search(search)
+                .pageable(pageable)
+                .build();
+        var result = productService.getProductSimilar(queryWrapper);
+        return ResponseEntity.ok(new ResponseObject.Builder<List<ProductResponse>>()
+                .success(true)
+                .code("SUCCESS")
+                .unwrapPaginationWrapper(result)
+                .messages("Products found successfully")
+                .build());
+    }
+
     @GetMapping("filter")
     public ResponseEntity<ResponseObject<FieldAdvanceSearch>> getProductFilter(
             @RequestParam(required = false, name = "q") String search
