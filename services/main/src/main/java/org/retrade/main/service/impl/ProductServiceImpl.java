@@ -9,12 +9,14 @@ import co.elastic.clients.elasticsearch._types.query_dsl.TextQueryType;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
+import jakarta.persistence.criteria.Subquery;
 import lombok.RequiredArgsConstructor;
 import org.retrade.common.model.dto.request.QueryFieldWrapper;
 import org.retrade.common.model.dto.request.QueryWrapper;
 import org.retrade.common.model.dto.response.PaginationWrapper;
 import org.retrade.common.model.exception.ActionFailedException;
 import org.retrade.common.model.exception.ValidationException;
+import org.retrade.main.client.ProductRecommendGrpcClient;
 import org.retrade.main.model.constant.ProductStatusEnum;
 import org.retrade.main.model.document.CategoryInfoDocument;
 import org.retrade.main.model.document.ProductDocument;
@@ -59,6 +61,7 @@ public class ProductServiceImpl implements ProductService {
     private final BrandRepository brandRepository;
     private final AuthUtils authUtils;
     private final BrandRepository brandEntityRepository;
+    private final ProductRecommendGrpcClient productRecommendGrpcClient;
 
     @Override
     @Transactional(rollbackFor = {ActionFailedException.class, Exception.class})
@@ -167,9 +170,54 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public PaginationWrapper<List<ProductResponse>> getAllProducts(QueryWrapper queryWrapper) {
-        ;
         return productRepository.query(queryWrapper, (param) -> (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
+            return getPredicate(param, root, criteriaBuilder, predicates);
+        }, (items) -> {
+            var list = items.map(this::mapToProductResponse).stream().toList();
+            return new PaginationWrapper.Builder<List<ProductResponse>>()
+                    .setPaginationInfo(items)
+                    .setData(list)
+                    .build();
+        });
+    }
+
+
+    @Override
+    public PaginationWrapper<List<ProductResponse>> getProductSimilar(QueryWrapper queryWrapper) {
+        var search = queryWrapper.search();
+        var pagination = queryWrapper.pagination();
+        if (search == null || search.isEmpty() || !search.containsKey("id")) {
+            throw new ValidationException("Missing required parameter: id");
+        }
+        QueryFieldWrapper id = search.remove("id");
+        List<String> productIds = null;
+        switch (id.getOperator()) {
+            case EQ:
+                    productIds = productRecommendGrpcClient.getSimilarProductByProductId(id.getValue().toString(), pagination.getPageNumber(), pagination.getPageSize());
+                    break;
+                case IN:
+                    @SuppressWarnings("unchecked")
+                    Collection<Object> idCollection = (Collection<Object>) id.getValue();
+                    if (idCollection.isEmpty()) {
+                        throw new ValidationException("The 'IN' condition requires at least one food ID.");
+                    }
+                    productIds = productRecommendGrpcClient.getSimilarProductByProductIds(
+                            idCollection.stream().map(Object::toString).collect(Collectors.toSet()),
+                            pagination.getPageNumber(),
+                            pagination.getPageSize());
+                    break;
+                    default:
+                    throw new ValidationException("Invalid condition operator: " + id.getOperator());
+        }
+        List<String> finalProductIds = productIds;
+        return productRepository.query(queryWrapper, (param) -> (root, query, criteriaBuilder) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            Subquery<String> subquery = Objects.requireNonNull(query).subquery(String.class);
+            Root<ProductEntity> subRoot = subquery.from(ProductEntity.class);
+            subquery.select(subRoot.get("id")).where(subRoot.get("id").in(finalProductIds),
+                    criteriaBuilder.isTrue(subRoot.get("verified")),
+                    criteriaBuilder.greaterThan(subRoot.get("quantity"), 0));
             return getPredicate(param, root, criteriaBuilder, predicates);
         }, (items) -> {
             var list = items.map(this::mapToProductResponse).stream().toList();

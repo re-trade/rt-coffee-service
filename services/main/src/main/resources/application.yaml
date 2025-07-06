@@ -123,6 +123,9 @@ grpc:
     voucher-service:
       host: ${VOUCHER_SERVICE_GRPC_HOST:localhost}
       port: ${VOUCHER_SERVICE_GRPC_PORT:9081}
+    recommendation-service:
+      host: ${RECOMMENDATION_SERVICE_GRPC_HOST:localhost}
+      port: ${RECOMMENDATION_SERVICE_GRPC_PORT:8386}
 
 cart:
   ttl-days: 30
