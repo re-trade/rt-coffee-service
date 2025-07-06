@@ -90,6 +90,7 @@ public class ProductServiceImpl implements ProductService {
                 .tags(request.getTags())
                 .status(request.getStatus() != null ? request.getStatus() : ProductStatusEnum.DRAFT)
                 .verified(false)
+                .avgVote(0.0)
                 .build();
 
         if (request.getStatus() != null) {
