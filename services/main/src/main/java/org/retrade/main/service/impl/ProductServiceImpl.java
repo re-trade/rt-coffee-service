@@ -484,6 +484,7 @@ public class ProductServiceImpl implements ProductService {
     }
 
 
+
     private ProductEntity getProductEntityById(String id) {
         return productRepository.findById(id)
                 .orElseThrow(() -> new ValidationException("Product not found with id: " + id));
@@ -509,6 +510,7 @@ public class ProductServiceImpl implements ProductService {
                 .model(product.getModel())
                 .currentPrice(product.getCurrentPrice())
                 .categories(convertCategoryEntitiesToNames(product.getCategories()))
+                .listOfCategories(covertCategoryEntitiesToCategories(product.getCategories()))
                 .tags(product.getTags())
                 .verified(product.getVerified())
                 .createdAt(product.getCreatedDate() != null ? product.getCreatedDate().toLocalDateTime() : null)
@@ -677,6 +679,15 @@ public class ProductServiceImpl implements ProductService {
         return categoryEntities.stream()
                 .map(CategoryEntity::getName)
                 .collect(Collectors.toSet());
+    }
+    private List<CategoryBaseResponse> covertCategoryEntitiesToCategories(Set<CategoryEntity> categoryEntities) {
+        if (categoryEntities == null || categoryEntities.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        return categoryEntities.stream()
+                .map(cat -> new CategoryBaseResponse(cat.getId(), cat.getName()))
+                .collect(Collectors.toList());
     }
 
     private Set<CategoryEntity> convertCategoryIdsToEntities(Set<String> categoryIds) {

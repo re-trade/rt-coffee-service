@@ -11,6 +11,7 @@ import org.retrade.main.model.constant.ProductStatusEnum;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Set;
 
 @Data
@@ -33,6 +34,7 @@ public class ProductResponse {
     private String model;
     private BigDecimal currentPrice;
     private Set<String> categories;
+    private List<CategoryBaseResponse> listOfCategories;
     private ProductConditionEnum condition;
     private ProductStatusEnum status;
     private Set<String> tags;
