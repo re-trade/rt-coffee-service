@@ -234,6 +234,27 @@ public class OrderServiceImpl implements OrderService {
                 .collect(Collectors.toList());
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public PaginationWrapper<List<CustomerOrderComboResponse>> getAllOrderCombosBySeller(QueryWrapper queryWrapper) {
+        var account = authUtils.getUserAccountFromAuthentication();
+        var seller = account.getSeller();
+        if (seller == null) {
+            throw new ValidationException("User is not a seller");
+        }
+        return orderComboRepository.query(queryWrapper, (param) -> (root, query, criteriaBuilder) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            predicates.add(criteriaBuilder.equal(root.get("seller"), seller));
+            return getOrderComboPredicate(param, root, criteriaBuilder, predicates);
+        }, (items) -> {
+            var list = items.map(this::wrapCustomerOrderComboResponse).stream().toList();
+            return new PaginationWrapper.Builder<List<CustomerOrderComboResponse>>()
+                    .setPaginationInfo(items)
+                    .setData(list)
+                    .build();
+        });
+    }
+
 
     private CustomerEntity getCurrentCustomerAccount() {
         var account = authUtils.getUserAccountFromAuthentication();
@@ -471,6 +492,7 @@ public class OrderServiceImpl implements OrderService {
                 .orderStatus(orderStatus.getName())
                 .items(orderItemResponses)
                 .destination(orderDestinationResponse)
+                .createDate(combo.getCreatedDate().toLocalDateTime())
                 .build();
     }
 
