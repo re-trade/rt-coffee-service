@@ -15,6 +15,4 @@ import java.util.UUID;
 public interface OrderRepository extends BaseJpaRepository<OrderEntity, String> {
     List<OrderEntity> findByCustomer(CustomerEntity customer);
     List<OrderEntity> findByCustomerAndCreatedDateBetween(CustomerEntity customer, LocalDateTime startDate, LocalDateTime endDate);
-
-    // o day ne cai query k thi o product review cung duoc nhu nhau
 }

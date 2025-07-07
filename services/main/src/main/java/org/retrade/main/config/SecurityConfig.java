@@ -34,7 +34,7 @@ public class SecurityConfig {
                    auth.requestMatchers("/auth/**", "/api-docs/**", "/swagger-ui/**","/actuator/health",
                            "/registers/**",
                            "/passwords/**",
-                           "/pings/**","/accounts/check-username"
+                           "/pings/**","/accounts/check-username", "/orders/status"
                            ).permitAll()
                            .requestMatchers(HttpMethod.GET, "/products/**", "/categories/**", "/payments/**", "/product-histories/**")
                            .permitAll()
