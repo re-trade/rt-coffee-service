@@ -157,7 +157,6 @@ public class ProductServiceImpl implements ProductService {
         try {
             productRepository.delete(product);
             productSearchRepository.deleteById(id);
-            ;
         } catch (Exception ex) {
             throw new ActionFailedException("Failed to delete product", ex);
         }

@@ -1,4 +1,4 @@
-package org.retrade.main.service.impl;
+ package org.retrade.main.service.impl;
 
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.Predicate;
