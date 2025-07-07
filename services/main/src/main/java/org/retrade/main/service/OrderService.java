@@ -34,4 +34,6 @@ public interface OrderService {
     CustomerOrderComboResponse getCustomerOrderComboById(String comboId);
 
     List<OrderResponse> getOrdersByCurrentCustomer();
+
+    PaginationWrapper<List<CustomerOrderComboResponse>>  getAllOrderCombosBySeller(QueryWrapper queryWrapper);
 }
