@@ -492,6 +492,7 @@ public class OrderServiceImpl implements OrderService {
                 .orderStatus(orderStatus.getName())
                 .items(orderItemResponses)
                 .destination(orderDestinationResponse)
+                .createDate(combo.getCreatedDate().toLocalDateTime())
                 .build();
     }
 
