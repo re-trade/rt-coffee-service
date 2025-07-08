@@ -231,9 +231,6 @@ public class ProductGrpcServiceImpl extends GrpcProductServiceGrpc.GrpcProductSe
         if (product.getProductImages() != null) {
             builder.addAllProductImages(product.getProductImages());
         }
-        if (product.getCategories() != null) {
-            builder.addAllCategories(product.getCategories());
-        }
         if (product.getTags() != null) {
             builder.addAllTags(product.getTags());
         }
