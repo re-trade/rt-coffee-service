@@ -63,7 +63,7 @@ public class OrderController {
         @ApiResponse(responseCode = "404", description = "Order not found"),
         @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    @PreAuthorize("hasRole('ROLE_CUSTOMER') or hasRole('ROLE_SELLER') or hasRole('ROLE_ADMIN')")
+    @PreAuthorize("hasRole('ROLE_CUSTOMER')")
     public ResponseEntity<ResponseObject<OrderResponse>> getOrderById(
             @Parameter(description = "Order ID", required = true)
             @PathVariable String orderId) {

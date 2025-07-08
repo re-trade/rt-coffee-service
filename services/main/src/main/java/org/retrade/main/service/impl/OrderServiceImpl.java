@@ -82,8 +82,15 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public OrderResponse getOrderById(String orderId) {
+        var account = authUtils.getUserAccountFromAuthentication();
+        if (account.getCustomer() == null) {
+            throw new ValidationException("User is not a customer");
+        }
         OrderEntity order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new ValidationException("Order not found with ID: " + orderId));
+        if (!order.getCustomer().getId().equals(account.getCustomer().getId())) {
+            throw new ValidationException("You are not the owner");
+        }
         return mapToOrderResponse(order);
     }
 
