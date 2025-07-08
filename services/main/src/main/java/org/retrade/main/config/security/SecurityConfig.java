@@ -1,4 +1,4 @@
-package org.retrade.main.config;
+package org.retrade.main.config.security;
 
 import lombok.RequiredArgsConstructor;
 import org.retrade.main.security.CookieValidationFilter;

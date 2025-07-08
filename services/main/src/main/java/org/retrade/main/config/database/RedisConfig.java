@@ -1,4 +1,4 @@
-package org.retrade.main.config;
+package org.retrade.main.config.database;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

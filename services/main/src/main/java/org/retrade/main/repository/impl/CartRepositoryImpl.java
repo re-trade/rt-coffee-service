@@ -3,7 +3,7 @@ package org.retrade.main.repository.impl;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
-import org.retrade.main.config.CartConfig;
+import org.retrade.main.config.common.CartConfig;
 import org.retrade.main.model.entity.CartEntity;
 import org.retrade.main.repository.CartRepository;
 import org.springframework.data.redis.core.RedisTemplate;

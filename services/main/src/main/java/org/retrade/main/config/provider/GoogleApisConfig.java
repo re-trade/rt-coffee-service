@@ -1,4 +1,4 @@
-package org.retrade.main.config;
+package org.retrade.main.config.provider;
 
 import lombok.Getter;
 import lombok.Setter;
