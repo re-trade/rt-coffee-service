@@ -33,8 +33,7 @@ public class ProductResponse {
     private LocalDate warrantyExpiryDate;
     private String model;
     private BigDecimal currentPrice;
-    private Set<String> categories;
-    private List<CategoryBaseResponse> listOfCategories;
+    private List<CategoryBaseResponse> categories;
     private ProductConditionEnum condition;
     private ProductStatusEnum status;
     private Set<String> tags;
