@@ -29,8 +29,6 @@ public class OrderEntity extends BaseSQLEntity {
     @ManyToOne(optional = false, fetch = FetchType.EAGER, targetEntity = CustomerEntity.class)
     @JoinColumn(name = "customer_id", nullable = false)
     private CustomerEntity customer;
-    @OneToMany(fetch = FetchType.EAGER, cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REMOVE}, targetEntity = OrderItemEntity.class, mappedBy = "id")
+    @OneToMany(fetch = FetchType.EAGER, cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REMOVE}, targetEntity = OrderItemEntity.class, mappedBy = "order")
     private Set<OrderItemEntity> orderItems;
-    @OneToMany(fetch = FetchType.EAGER, cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REMOVE}, targetEntity = OrderHistoryEntity.class, mappedBy = "id")
-    private Set<OrderHistoryEntity> orderHistories;
 }
