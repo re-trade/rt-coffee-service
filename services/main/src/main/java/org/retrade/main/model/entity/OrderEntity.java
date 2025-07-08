@@ -26,9 +26,9 @@ public class OrderEntity extends BaseSQLEntity {
     private Double shippingCost;
     @Column(name = "grand_total", nullable = false)
     private BigDecimal grandTotal;
-    @ManyToOne(optional = false, fetch = FetchType.EAGER, targetEntity = CustomerEntity.class)
+    @ManyToOne(optional = false, fetch = FetchType.LAZY, targetEntity = CustomerEntity.class)
     @JoinColumn(name = "customer_id", nullable = false)
     private CustomerEntity customer;
-    @OneToMany(fetch = FetchType.EAGER, cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REMOVE}, targetEntity = OrderItemEntity.class, mappedBy = "order")
+    @OneToMany(fetch = FetchType.LAZY, cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REMOVE}, targetEntity = OrderItemEntity.class, mappedBy = "order")
     private Set<OrderItemEntity> orderItems;
 }

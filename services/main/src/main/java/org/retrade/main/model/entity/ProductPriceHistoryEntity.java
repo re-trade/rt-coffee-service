@@ -14,7 +14,7 @@ import java.time.LocalDateTime;
 @Builder
 @Entity(name = "product_price_histories")
 public class ProductPriceHistoryEntity extends BaseSQLEntity {
-    @ManyToOne(targetEntity = ProductEntity.class, fetch = FetchType.EAGER, optional = false)
+    @ManyToOne(targetEntity = ProductEntity.class, fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "product_id", nullable = false)
     private ProductEntity product;
     @Column(name = "old_price", nullable = false)

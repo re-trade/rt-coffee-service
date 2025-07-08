@@ -45,7 +45,7 @@ public class ProductEntity extends BaseSQLEntity {
     private String model;
     @Column(name = "current_price", nullable = false)
     private BigDecimal currentPrice;
-    @ManyToMany(targetEntity = CategoryEntity.class, fetch = FetchType.EAGER)
+    @ManyToMany(targetEntity = CategoryEntity.class, fetch = FetchType.LAZY)
     @JoinTable(
             name = "product_categories",
             joinColumns = @JoinColumn(name = "product_id", nullable = false),
@@ -63,6 +63,6 @@ public class ProductEntity extends BaseSQLEntity {
     private ProductEntity parentProduct;
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "parentProduct")
     private Set<ProductEntity> childProducts;
-    @OneToMany(fetch = FetchType.EAGER, cascade = {CascadeType.PERSIST}, mappedBy = "product")
+    @OneToMany(fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST}, mappedBy = "product")
     private Set<ProductPriceHistoryEntity> productPriceHistories;
 }
