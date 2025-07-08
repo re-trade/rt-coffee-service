@@ -4,6 +4,7 @@ import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch._types.aggregations.Aggregate;
 import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
 import co.elastic.clients.elasticsearch._types.aggregations.StringTermsBucket;
+import co.elastic.clients.elasticsearch._types.query_dsl.Operator;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch._types.query_dsl.TextQueryType;
 import jakarta.persistence.criteria.CriteriaBuilder;
@@ -626,36 +627,54 @@ public class ProductServiceImpl implements ProductService {
         return elasticsearchOperations.search(query, ProductDocument.class).getAggregations();
     }
 
-
-
-
     private Query elasticSearchKeywordQueryBuild(String keyword) {
+        boolean isMultiWord = keyword.contains(" ");
+
         return Query.of(q -> q.bool(b -> b
-                .should(s -> s.multiMatch(m -> m
-                        .fields("name^3", "shortDescription^2", "description^1")
+                .should(s -> s.matchPhrase(mp -> mp
+                        .field("name")
                         .query(keyword)
-                        .type(TextQueryType.BestFields)
-                        .fuzziness("1")
-                        .prefixLength(2)
+                        .boost(10.0f)
+                ))
+                .should(s -> s.matchPhrase(mp -> mp
+                        .field("shortDescription")
+                        .query(keyword)
+                        .boost(5.0f)
+                ))
+                .should(s -> s.matchPhrase(mp -> mp
+                        .field("description")
+                        .query(keyword)
+                        .boost(3.0f)
                 ))
                 .should(s -> s.multiMatch(m -> m
-                        .fields("addressLine", "state", "district", "ward")
+                        .fields("name^5", "shortDescription^3", "description")
                         .query(keyword)
                         .type(TextQueryType.BestFields)
-                        .fuzziness("1")
+                        .fuzziness(isMultiWord ? null : "1")
+                        .prefixLength(1)
                 ))
-                .should(s -> s.multiMatch(m -> m
-                        .fields("name^5", "shortDescription^3")
+                .should(s -> s.match(m -> m
+                        .field("brand")
                         .query(keyword)
-                        .type(TextQueryType.Phrase)
+                        .boost(3.0f)
+                ))
+                .should(s -> s.match(m -> m
+                        .field("model")
+                        .query(keyword)
+                        .boost(2.0f)
                 ))
                 .should(s -> s.nested(n -> n
                         .path("categories")
                         .query(nq -> nq
                                 .match(m -> m.field("categories.name").query(keyword))
                         )
+                )).should(s -> s.multiMatch(m -> m
+                        .fields("name^4", "brand^2")
+                        .query(keyword)
+                        .type(TextQueryType.CrossFields)
+                        .operator(Operator.And)
                 ))
-                .minimumShouldMatch("1")
+                .minimumShouldMatch("2")
         ));
     }
 
