@@ -1,9 +1,10 @@
-package org.retrade.main.config;
+package org.retrade.main.config.common;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.ProviderManager;
@@ -25,10 +26,10 @@ public class MainServiceConfig {
         return new ProviderManager(authenticationProviders);
     }
     @Bean
-    DaoAuthenticationProvider authenticationProvider(UserDetailsService userDetailsService , PasswordEncoder encoder) {
+    DaoAuthenticationProvider authenticationProvider(@Lazy UserDetailsService userDetailsService , PasswordEncoder encoder) {
         DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
         authProvider.setUserDetailsService(userDetailsService);
-        authProvider.setPasswordEncoder(passwordEncoder());
+        authProvider.setPasswordEncoder(encoder);
         return authProvider;
     }
 

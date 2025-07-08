@@ -1,30 +1,30 @@
  package org.retrade.main.service.impl;
 
-import jakarta.persistence.criteria.CriteriaBuilder;
-import jakarta.persistence.criteria.Predicate;
-import jakarta.persistence.criteria.Root;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.retrade.common.model.dto.request.QueryFieldWrapper;
-import org.retrade.common.model.dto.request.QueryWrapper;
-import org.retrade.common.model.dto.response.PaginationWrapper;
-import org.retrade.common.model.exception.ActionFailedException;
-import org.retrade.common.model.exception.ValidationException;
-import org.retrade.main.model.dto.request.CreateOrderRequest;
-import org.retrade.main.model.dto.request.OrderItemRequest;
-import org.retrade.main.model.dto.response.*;
-import org.retrade.main.model.entity.*;
-import org.retrade.main.repository.*;
-import org.retrade.main.service.CartService;
-import org.retrade.main.service.OrderService;
-import org.retrade.main.util.AuthUtils;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+ import jakarta.persistence.criteria.CriteriaBuilder;
+ import jakarta.persistence.criteria.Predicate;
+ import jakarta.persistence.criteria.Root;
+ import lombok.RequiredArgsConstructor;
+ import lombok.extern.slf4j.Slf4j;
+ import org.retrade.common.model.dto.request.QueryFieldWrapper;
+ import org.retrade.common.model.dto.request.QueryWrapper;
+ import org.retrade.common.model.dto.response.PaginationWrapper;
+ import org.retrade.common.model.exception.ActionFailedException;
+ import org.retrade.common.model.exception.ValidationException;
+ import org.retrade.main.model.dto.request.CreateOrderRequest;
+ import org.retrade.main.model.dto.request.OrderItemRequest;
+ import org.retrade.main.model.dto.response.*;
+ import org.retrade.main.model.entity.*;
+ import org.retrade.main.repository.*;
+ import org.retrade.main.service.CartService;
+ import org.retrade.main.service.OrderService;
+ import org.retrade.main.util.AuthUtils;
+ import org.springframework.stereotype.Service;
+ import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.util.*;
-import java.util.stream.Collectors;
+ import java.math.BigDecimal;
+ import java.math.RoundingMode;
+ import java.util.*;
+ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -115,7 +115,10 @@ public class OrderServiceImpl implements OrderService {
         }
         return orderComboRepository.query(queryWrapper, (param) -> (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
-            predicates.add(criteriaBuilder.equal(root.get("orderDestination").get("order").get("customer"),customerEntity));
+            var destinationJoin = root.join("orderDestination");
+            var orderJoin = destinationJoin.join("order");
+            var customerJoin = orderJoin.join("customer");
+            predicates.add(criteriaBuilder.equal(customerJoin.get("id"), customerEntity.getId()));
             return getOrderComboPredicate(param, root, criteriaBuilder, predicates);
         }, (items) -> {
             var list = items.map(this::wrapCustomerOrderComboResponse).stream().toList();

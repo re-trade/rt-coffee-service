@@ -3,7 +3,7 @@ package org.retrade.main.service.impl;
 import lombok.RequiredArgsConstructor;
 import org.retrade.common.model.exception.ActionFailedException;
 import org.retrade.common.model.exception.ValidationException;
-import org.retrade.main.config.CartConfig;
+import org.retrade.main.config.common.CartConfig;
 import org.retrade.main.model.dto.request.CartRequest;
 import org.retrade.main.model.dto.response.CartGroupResponse;
 import org.retrade.main.model.dto.response.CartItemResponse;

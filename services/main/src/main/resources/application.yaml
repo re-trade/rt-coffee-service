@@ -9,6 +9,13 @@ spring:
     redis:
       port: ${REDIS_PORT:6379}
       host: ${REDIS_HOST:localhost}
+      timeout: 2000
+      connect-timeout: 2000
+      repositories:
+        enabled: false
+      lettuce:
+        pool:
+          max-active: 5
     elasticsearch:
       repositories:
         enabled: on
