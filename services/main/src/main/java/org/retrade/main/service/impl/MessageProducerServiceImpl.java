@@ -37,8 +37,8 @@ public class MessageProducerServiceImpl implements MessageProducerService {
                 .build();
         log.info("Sending email notification message: {}", message.getMessageId());
         rabbitTemplate.convertAndSend(
-                ExchangeNameEnum.NOTIFICATION_EXCHANGE.name(),
-                RoutingKeyEnum.EMAIL_NOTIFICATION_ROUTING_KEY.name(),
+                ExchangeNameEnum.NOTIFICATION_EXCHANGE.getName(),
+                RoutingKeyEnum.EMAIL_NOTIFICATION_ROUTING_KEY.getName(),
                 messageWrapper
         );
         log.info("Email notification message sent: {}", message.getMessageId());
@@ -58,8 +58,8 @@ public class MessageProducerServiceImpl implements MessageProducerService {
                 .build();
         log.info("Sending user registration message: {}", message.getMessageId());
         rabbitTemplate.convertAndSend(
-                ExchangeNameEnum.REGISTRATION_EXCHANGE.name(),
-                RoutingKeyEnum.USER_REGISTRATION_ROUTING_KEY.name(),
+                ExchangeNameEnum.REGISTRATION_EXCHANGE.getName(),
+                RoutingKeyEnum.USER_REGISTRATION_ROUTING_KEY.getName(),
                 messageWrapper
         );
         log.info("User registration message sent: {}", message.getMessageId());
@@ -79,8 +79,8 @@ public class MessageProducerServiceImpl implements MessageProducerService {
                 .build();
         log.info("Sending seller verified message: {}", message.getMessageId());
         rabbitTemplate.convertAndSend(
-                ExchangeNameEnum.IDENTITY_EXCHANGE.name(),
-                RoutingKeyEnum.IDENTITY_VERIFICATION_ROUTING_KEY.name(),
+                ExchangeNameEnum.IDENTITY_EXCHANGE.getName(),
+                RoutingKeyEnum.IDENTITY_VERIFICATION_ROUTING_KEY.getName(),
                 messageWrapper
         );
         log.info("Seller verified message sent: {}", message.getMessageId());
@@ -89,6 +89,6 @@ public class MessageProducerServiceImpl implements MessageProducerService {
     @Override
     public void sendMessageToDeadQueue(Message rawMessage) {
         log.info("Sending message to dead queue: {}", rawMessage.getMessageProperties().getConsumerQueue());
-        rabbitTemplate.send(ExchangeNameEnum.NOTIFICATION_EXCHANGE.name(), RoutingKeyEnum.DEAD_LETTER_ROUTING_KEY.name(), rawMessage);
+        rabbitTemplate.send(ExchangeNameEnum.NOTIFICATION_EXCHANGE.getName(), RoutingKeyEnum.DEAD_LETTER_ROUTING_KEY.getName(), rawMessage);
     }
 }

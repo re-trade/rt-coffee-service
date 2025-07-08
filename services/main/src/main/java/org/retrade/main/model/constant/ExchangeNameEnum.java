@@ -1,5 +1,8 @@
 package org.retrade.main.model.constant;
 
+import lombok.Getter;
+
+@Getter
 public enum ExchangeNameEnum {
     NOTIFICATION_EXCHANGE("notification.exchange"),
     NOTIFICATION_RETRY_EXCHANGE("notification.dlx.exchange"),

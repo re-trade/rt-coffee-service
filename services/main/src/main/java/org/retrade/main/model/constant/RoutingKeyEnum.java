@@ -1,5 +1,8 @@
 package org.retrade.main.model.constant;
 
+import lombok.Getter;
+
+@Getter
 public enum RoutingKeyEnum {
     EMAIL_NOTIFICATION_ROUTING_KEY("email.notification"),
     EMAIL_RETRY_ROUTING_KEY("email.retry"),

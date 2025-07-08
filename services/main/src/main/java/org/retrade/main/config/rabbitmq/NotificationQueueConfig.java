@@ -11,21 +11,21 @@ import org.springframework.context.annotation.Configuration;
 public class NotificationQueueConfig {
     @Bean
     public Declarables notificationQueueDeclarables() {
-        DirectExchange notificationExchange = new DirectExchange(ExchangeNameEnum.NOTIFICATION_EXCHANGE.name());
-        DirectExchange notificationRetryExchange = new DirectExchange(ExchangeNameEnum.NOTIFICATION_RETRY_EXCHANGE.name());
+        DirectExchange notificationExchange = new DirectExchange(ExchangeNameEnum.NOTIFICATION_EXCHANGE.getName());
+        DirectExchange notificationRetryExchange = new DirectExchange(ExchangeNameEnum.NOTIFICATION_RETRY_EXCHANGE.getName());
 
-        Queue emailNotificationQueue = QueueBuilder.durable(QueueNameEnum.EMAIL_NOTIFICATION_QUEUE.name())
+        Queue emailNotificationQueue = QueueBuilder.durable(QueueNameEnum.EMAIL_NOTIFICATION_QUEUE.getName())
                 .withArgument("x-dead-letter-exchange", notificationRetryExchange.getName())
-                .withArgument("x-dead-letter-routing-key", RoutingKeyEnum.EMAIL_RETRY_ROUTING_KEY.name())
+                .withArgument("x-dead-letter-routing-key", RoutingKeyEnum.EMAIL_RETRY_ROUTING_KEY.getName())
                 .build();
 
-        Queue emailRetryQueue = QueueBuilder.durable(QueueNameEnum.EMAIL_RETRY_QUEUE.name())
+        Queue emailRetryQueue = QueueBuilder.durable(QueueNameEnum.EMAIL_RETRY_QUEUE.getName())
                 .withArgument("x-message-ttl", 30000)
                 .withArgument("x-dead-letter-exchange", notificationExchange.getName())
-                .withArgument("x-dead-letter-routing-key", RoutingKeyEnum.EMAIL_NOTIFICATION_ROUTING_KEY.name())
+                .withArgument("x-dead-letter-routing-key", RoutingKeyEnum.EMAIL_NOTIFICATION_ROUTING_KEY.getName())
                 .build();
 
-        Queue deadLetterQueue = QueueBuilder.durable(QueueNameEnum.DEAD_LETTER_QUEUE.name()).build();
+        Queue deadLetterQueue = QueueBuilder.durable(QueueNameEnum.DEAD_LETTER_QUEUE.getName()).build();
 
         return new Declarables(
                 notificationExchange,
@@ -34,11 +34,11 @@ public class NotificationQueueConfig {
                 emailRetryQueue,
                 deadLetterQueue,
                 BindingBuilder.bind(emailNotificationQueue).to(notificationExchange)
-                        .with(RoutingKeyEnum.EMAIL_NOTIFICATION_ROUTING_KEY.name()),
+                        .with(RoutingKeyEnum.EMAIL_NOTIFICATION_ROUTING_KEY.getName()),
                 BindingBuilder.bind(emailRetryQueue).to(notificationRetryExchange)
-                        .with(RoutingKeyEnum.EMAIL_RETRY_ROUTING_KEY.name()),
+                        .with(RoutingKeyEnum.EMAIL_RETRY_ROUTING_KEY.getName()),
                 BindingBuilder.bind(deadLetterQueue).to(notificationRetryExchange)
-                        .with(RoutingKeyEnum.DEAD_LETTER_ROUTING_KEY.name())
+                        .with(RoutingKeyEnum.DEAD_LETTER_ROUTING_KEY.getName())
         );
     }
 }

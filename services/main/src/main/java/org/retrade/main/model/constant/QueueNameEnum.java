@@ -1,5 +1,8 @@
 package org.retrade.main.model.constant;
 
+import lombok.Getter;
+
+@Getter
 public enum QueueNameEnum {
     EMAIL_NOTIFICATION_QUEUE("email.notification.queue"),
     EMAIL_RETRY_QUEUE("email.dlx.queue"),
