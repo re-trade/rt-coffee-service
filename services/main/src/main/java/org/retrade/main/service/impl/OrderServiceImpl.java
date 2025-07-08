@@ -1,4 +1,4 @@
-package org.retrade.main.service.impl;
+ package org.retrade.main.service.impl;
 
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.Predicate;
@@ -82,8 +82,15 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public OrderResponse getOrderById(String orderId) {
+        var account = authUtils.getUserAccountFromAuthentication();
+        if (account.getCustomer() == null) {
+            throw new ValidationException("User is not a customer");
+        }
         OrderEntity order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new ValidationException("Order not found with ID: " + orderId));
+        if (!order.getCustomer().getId().equals(account.getCustomer().getId())) {
+            throw new ValidationException("You are not the owner");
+        }
         return mapToOrderResponse(order);
     }
 
@@ -219,11 +226,6 @@ public class OrderServiceImpl implements OrderService {
         return wrapCustomerOrderComboResponse(combo);
     }
 
-    private OrderComboEntity getOrderComboById(String comboId) {
-        return orderComboRepository.findById(comboId)
-                .orElseThrow(() -> new ValidationException("Order combo not found with ID: " + comboId));
-    }
-
     @Override
     public List<OrderResponse> getOrdersByCurrentCustomer() {
         CustomerEntity customer = getCurrentCustomerAccount();
@@ -255,6 +257,33 @@ public class OrderServiceImpl implements OrderService {
         });
     }
 
+    @Override
+    public PaginationWrapper<List<OrderStatusResponse>> getOrderStatusesTemplate(QueryWrapper queryWrapper) {
+        return orderStatusRepository.query(queryWrapper, (param) -> (root, query, criteriaBuilder) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            return getOrderStatusPredicate(param, root, criteriaBuilder, predicates);
+        }, (items) -> {
+            var list = items.map(this::wrapOrderStatusResponse).stream().toList();
+            return new PaginationWrapper.Builder<List<OrderStatusResponse>>()
+                    .setPaginationInfo(items)
+                    .setData(list)
+                    .build();
+        });
+    }
+
+    private OrderStatusResponse wrapOrderStatusResponse(OrderStatusEntity orderStatus) {
+        return OrderStatusResponse.builder()
+                .id(orderStatus.getId())
+                .code(orderStatus.getCode())
+                .name(orderStatus.getName())
+                .enabled(orderStatus.getEnabled())
+                .build();
+    }
+
+    private OrderComboEntity getOrderComboById(String comboId) {
+        return orderComboRepository.findById(comboId)
+                .orElseThrow(() -> new ValidationException("Order combo not found with ID: " + comboId));
+    }
 
     private CustomerEntity getCurrentCustomerAccount() {
         var account = authUtils.getUserAccountFromAuthentication();
@@ -533,6 +562,14 @@ public class OrderServiceImpl implements OrderService {
     private Predicate getOrderComboPredicate(Map<String, QueryFieldWrapper> param, Root<OrderComboEntity> root, CriteriaBuilder criteriaBuilder, List<Predicate> predicates) {
         if (param != null && !param.isEmpty()) {
             Predicate[] defaultPredicates = orderComboRepository.createDefaultPredicate(criteriaBuilder, root, param);
+            predicates.addAll(Arrays.asList(defaultPredicates));
+        }
+        return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
+    }
+
+    private Predicate getOrderStatusPredicate(Map<String, QueryFieldWrapper> param, Root<OrderStatusEntity> root, CriteriaBuilder criteriaBuilder, List<Predicate> predicates) {
+        if (param != null && !param.isEmpty()) {
+            Predicate[] defaultPredicates = orderStatusRepository.createDefaultPredicate(criteriaBuilder, root, param);
             predicates.addAll(Arrays.asList(defaultPredicates));
         }
         return criteriaBuilder.and(predicates.toArray(new Predicate[0]));

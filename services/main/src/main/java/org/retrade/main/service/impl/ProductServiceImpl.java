@@ -157,7 +157,6 @@ public class ProductServiceImpl implements ProductService {
         try {
             productRepository.delete(product);
             productSearchRepository.deleteById(id);
-            ;
         } catch (Exception ex) {
             throw new ActionFailedException("Failed to delete product", ex);
         }
@@ -509,8 +508,7 @@ public class ProductServiceImpl implements ProductService {
                 .status(product.getStatus())
                 .model(product.getModel())
                 .currentPrice(product.getCurrentPrice())
-                .categories(convertCategoryEntitiesToNames(product.getCategories()))
-                .listOfCategories(covertCategoryEntitiesToCategories(product.getCategories()))
+                .categories(covertCategoryEntitiesToCategories(product.getCategories()))
                 .tags(product.getTags())
                 .verified(product.getVerified())
                 .createdAt(product.getCreatedDate() != null ? product.getCreatedDate().toLocalDateTime() : null)

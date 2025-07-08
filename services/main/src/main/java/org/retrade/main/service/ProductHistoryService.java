@@ -8,4 +8,6 @@ import java.util.List;
 
 public interface ProductHistoryService {
     PaginationWrapper<List<ProductHistoryResponse>> getProductHistoryByProductId(String productId, QueryWrapper queryWrapper);
+
+    void retradeProduct(String orderItemId);
 }

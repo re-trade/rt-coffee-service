@@ -1,12 +1,13 @@
 package org.retrade.main.init;
 
 import lombok.RequiredArgsConstructor;
+import org.retrade.main.model.constant.OrderStatusCodes;
 import org.retrade.main.model.entity.OrderStatusEntity;
 import org.retrade.main.repository.OrderStatusRepository;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
+import java.util.Map;
 
 @Component
 @RequiredArgsConstructor
@@ -14,58 +15,35 @@ public class OrderStatusInitializer implements CommandLineRunner {
     private final OrderStatusRepository orderStatusRepository;
     @Override
     public void run(String... args) {
-        List<OrderStatusEntity> defaultOrderStatuses = List.of(
-                OrderStatusEntity.builder()
-                        .name("Pending")
-                        .code("PENDING")
-                        .enabled(true)
-                        .build(),
-
-                OrderStatusEntity.builder()
-                        .name("Payment Confirmation")
-                        .code("PAYMENT_CONFIRMATION")
-                        .enabled(true)
-                        .build(),
-
-                OrderStatusEntity.builder()
-                        .name("Preparing")
-                        .code("PREPARING")
-                        .enabled(true)
-                        .build(),
-
-                OrderStatusEntity.builder()
-                        .name("Delivering")
-                        .code("DELIVERING")
-                        .enabled(true)
-                        .build(),
-
-                OrderStatusEntity.builder()
-                        .name("Delivered")
-                        .code("DELIVERED")
-                        .enabled(true)
-                        .build(),
-
-                OrderStatusEntity.builder()
-                        .name("Cancelled")
-                        .code("CANCELLED")
-                        .enabled(true)
-                        .build(),
-
-                OrderStatusEntity.builder()
-                        .name("Payment Cancelled")
-                        .code("PAYMENT_CANCELLED")
-                        .enabled(true)
-                        .build()
+        Map<String, String> defaultStatuses = Map.ofEntries(
+                Map.entry(OrderStatusCodes.PENDING, "Pending"),
+                Map.entry(OrderStatusCodes.PAYMENT_CONFIRMATION, "Payment Confirmation"),
+                Map.entry(OrderStatusCodes.PREPARING, "Preparing"),
+                Map.entry(OrderStatusCodes.DELIVERING, "Delivering"),
+                Map.entry(OrderStatusCodes.DELIVERED, "Delivered"),
+                Map.entry(OrderStatusCodes.COMPLETED, "Completed"),
+                Map.entry(OrderStatusCodes.CANCELLED, "Cancelled"),
+                Map.entry(OrderStatusCodes.RETURN_REQUESTED, "Return Requested"),
+                Map.entry(OrderStatusCodes.RETURN_APPROVED, "Return Approved"),
+                Map.entry(OrderStatusCodes.RETURN_REJECTED, "Return Rejected"),
+                Map.entry(OrderStatusCodes.RETURNING, "Returning"),
+                Map.entry(OrderStatusCodes.RETURNED, "Returned"),
+                Map.entry(OrderStatusCodes.REFUNDED, "Refunded")
         );
-        defaultOrderStatuses.forEach(orderStatus -> {
-            orderStatusRepository.findByCode(orderStatus.getCode())
-                    .ifPresentOrElse(
-                            existing -> System.out.println("Order status already exists: " + existing.getCode()),
-                            () -> {
-                                orderStatusRepository.save(orderStatus);
-                                System.out.println("Added order status: " + orderStatus.getCode());
-                            }
-                    );
+
+        defaultStatuses.forEach((code, name) -> {
+            orderStatusRepository.findByCode(code).ifPresentOrElse(
+                    existing -> System.out.println("✔ Status exists: " + code),
+                    () -> {
+                        OrderStatusEntity status = OrderStatusEntity.builder()
+                                .code(code)
+                                .name(name)
+                                .enabled(true)
+                                .build();
+                        orderStatusRepository.save(status);
+                        System.out.println("➕ Inserted status: " + code);
+                    }
+            );
         });
     }
 }

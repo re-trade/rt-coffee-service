@@ -35,4 +35,14 @@ public class ProductHistoryController {
                 .messages("Product history return successfully")
                 .build());
     }
+
+    @PostMapping("retrade/{orderItemId}")
+    public ResponseEntity<ResponseObject<Void>> retradeProduct(@PathVariable String orderItemId) {
+        productHistoryService.retradeProduct(orderItemId);
+        return ResponseEntity.ok(new ResponseObject.Builder<Void>()
+                        .success(true)
+                        .code("SUCCESS")
+                        .messages("Retrade return successfully")
+                .build());
+    }
 }

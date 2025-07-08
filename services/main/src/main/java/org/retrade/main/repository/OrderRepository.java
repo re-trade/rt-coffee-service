@@ -9,12 +9,18 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.UUID;
+import java.util.Optional;
 
 @Repository
 public interface OrderRepository extends BaseJpaRepository<OrderEntity, String> {
     List<OrderEntity> findByCustomer(CustomerEntity customer);
     List<OrderEntity> findByCustomerAndCreatedDateBetween(CustomerEntity customer, LocalDateTime startDate, LocalDateTime endDate);
+    @Query("""
+    SELECT od.order
+    FROM order_combos oc
+    JOIN oc.orderDestination od
+    WHERE oc.id = :orderComboId
+    """)
+    Optional<OrderEntity> findOrderByOrderComboId(@Param("orderComboId") String orderComboId);
 
-    // o day ne cai query k thi o product review cung duoc nhu nhau
 }
