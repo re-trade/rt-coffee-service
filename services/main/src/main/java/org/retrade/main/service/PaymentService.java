@@ -20,6 +20,9 @@ public interface PaymentService {
     @Transactional
     PaymentProviderCallbackWrapper handlePaymentCallback(HttpServletRequest request, String methodCode);
 
+    @Transactional
+    PaymentProviderCallbackWrapper handleIPNWebhookCallback(HttpServletRequest request, String methodCode);
+
     PaginationWrapper<List<PaymentMethodResponse>> getPaymentMethods (QueryWrapper queryWrapper);
 
 //    List<PaymentHistoryResponse> getPaymentHistoriesByCustomerId(String customerId);

@@ -18,7 +18,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
@@ -75,6 +77,36 @@ public class PaymentController {
                 .success(result.getSuccess())
                 .build()
         );
+    }
+    @PostMapping("callback/vnp/ipn")
+    public ResponseEntity<Map<String, String>> paymentVNPayIPN(HttpServletRequest request) {
+        var response = new HashMap<String, String>();
+        try {
+            var result = paymentService.handleIPNWebhookCallback(request, "VN_PAY");
+            if (result.getSuccess()) {
+                response.put("RspCode", "00");
+                response.put("Message", "Confirm Success");
+            } else {
+                response.put("RspCode", "97");
+                response.put("Message", "Invalid signature");
+            }
+        } catch (Exception e) {
+            response.put("RspCode", "99");
+            response.put("Message", "Unknow error");
+        }
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("callback/payos/ipn")
+    public ResponseEntity<Map<String, Boolean>> paymentPayOsIPN(HttpServletRequest request) {
+        var response = new HashMap<String, Boolean>();
+        try {
+            var result = paymentService.handleIPNWebhookCallback(request, "PAY_OS");
+            response.put("success", result.getSuccess());
+        } catch (Exception e) {
+            response.put("success", false);
+        }
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("methods")
