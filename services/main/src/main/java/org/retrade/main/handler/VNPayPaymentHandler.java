@@ -2,7 +2,7 @@ package org.retrade.main.handler;
 
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
-import org.retrade.main.config.VNPayConfig;
+import org.retrade.main.config.provider.VNPayConfig;
 import org.retrade.main.model.other.PaymentAPICallback;
 import org.retrade.main.util.HashUtils;
 import org.retrade.main.util.NetUtils;

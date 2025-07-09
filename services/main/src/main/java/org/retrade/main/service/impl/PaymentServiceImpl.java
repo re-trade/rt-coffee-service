@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.retrade.common.model.dto.request.QueryFieldWrapper;
 import org.retrade.common.model.dto.request.QueryWrapper;
 import org.retrade.common.model.dto.response.PaginationWrapper;
+import org.retrade.common.model.entity.BaseSQLEntity;
 import org.retrade.common.model.exception.ActionFailedException;
 import org.retrade.common.model.exception.ValidationException;
 import org.retrade.main.handler.PaymentHandler;
@@ -15,11 +16,10 @@ import org.retrade.main.model.constant.PaymentStatusEnum;
 import org.retrade.main.model.dto.request.PaymentInitRequest;
 import org.retrade.main.model.dto.response.PaymentHistoryResponse;
 import org.retrade.main.model.dto.response.PaymentMethodResponse;
-import org.retrade.main.model.dto.response.ProductResponse;
+import org.retrade.main.model.dto.response.PaymentOrderStatusResponse;
 import org.retrade.main.model.entity.CustomerEntity;
 import org.retrade.main.model.entity.PaymentHistoryEntity;
 import org.retrade.main.model.entity.PaymentMethodEntity;
-import org.retrade.main.model.entity.SellerEntity;
 import org.retrade.main.model.other.PaymentProviderCallbackWrapper;
 import org.retrade.main.repository.*;
 import org.retrade.main.service.PaymentService;
@@ -31,6 +31,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.interceptor.TransactionAspectSupport;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -153,6 +154,47 @@ public class PaymentServiceImpl implements PaymentService {
         var customer = getCurrentCustomerAccount();
 
         return getPaymentHistorysByCustomer(customer, queryWrapper);
+    }
+
+    @Override
+    public PaymentOrderStatusResponse checkOrderPaymentStatusByOrderComboId(String orderComboId) {
+        var account = authUtils.getUserAccountFromAuthentication();
+        var customerEntity = account.getCustomer();
+        if (customerEntity == null) {
+            throw new ValidationException("User is not a customer");
+        }
+        if (!orderComboRepository.existsById(orderComboId)) {
+            throw new ValidationException("Order combo not found");
+        }
+        var orderEntity = orderRepository.findOrderByOrderComboId(orderComboId).orElseThrow(() -> new ValidationException("Order not found"));
+        var paymentHistory = paymentHistoryRepository.findByOrder(orderEntity);
+        if (paymentHistory.isEmpty()) {
+            throw new ValidationException("Order has no payment history");
+        }
+
+        Map<String, List<PaymentHistoryEntity>> grouped = paymentHistory.stream()
+                .collect(Collectors.groupingBy(ph -> switch (ph.getPaymentStatus()) {
+                    case CREATED -> "created";
+                    case PAID -> "paid";
+                    default -> "cancelled";
+                }));
+
+        var paidHistories = grouped.getOrDefault("paid", List.of());
+        var totalPaid = paidHistories.stream()
+                .map(PaymentHistoryEntity::getPaymentTotal)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+
+        boolean isFullyPaid = totalPaid.compareTo(orderEntity.getGrandTotal()) >= 0;
+        Set<String> relatedComboIds = orderComboRepository.findByOrderDestination(orderEntity.getOrderDestination()).stream()
+                .map(BaseSQLEntity::getId)
+                .collect(Collectors.toSet());
+
+        return PaymentOrderStatusResponse.builder()
+                .paid(isFullyPaid)
+                .orderId(orderEntity.getId())
+                .relatedComboIds(relatedComboIds)
+                .build();
     }
 
 

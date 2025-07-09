@@ -1,30 +1,30 @@
-package org.retrade.main.service.impl;
+ package org.retrade.main.service.impl;
 
-import jakarta.persistence.criteria.CriteriaBuilder;
-import jakarta.persistence.criteria.Predicate;
-import jakarta.persistence.criteria.Root;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.retrade.common.model.dto.request.QueryFieldWrapper;
-import org.retrade.common.model.dto.request.QueryWrapper;
-import org.retrade.common.model.dto.response.PaginationWrapper;
-import org.retrade.common.model.exception.ActionFailedException;
-import org.retrade.common.model.exception.ValidationException;
-import org.retrade.main.model.dto.request.CreateOrderRequest;
-import org.retrade.main.model.dto.request.OrderItemRequest;
-import org.retrade.main.model.dto.response.*;
-import org.retrade.main.model.entity.*;
-import org.retrade.main.repository.*;
-import org.retrade.main.service.CartService;
-import org.retrade.main.service.OrderService;
-import org.retrade.main.util.AuthUtils;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+ import jakarta.persistence.criteria.CriteriaBuilder;
+ import jakarta.persistence.criteria.Predicate;
+ import jakarta.persistence.criteria.Root;
+ import lombok.RequiredArgsConstructor;
+ import lombok.extern.slf4j.Slf4j;
+ import org.retrade.common.model.dto.request.QueryFieldWrapper;
+ import org.retrade.common.model.dto.request.QueryWrapper;
+ import org.retrade.common.model.dto.response.PaginationWrapper;
+ import org.retrade.common.model.exception.ActionFailedException;
+ import org.retrade.common.model.exception.ValidationException;
+ import org.retrade.main.model.dto.request.CreateOrderRequest;
+ import org.retrade.main.model.dto.request.OrderItemRequest;
+ import org.retrade.main.model.dto.response.*;
+ import org.retrade.main.model.entity.*;
+ import org.retrade.main.repository.*;
+ import org.retrade.main.service.CartService;
+ import org.retrade.main.service.OrderService;
+ import org.retrade.main.util.AuthUtils;
+ import org.springframework.stereotype.Service;
+ import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.util.*;
-import java.util.stream.Collectors;
+ import java.math.BigDecimal;
+ import java.math.RoundingMode;
+ import java.util.*;
+ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -82,8 +82,15 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public OrderResponse getOrderById(String orderId) {
+        var account = authUtils.getUserAccountFromAuthentication();
+        if (account.getCustomer() == null) {
+            throw new ValidationException("User is not a customer");
+        }
         OrderEntity order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new ValidationException("Order not found with ID: " + orderId));
+        if (!order.getCustomer().getId().equals(account.getCustomer().getId())) {
+            throw new ValidationException("You are not the owner");
+        }
         return mapToOrderResponse(order);
     }
 
@@ -108,7 +115,10 @@ public class OrderServiceImpl implements OrderService {
         }
         return orderComboRepository.query(queryWrapper, (param) -> (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
-            predicates.add(criteriaBuilder.equal(root.get("orderDestination").get("order").get("customer"),customerEntity));
+            var destinationJoin = root.join("orderDestination");
+            var orderJoin = destinationJoin.join("order");
+            var customerJoin = orderJoin.join("customer");
+            predicates.add(criteriaBuilder.equal(customerJoin.get("id"), customerEntity.getId()));
             return getOrderComboPredicate(param, root, criteriaBuilder, predicates);
         }, (items) -> {
             var list = items.map(this::wrapCustomerOrderComboResponse).stream().toList();
@@ -219,11 +229,6 @@ public class OrderServiceImpl implements OrderService {
         return wrapCustomerOrderComboResponse(combo);
     }
 
-    private OrderComboEntity getOrderComboById(String comboId) {
-        return orderComboRepository.findById(comboId)
-                .orElseThrow(() -> new ValidationException("Order combo not found with ID: " + comboId));
-    }
-
     @Override
     public List<OrderResponse> getOrdersByCurrentCustomer() {
         CustomerEntity customer = getCurrentCustomerAccount();
@@ -255,6 +260,33 @@ public class OrderServiceImpl implements OrderService {
         });
     }
 
+    @Override
+    public PaginationWrapper<List<OrderStatusResponse>> getOrderStatusesTemplate(QueryWrapper queryWrapper) {
+        return orderStatusRepository.query(queryWrapper, (param) -> (root, query, criteriaBuilder) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            return getOrderStatusPredicate(param, root, criteriaBuilder, predicates);
+        }, (items) -> {
+            var list = items.map(this::wrapOrderStatusResponse).stream().toList();
+            return new PaginationWrapper.Builder<List<OrderStatusResponse>>()
+                    .setPaginationInfo(items)
+                    .setData(list)
+                    .build();
+        });
+    }
+
+    private OrderStatusResponse wrapOrderStatusResponse(OrderStatusEntity orderStatus) {
+        return OrderStatusResponse.builder()
+                .id(orderStatus.getId())
+                .code(orderStatus.getCode())
+                .name(orderStatus.getName())
+                .enabled(orderStatus.getEnabled())
+                .build();
+    }
+
+    private OrderComboEntity getOrderComboById(String comboId) {
+        return orderComboRepository.findById(comboId)
+                .orElseThrow(() -> new ValidationException("Order combo not found with ID: " + comboId));
+    }
 
     private CustomerEntity getCurrentCustomerAccount() {
         var account = authUtils.getUserAccountFromAuthentication();
@@ -569,6 +601,14 @@ public class OrderServiceImpl implements OrderService {
     private Predicate getOrderComboPredicate(Map<String, QueryFieldWrapper> param, Root<OrderComboEntity> root, CriteriaBuilder criteriaBuilder, List<Predicate> predicates) {
         if (param != null && !param.isEmpty()) {
             Predicate[] defaultPredicates = orderComboRepository.createDefaultPredicate(criteriaBuilder, root, param);
+            predicates.addAll(Arrays.asList(defaultPredicates));
+        }
+        return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
+    }
+
+    private Predicate getOrderStatusPredicate(Map<String, QueryFieldWrapper> param, Root<OrderStatusEntity> root, CriteriaBuilder criteriaBuilder, List<Predicate> predicates) {
+        if (param != null && !param.isEmpty()) {
+            Predicate[] defaultPredicates = orderStatusRepository.createDefaultPredicate(criteriaBuilder, root, param);
             predicates.addAll(Arrays.asList(defaultPredicates));
         }
         return criteriaBuilder.and(predicates.toArray(new Predicate[0]));

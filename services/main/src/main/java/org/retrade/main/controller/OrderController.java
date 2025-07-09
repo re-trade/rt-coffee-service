@@ -13,6 +13,7 @@ import org.retrade.main.model.dto.request.CreateOrderRequest;
 import org.retrade.main.model.dto.response.CustomerOrderComboResponse;
 import org.retrade.main.model.dto.response.OrderResponse;
 import org.retrade.main.model.dto.response.SellerOrderComboResponse;
+import org.retrade.main.model.dto.response.OrderStatusResponse;
 import org.retrade.main.service.OrderService;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
@@ -63,7 +64,7 @@ public class OrderController {
         @ApiResponse(responseCode = "404", description = "Order not found"),
         @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    @PreAuthorize("hasRole('ROLE_CUSTOMER') or hasRole('ROLE_SELLER') or hasRole('ROLE_ADMIN')")
+    @PreAuthorize("hasRole('ROLE_CUSTOMER')")
     public ResponseEntity<ResponseObject<OrderResponse>> getOrderById(
             @Parameter(description = "Order ID", required = true)
             @PathVariable String orderId) {
@@ -75,6 +76,20 @@ public class OrderController {
                 .code("SUCCESS")
                 .content(orderResponse)
                 .messages("Order retrieved successfully")
+                .build());
+    }
+
+    @GetMapping("/status")
+    public ResponseEntity<ResponseObject<List<OrderStatusResponse>>> getOrderStatuses(@PageableDefault Pageable pageable, @RequestParam(name = "q", required = false)  String query) {
+        var result =  orderService.getOrderStatusesTemplate(QueryWrapper.builder()
+                        .search(query)
+                        .wrapSort(pageable)
+                .build());
+        return ResponseEntity.ok(new ResponseObject.Builder<List<OrderStatusResponse>>()
+                .success(true)
+                .code("SUCCESS")
+                .unwrapPaginationWrapper(result)
+                .messages("Order status retrieved successfully")
                 .build());
     }
 

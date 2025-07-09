@@ -3,7 +3,8 @@ package org.retrade.main.service.impl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.retrade.common.model.message.MessageObject;
-import org.retrade.main.config.RabbitMQConfig;
+import org.retrade.main.model.constant.ExchangeNameEnum;
+import org.retrade.main.model.constant.RoutingKeyEnum;
 import org.retrade.main.model.message.CCCDVerificationMessage;
 import org.retrade.main.model.message.EmailNotificationMessage;
 import org.retrade.main.model.message.UserRegistrationMessage;
@@ -36,8 +37,8 @@ public class MessageProducerServiceImpl implements MessageProducerService {
                 .build();
         log.info("Sending email notification message: {}", message.getMessageId());
         rabbitTemplate.convertAndSend(
-                RabbitMQConfig.ExchangeNameEnum.NOTIFICATION_EXCHANGE.getName(),
-                RabbitMQConfig.RoutingKeyEnum.EMAIL_NOTIFICATION_ROUTING_KEY.getName(),
+                ExchangeNameEnum.NOTIFICATION_EXCHANGE.getName(),
+                RoutingKeyEnum.EMAIL_NOTIFICATION_ROUTING_KEY.getName(),
                 messageWrapper
         );
         log.info("Email notification message sent: {}", message.getMessageId());
@@ -57,8 +58,8 @@ public class MessageProducerServiceImpl implements MessageProducerService {
                 .build();
         log.info("Sending user registration message: {}", message.getMessageId());
         rabbitTemplate.convertAndSend(
-                RabbitMQConfig.ExchangeNameEnum.REGISTRATION_EXCHANGE.getName(),
-                RabbitMQConfig.RoutingKeyEnum.USER_REGISTRATION_ROUTING_KEY.getName(),
+                ExchangeNameEnum.REGISTRATION_EXCHANGE.getName(),
+                RoutingKeyEnum.USER_REGISTRATION_ROUTING_KEY.getName(),
                 messageWrapper
         );
         log.info("User registration message sent: {}", message.getMessageId());
@@ -78,8 +79,8 @@ public class MessageProducerServiceImpl implements MessageProducerService {
                 .build();
         log.info("Sending seller verified message: {}", message.getMessageId());
         rabbitTemplate.convertAndSend(
-                RabbitMQConfig.ExchangeNameEnum.IDENTITY_EXCHANGE.getName(),
-                RabbitMQConfig.RoutingKeyEnum.IDENTITY_VERIFICATION_ROUTING_KEY.getName(),
+                ExchangeNameEnum.IDENTITY_EXCHANGE.getName(),
+                RoutingKeyEnum.IDENTITY_VERIFICATION_ROUTING_KEY.getName(),
                 messageWrapper
         );
         log.info("Seller verified message sent: {}", message.getMessageId());
@@ -88,6 +89,6 @@ public class MessageProducerServiceImpl implements MessageProducerService {
     @Override
     public void sendMessageToDeadQueue(Message rawMessage) {
         log.info("Sending message to dead queue: {}", rawMessage.getMessageProperties().getConsumerQueue());
-        rabbitTemplate.send(RabbitMQConfig.ExchangeNameEnum.NOTIFICATION_EXCHANGE.getName(), RabbitMQConfig.RoutingKeyEnum.DEAD_LETTER_ROUTING_KEY.getName(), rawMessage);
+        rabbitTemplate.send(ExchangeNameEnum.NOTIFICATION_EXCHANGE.getName(), RoutingKeyEnum.DEAD_LETTER_ROUTING_KEY.getName(), rawMessage);
     }
 }

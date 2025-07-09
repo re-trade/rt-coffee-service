@@ -1,4 +1,4 @@
-package org.retrade.main.config;
+package org.retrade.main.config.database;
 
 import io.minio.MinioClient;
 import org.springframework.beans.factory.annotation.Value;

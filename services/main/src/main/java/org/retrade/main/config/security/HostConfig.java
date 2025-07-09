@@ -1,4 +1,4 @@
-package org.retrade.main.config;
+package org.retrade.main.config.security;
 
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
