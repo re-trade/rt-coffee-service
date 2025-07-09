@@ -1,8 +1,6 @@
  package org.retrade.main.service.impl;
 
- import jakarta.persistence.criteria.CriteriaBuilder;
- import jakarta.persistence.criteria.Predicate;
- import jakarta.persistence.criteria.Root;
+ import jakarta.persistence.criteria.*;
  import lombok.RequiredArgsConstructor;
  import lombok.extern.slf4j.Slf4j;
  import org.retrade.common.model.dto.request.QueryFieldWrapper;
@@ -241,15 +239,33 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     @Transactional(readOnly = true)
-    public PaginationWrapper<List<SellerOrderComboResponse>> getAllOrderCombosBySeller(QueryWrapper queryWrapper) {
+    public PaginationWrapper<List<SellerOrderComboResponse>> getAllOrderCombosBySeller(QueryWrapper queryWrapper, String orderStatus) {
         var account = authUtils.getUserAccountFromAuthentication();
         var seller = account.getSeller();
         if (seller == null) {
             throw new ValidationException("User is not a seller");
         }
+        var search = queryWrapper.search().toString();
+        QueryFieldWrapper keyword = queryWrapper.search().remove("keyword");
+
         return orderComboRepository.query(queryWrapper, (param) -> (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
+            Join<OrderComboEntity, OrderDestinationEntity> destinationJoin = root.join("orderDestination", JoinType.LEFT);
+            Join<OrderComboEntity, OrderItemEntity> itemJoin = root.joinSet("orderItems", JoinType.LEFT);
+
             predicates.add(criteriaBuilder.equal(root.get("seller"), seller));
+            if (orderStatus != null) {
+                predicates.add(criteriaBuilder.equal(root.get("orderStatus").get("code"), orderStatus));
+            }
+
+            if (keyword != null && !keyword.getValue().toString().trim().isEmpty()) {
+                String searchPattern = "%" + keyword.getValue().toString().toLowerCase() + "%";
+                predicates.add(criteriaBuilder.or(
+                        criteriaBuilder.like(criteriaBuilder.lower(destinationJoin.get("customerName")), searchPattern),
+                        criteriaBuilder.like(criteriaBuilder.lower(itemJoin.get("productName")), searchPattern)
+                ));
+            }
+
             return getOrderComboPredicate(param, root, criteriaBuilder, predicates);
         }, (items) -> {
             var list = items.map(this::wrapSellerOrderComboResponse).stream().toList();

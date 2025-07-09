@@ -37,7 +37,7 @@ public interface OrderService {
 
     List<OrderResponse> getOrdersByCurrentCustomer();
 
-    PaginationWrapper<List<SellerOrderComboResponse>>  getAllOrderCombosBySeller(QueryWrapper queryWrapper);
+    PaginationWrapper<List<SellerOrderComboResponse>>  getAllOrderCombosBySeller(QueryWrapper queryWrapper, String orderStatus);
 
     PaginationWrapper<List<OrderStatusResponse>> getOrderStatusesTemplate(QueryWrapper queryWrapper);
 }

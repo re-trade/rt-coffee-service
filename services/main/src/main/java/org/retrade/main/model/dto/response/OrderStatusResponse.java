@@ -13,4 +13,5 @@ public class OrderStatusResponse {
     private String id;
     private String code;
     private String name;
+    private Boolean enabled;
 }
