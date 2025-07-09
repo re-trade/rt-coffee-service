@@ -240,7 +240,6 @@ public class ProductGrpcServiceImpl extends GrpcProductServiceGrpc.GrpcProductSe
         if (product.getUpdatedAt() != null) {
             builder.setUpdatedAt(product.getUpdatedAt().format(DATE_FORMATTER));
         }
-
         return builder.build();
     }
 }

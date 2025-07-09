@@ -5,6 +5,7 @@ import org.retrade.common.model.dto.response.PaginationWrapper;
 import org.retrade.main.model.dto.request.CreateOrderRequest;
 import org.retrade.main.model.dto.response.CustomerOrderComboResponse;
 import org.retrade.main.model.dto.response.OrderResponse;
+import org.retrade.main.model.dto.response.SellerOrderComboResponse;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
@@ -35,5 +36,5 @@ public interface OrderService {
 
     List<OrderResponse> getOrdersByCurrentCustomer();
 
-    PaginationWrapper<List<CustomerOrderComboResponse>>  getAllOrderCombosBySeller(QueryWrapper queryWrapper);
+    PaginationWrapper<List<SellerOrderComboResponse>>  getAllOrderCombosBySeller(QueryWrapper queryWrapper);
 }

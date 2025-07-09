@@ -12,6 +12,7 @@ import org.retrade.common.model.dto.response.ResponseObject;
 import org.retrade.main.model.dto.request.CreateOrderRequest;
 import org.retrade.main.model.dto.response.CustomerOrderComboResponse;
 import org.retrade.main.model.dto.response.OrderResponse;
+import org.retrade.main.model.dto.response.SellerOrderComboResponse;
 import org.retrade.main.service.OrderService;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
@@ -248,11 +249,11 @@ public class OrderController {
 
     @PreAuthorize("hasRole('ROLE_SELLER')")
     @GetMapping("seller/combo")
-    public ResponseEntity<ResponseObject<List<CustomerOrderComboResponse>>> getAllOrderCombosBySeller(@RequestParam(required = false, name = "q") String q,
-                                                                                                   @PageableDefault Pageable pageable) {
+    public ResponseEntity<ResponseObject<List<SellerOrderComboResponse>>> getAllOrderCombosBySeller(@RequestParam(required = false, name = "q") String q,
+                                                                                                                       @PageableDefault Pageable pageable) {
         var queryWrapper = new QueryWrapper.QueryWrapperBuilder().search(q).wrapSort(pageable).build();
         var orders = orderService.getAllOrderCombosBySeller(queryWrapper);
-        return ResponseEntity.ok(new ResponseObject.Builder<List<CustomerOrderComboResponse>>()
+        return ResponseEntity.ok(new ResponseObject.Builder<List<SellerOrderComboResponse>>()
                 .success(true)
                 .code("SUCCESS")
                 .unwrapPaginationWrapper(orders)
