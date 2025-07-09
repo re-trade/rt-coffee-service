@@ -4,17 +4,20 @@ import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch._types.aggregations.Aggregate;
 import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
 import co.elastic.clients.elasticsearch._types.aggregations.StringTermsBucket;
+import co.elastic.clients.elasticsearch._types.query_dsl.Operator;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch._types.query_dsl.TextQueryType;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
+import jakarta.persistence.criteria.Subquery;
 import lombok.RequiredArgsConstructor;
 import org.retrade.common.model.dto.request.QueryFieldWrapper;
 import org.retrade.common.model.dto.request.QueryWrapper;
 import org.retrade.common.model.dto.response.PaginationWrapper;
 import org.retrade.common.model.exception.ActionFailedException;
 import org.retrade.common.model.exception.ValidationException;
+import org.retrade.main.client.ProductRecommendGrpcClient;
 import org.retrade.main.model.constant.ProductStatusEnum;
 import org.retrade.main.model.document.CategoryInfoDocument;
 import org.retrade.main.model.document.ProductDocument;
@@ -59,6 +62,7 @@ public class ProductServiceImpl implements ProductService {
     private final BrandRepository brandRepository;
     private final AuthUtils authUtils;
     private final BrandRepository brandEntityRepository;
+    private final ProductRecommendGrpcClient productRecommendGrpcClient;
 
     @Override
     @Transactional(rollbackFor = {ActionFailedException.class, Exception.class})
@@ -87,6 +91,7 @@ public class ProductServiceImpl implements ProductService {
                 .tags(request.getTags())
                 .status(request.getStatus() != null ? request.getStatus() : ProductStatusEnum.DRAFT)
                 .verified(false)
+                .avgVote(0.0)
                 .build();
 
         if (request.getStatus() != null) {
@@ -153,7 +158,6 @@ public class ProductServiceImpl implements ProductService {
         try {
             productRepository.delete(product);
             productSearchRepository.deleteById(id);
-            ;
         } catch (Exception ex) {
             throw new ActionFailedException("Failed to delete product", ex);
         }
@@ -167,9 +171,54 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public PaginationWrapper<List<ProductResponse>> getAllProducts(QueryWrapper queryWrapper) {
-        ;
         return productRepository.query(queryWrapper, (param) -> (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
+            return getPredicate(param, root, criteriaBuilder, predicates);
+        }, (items) -> {
+            var list = items.map(this::mapToProductResponse).stream().toList();
+            return new PaginationWrapper.Builder<List<ProductResponse>>()
+                    .setPaginationInfo(items)
+                    .setData(list)
+                    .build();
+        });
+    }
+
+
+    @Override
+    public PaginationWrapper<List<ProductResponse>> getProductSimilar(QueryWrapper queryWrapper) {
+        var search = queryWrapper.search();
+        var pagination = queryWrapper.pagination();
+        if (search == null || search.isEmpty() || !search.containsKey("id")) {
+            throw new ValidationException("Missing required parameter: id");
+        }
+        QueryFieldWrapper id = search.remove("id");
+        List<String> productIds = null;
+        switch (id.getOperator()) {
+            case EQ:
+                    productIds = productRecommendGrpcClient.getSimilarProductByProductId(id.getValue().toString(), pagination.getPageNumber(), pagination.getPageSize());
+                    break;
+                case IN:
+                    @SuppressWarnings("unchecked")
+                    Collection<Object> idCollection = (Collection<Object>) id.getValue();
+                    if (idCollection.isEmpty()) {
+                        throw new ValidationException("The 'IN' condition requires at least one food ID.");
+                    }
+                    productIds = productRecommendGrpcClient.getSimilarProductByProductIds(
+                            idCollection.stream().map(Object::toString).collect(Collectors.toSet()),
+                            pagination.getPageNumber(),
+                            pagination.getPageSize());
+                    break;
+                    default:
+                    throw new ValidationException("Invalid condition operator: " + id.getOperator());
+        }
+        List<String> finalProductIds = productIds;
+        return productRepository.query(queryWrapper, (param) -> (root, query, criteriaBuilder) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            Subquery<String> subquery = Objects.requireNonNull(query).subquery(String.class);
+            Root<ProductEntity> subRoot = subquery.from(ProductEntity.class);
+            subquery.select(subRoot.get("id")).where(subRoot.get("id").in(finalProductIds),
+                    criteriaBuilder.isTrue(subRoot.get("verified")),
+                    criteriaBuilder.greaterThan(subRoot.get("quantity"), 0));
             return getPredicate(param, root, criteriaBuilder, predicates);
         }, (items) -> {
             var list = items.map(this::mapToProductResponse).stream().toList();
@@ -435,6 +484,7 @@ public class ProductServiceImpl implements ProductService {
     }
 
 
+
     private ProductEntity getProductEntityById(String id) {
         return productRepository.findById(id)
                 .orElseThrow(() -> new ValidationException("Product not found with id: " + id));
@@ -459,7 +509,7 @@ public class ProductServiceImpl implements ProductService {
                 .status(product.getStatus())
                 .model(product.getModel())
                 .currentPrice(product.getCurrentPrice())
-                .categories(convertCategoryEntitiesToNames(product.getCategories()))
+                .categories(covertCategoryEntitiesToCategories(product.getCategories()))
                 .tags(product.getTags())
                 .verified(product.getVerified())
                 .createdAt(product.getCreatedDate() != null ? product.getCreatedDate().toLocalDateTime() : null)
@@ -577,36 +627,54 @@ public class ProductServiceImpl implements ProductService {
         return elasticsearchOperations.search(query, ProductDocument.class).getAggregations();
     }
 
-
-
-
     private Query elasticSearchKeywordQueryBuild(String keyword) {
+        boolean isMultiWord = keyword.contains(" ");
+
         return Query.of(q -> q.bool(b -> b
-                .should(s -> s.multiMatch(m -> m
-                        .fields("name^3", "shortDescription^2", "description^1")
+                .should(s -> s.matchPhrase(mp -> mp
+                        .field("name")
                         .query(keyword)
-                        .type(TextQueryType.BestFields)
-                        .fuzziness("1")
-                        .prefixLength(2)
+                        .boost(10.0f)
+                ))
+                .should(s -> s.matchPhrase(mp -> mp
+                        .field("shortDescription")
+                        .query(keyword)
+                        .boost(5.0f)
+                ))
+                .should(s -> s.matchPhrase(mp -> mp
+                        .field("description")
+                        .query(keyword)
+                        .boost(3.0f)
                 ))
                 .should(s -> s.multiMatch(m -> m
-                        .fields("addressLine", "state", "district", "ward")
+                        .fields("name^5", "shortDescription^3", "description")
                         .query(keyword)
                         .type(TextQueryType.BestFields)
-                        .fuzziness("1")
+                        .fuzziness(isMultiWord ? null : "1")
+                        .prefixLength(1)
                 ))
-                .should(s -> s.multiMatch(m -> m
-                        .fields("name^5", "shortDescription^3")
+                .should(s -> s.match(m -> m
+                        .field("brand")
                         .query(keyword)
-                        .type(TextQueryType.Phrase)
+                        .boost(3.0f)
+                ))
+                .should(s -> s.match(m -> m
+                        .field("model")
+                        .query(keyword)
+                        .boost(2.0f)
                 ))
                 .should(s -> s.nested(n -> n
                         .path("categories")
                         .query(nq -> nq
                                 .match(m -> m.field("categories.name").query(keyword))
                         )
+                )).should(s -> s.multiMatch(m -> m
+                        .fields("name^4", "brand^2")
+                        .query(keyword)
+                        .type(TextQueryType.CrossFields)
+                        .operator(Operator.And)
                 ))
-                .minimumShouldMatch("1")
+                .minimumShouldMatch("2")
         ));
     }
 
@@ -628,6 +696,15 @@ public class ProductServiceImpl implements ProductService {
         return categoryEntities.stream()
                 .map(CategoryEntity::getName)
                 .collect(Collectors.toSet());
+    }
+    private List<CategoryBaseResponse> covertCategoryEntitiesToCategories(Set<CategoryEntity> categoryEntities) {
+        if (categoryEntities == null || categoryEntities.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        return categoryEntities.stream()
+                .map(cat -> new CategoryBaseResponse(cat.getId(), cat.getName()))
+                .collect(Collectors.toList());
     }
 
     private Set<CategoryEntity> convertCategoryIdsToEntities(Set<String> categoryIds) {

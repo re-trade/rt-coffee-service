@@ -12,7 +12,6 @@ import org.checkerframework.checker.units.qual.A;
 @Builder
 public class AuthorBaseResponse {
     private String authorId;
-    private String firstName;
-    private String lastName;
+    private String name;
     private String avatarUrl;
 }

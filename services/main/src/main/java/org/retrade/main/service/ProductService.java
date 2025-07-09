@@ -20,6 +20,8 @@ public interface ProductService {
 
     PaginationWrapper<List<ProductResponse>> getAllProducts(QueryWrapper queryWrapper);
 
+    PaginationWrapper<List<ProductResponse>> getProductSimilar(QueryWrapper queryWrapper);
+
     PaginationWrapper<List<ProductResponse>> getProductsBySeller(String sellerId, QueryWrapper queryWrapper);
 
     PaginationWrapper<List<ProductResponse>> getMyProducts(QueryWrapper queryWrapper);

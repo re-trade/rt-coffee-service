@@ -13,4 +13,6 @@ public interface BrandService {
     BrandResponse updateBrand(String id, BrandRequest request);
 
     PaginationWrapper<List<BrandResponse>> getAllBrands(QueryWrapper queryWrapper);
+
+    List<BrandResponse> getAllBrandNoPaging();
 }

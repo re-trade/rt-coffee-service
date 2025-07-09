@@ -4,23 +4,32 @@ import org.retrade.common.model.dto.request.QueryWrapper;
 import org.retrade.common.model.dto.response.PaginationWrapper;
 import org.retrade.main.model.dto.request.CreateProductReviewRequest;
 import org.retrade.main.model.dto.request.UpdateProductReviewRequest;
-import org.retrade.main.model.dto.response.ProductReviewBaseResponse;
 import org.retrade.main.model.dto.response.ProductReviewResponse;
+import org.retrade.main.model.dto.response.ReviewStatsResponse;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.List;
 
 public interface ProductReviewService {
-    ProductReviewBaseResponse createProductReview(CreateProductReviewRequest request);
+    ProductReviewResponse createProductReview(CreateProductReviewRequest request);
 
-    PaginationWrapper <List<ProductReviewBaseResponse>> getProductReviewByProductId(String productId, QueryWrapper queryWrapper);
+    PaginationWrapper <List<ProductReviewResponse>> getProductReviewByProductId(String productId, QueryWrapper queryWrapper);
 
-    ProductReviewBaseResponse getProductReviewDetails(String id);
+    ProductReviewResponse getProductReviewDetails(String id);
 
-    ProductReviewBaseResponse updateProductReview(String id, UpdateProductReviewRequest request);
+    ProductReviewResponse updateProductReview(String id, UpdateProductReviewRequest request);
 
-    ProductReviewBaseResponse deleteProductReview(String id);
+    ProductReviewResponse deleteProductReview(String id);
 
-    PaginationWrapper <List<ProductReviewBaseResponse>> getProductReviewBySellerId(String sellerId, QueryWrapper queryWrapper);
+    PaginationWrapper <List<ProductReviewResponse>> getProductReviewBySellerId(String sellerId, QueryWrapper queryWrapper);
 
     PaginationWrapper <List<ProductReviewResponse>>  geAllProductReviewBySeller(QueryWrapper queryWrapper);
+
+    ProductReviewResponse createReplyProductReview(String id, String content);
+
+    ProductReviewResponse updateReplyProductReview(String id, String content);
+
+    PaginationWrapper <List<ProductReviewResponse>> getAllProductReviewsBySellerAndSearch(Double vote,String search, QueryWrapper queryWrapper);
+
+    ReviewStatsResponse getStatsSeller();
 }

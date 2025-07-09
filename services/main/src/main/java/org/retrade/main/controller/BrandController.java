@@ -19,6 +19,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class BrandController {
     private final BrandService brandService;
+
     @GetMapping
     public ResponseEntity<ResponseObject<List<BrandResponse>>> getBrands(
             @RequestParam(required = false, name = "q") String query,
@@ -40,7 +41,7 @@ public class BrandController {
                 .success(true)
                 .code("BRAND_SUBMIT")
                 .messages("Brands retrieved successfully")
-                        .content(response)
+                .content(response)
                 .build());
     }
 
@@ -48,6 +49,17 @@ public class BrandController {
     public ResponseEntity<ResponseObject<BrandResponse>> updateBrand(@PathVariable String id, @Valid @RequestBody BrandRequest request) {
         var response = brandService.updateBrand(id, request);
         return ResponseEntity.ok(new ResponseObject.Builder<BrandResponse>()
+                .success(true)
+                .code("BRAND_SUBMIT")
+                .messages("Brands retrieved successfully")
+                .content(response)
+                .build());
+    }
+
+    @GetMapping("all")
+    public ResponseEntity<ResponseObject<List<BrandResponse>>> getAllBrandNoPaging() {
+        var response = brandService.getAllBrandNoPaging();
+        return ResponseEntity.ok(new ResponseObject.Builder<List<BrandResponse>>()
                 .success(true)
                 .code("BRAND_SUBMIT")
                 .messages("Brands retrieved successfully")

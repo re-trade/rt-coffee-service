@@ -9,6 +9,13 @@ spring:
     redis:
       port: ${REDIS_PORT:6379}
       host: ${REDIS_HOST:localhost}
+      timeout: 2000
+      connect-timeout: 2000
+      repositories:
+        enabled: false
+      lettuce:
+        pool:
+          max-active: 5
     elasticsearch:
       repositories:
         enabled: on
@@ -123,6 +130,9 @@ grpc:
     voucher-service:
       host: ${VOUCHER_SERVICE_GRPC_HOST:localhost}
       port: ${VOUCHER_SERVICE_GRPC_PORT:9081}
+    recommendation-service:
+      host: ${RECOMMENDATION_SERVICE_GRPC_HOST:localhost}
+      port: ${RECOMMENDATION_SERVICE_GRPC_PORT:8386}
 
 cart:
   ttl-days: 30
