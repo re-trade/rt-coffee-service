@@ -241,7 +241,7 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     @Transactional(readOnly = true)
-    public PaginationWrapper<List<CustomerOrderComboResponse>> getAllOrderCombosBySeller(QueryWrapper queryWrapper) {
+    public PaginationWrapper<List<SellerOrderComboResponse>> getAllOrderCombosBySeller(QueryWrapper queryWrapper) {
         var account = authUtils.getUserAccountFromAuthentication();
         var seller = account.getSeller();
         if (seller == null) {
@@ -252,8 +252,8 @@ public class OrderServiceImpl implements OrderService {
             predicates.add(criteriaBuilder.equal(root.get("seller"), seller));
             return getOrderComboPredicate(param, root, criteriaBuilder, predicates);
         }, (items) -> {
-            var list = items.map(this::wrapCustomerOrderComboResponse).stream().toList();
-            return new PaginationWrapper.Builder<List<CustomerOrderComboResponse>>()
+            var list = items.map(this::wrapSellerOrderComboResponse).stream().toList();
+            return new PaginationWrapper.Builder<List<SellerOrderComboResponse>>()
                     .setPaginationInfo(items)
                     .setData(list)
                     .build();
@@ -525,6 +525,42 @@ public class OrderServiceImpl implements OrderService {
                 .items(orderItemResponses)
                 .destination(orderDestinationResponse)
                 .createDate(combo.getCreatedDate().toLocalDateTime())
+                .build();
+    }
+
+    private SellerOrderComboResponse wrapSellerOrderComboResponse(OrderComboEntity combo) {
+        var orderItems = combo.getOrderItems();
+        var paymentStatus = "";
+        if(combo.getOrderStatus().getCode().equals("PAYMENT_FAILED")){
+            paymentStatus = "PAYMENT_FAILED";
+        }else if(combo.getOrderStatus().getCode().equals("PAYMENT_CANCELLED")){
+            paymentStatus = "PAYMENT_CANCELLED";
+        }else {
+            paymentStatus = "PAYMENT_SUCCESS";
+        }
+        var seller = combo.getSeller();
+        var orderStatus = OrderStatusResponse.builder()
+                .id(combo.getOrderStatus().getId())
+                .code(combo.getOrderStatus().getCode())
+                .name(combo.getOrderStatus().getName())
+                .build();
+
+        var orderDestination = combo.getOrderDestination();
+        var orderDestinationResponse = wrapOrderDestinationResponse(orderDestination);
+        var orderItemResponses = wrapCustomerOrderItemResponse(orderItems);
+        return SellerOrderComboResponse.builder()
+                .comboId(combo.getId())
+                .sellerId(seller.getId())
+                .sellerAvatarUrl(seller.getAvatarUrl())
+                .sellerName(seller.getShopName())
+                .grandPrice(combo.getGrandPrice())
+                .orderStatusId(orderStatus.getId())
+                .orderStatus(orderStatus)
+                .items(orderItemResponses)
+                .destination(orderDestinationResponse)
+                .createDate(combo.getCreatedDate().toLocalDateTime())
+                .updateDate(combo.getUpdatedDate().toLocalDateTime())
+                .paymentStatus(paymentStatus)
                 .build();
     }
 

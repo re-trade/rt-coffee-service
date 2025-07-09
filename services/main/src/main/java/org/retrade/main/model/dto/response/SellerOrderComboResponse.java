@@ -14,13 +14,13 @@ import java.util.Set;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class CustomerOrderComboResponse {
+public class SellerOrderComboResponse {
     private String comboId;
     private String sellerId;
     private String sellerName;
     private String sellerAvatarUrl;
     private String orderStatusId;
-    private String orderStatus;
+    private OrderStatusResponse orderStatus;
     private BigDecimal grandPrice;
     private Set<CustomerOrderItemResponse> items;
     private OrderDestinationResponse destination;
