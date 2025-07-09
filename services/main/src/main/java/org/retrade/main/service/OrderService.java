@@ -5,24 +5,29 @@ import org.retrade.common.model.dto.response.PaginationWrapper;
 import org.retrade.main.model.dto.request.CreateOrderRequest;
 import org.retrade.main.model.dto.response.CustomerOrderComboResponse;
 import org.retrade.main.model.dto.response.OrderResponse;
+import org.retrade.main.model.dto.response.TopCustomerResponse;
+import org.retrade.main.model.dto.response.TopSellersResponse;
+import org.springframework.data.domain.Page;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.awt.print.Pageable;
 import java.util.List;
 
-public interface OrderService {
-    
+public interface
+OrderService {
+
     OrderResponse createOrder(CreateOrderRequest request);
-    
+
     OrderResponse getOrderById(String orderId);
-    
+
     List<OrderResponse> getOrdersByCustomer(String customerId);
 
     PaginationWrapper<List<CustomerOrderComboResponse>> getCustomerOrderCombos(QueryWrapper queryWrapper);
 
     PaginationWrapper<List<OrderResponse>> getAllOrders(QueryWrapper queryWrapper);
-    
+
     OrderResponse updateOrderStatus(String orderId, String statusCode, String notes);
-    
+
     void cancelOrder(String orderId, String reason);
 
     PaginationWrapper<List<CustomerOrderComboResponse>> getSellerOrderCombos(QueryWrapper queryFieldWrapper);
@@ -34,4 +39,11 @@ public interface OrderService {
     CustomerOrderComboResponse getCustomerOrderComboById(String comboId);
 
     List<OrderResponse> getOrdersByCurrentCustomer();
+
+
+    PaginationWrapper<List<TopSellersResponse>> getTopSellers(QueryWrapper queryWrapper);
+
+    PaginationWrapper<List<TopCustomerResponse>> getTopCustomerBySeller(QueryWrapper queryWrapper);
+
+
 }

@@ -1,8 +1,6 @@
 package org.retrade.main.service.impl;
 
-import jakarta.persistence.criteria.CriteriaBuilder;
-import jakarta.persistence.criteria.Predicate;
-import jakarta.persistence.criteria.Root;
+import jakarta.persistence.criteria.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.retrade.common.model.dto.request.QueryFieldWrapper;
@@ -18,8 +16,13 @@ import org.retrade.main.repository.*;
 import org.retrade.main.service.CartService;
 import org.retrade.main.service.OrderService;
 import org.retrade.main.util.AuthUtils;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.awt.print.Pageable;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -233,6 +236,149 @@ public class OrderServiceImpl implements OrderService {
                 .map(this::mapToOrderResponse)
                 .collect(Collectors.toList());
     }
+
+
+
+
+    @Override
+    @Transactional(readOnly = true)
+    public PaginationWrapper<List<TopSellersResponse>> getTopSellers(QueryWrapper queryWrapper) {
+        return orderRepository.query(queryWrapper, (param) -> (root, query, criteriaBuilder) -> {
+            List<Predicate> predicates = new ArrayList<>();
+
+            Join<OrderEntity, OrderItemEntity> itemJoin = root.join("orderItems");
+            Join<OrderItemEntity, OrderComboEntity> comboJoin = itemJoin.join("orderCombo");
+            Join<OrderComboEntity, OrderStatusEntity> statusJoin = comboJoin.join("orderStatus");
+            Join<OrderComboEntity, OrderHistoryEntity> historyJoin = comboJoin.join("orderHistories");
+
+            predicates.add(criteriaBuilder.equal(statusJoin.get("code"), "PAYMENT_CONFIRMATION"));
+
+            if (param != null) {
+                if (param.containsKey("startDate")) {
+                    QueryFieldWrapper startDateField = param.get("startDate");
+                    predicates.add(criteriaBuilder.greaterThanOrEqualTo(
+                            historyJoin.get("createdAt"), (java.time.LocalDateTime) startDateField.getValue()));
+                }
+                if (param.containsKey("endDate")) {
+                    QueryFieldWrapper endDateField = param.get("endDate");
+                    predicates.add(criteriaBuilder.lessThanOrEqualTo(
+                            historyJoin.get("createdAt"), (java.time.LocalDateTime) endDateField.getValue()));
+                }
+            }
+
+
+            return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
+        }, (items) -> {
+            Map<String, TopSellersResponse.TopSellersResponseBuilder> sellerMap = new HashMap<>();
+
+            items.forEach(order -> {
+                order.getOrderItems().forEach(item -> {
+                    if (item.getOrderCombo() != null &&
+                            item.getOrderCombo().getSeller() != null &&
+                            item.getOrderCombo().getOrderStatus() != null &&
+                            "PAYMENT_CONFIRMATION".equals(item.getOrderCombo().getOrderStatus().getCode())) {
+
+                        String sellerId = item.getOrderCombo().getSeller().getId();
+                        String sellerName = item.getOrderCombo().getSeller().getShopName();
+
+                        sellerMap.computeIfAbsent(sellerId, k ->
+                                TopSellersResponse.builder()
+                                        .id(sellerId)
+                                        .name(sellerName)
+                                        .orderCount(0L)
+                        ).orderCount(sellerMap.get(sellerId).build().getOrderCount() + 1);
+                    }
+                });
+            });
+
+            List<TopSellersResponse> list = sellerMap.values().stream()
+                    .map(builder -> builder.build())
+                    .sorted((a, b) -> Long.compare(b.getOrderCount(), a.getOrderCount()))
+                    .collect(Collectors.toList());
+
+            return new PaginationWrapper.Builder<List<TopSellersResponse>>()
+                    .setPaginationInfo(items)
+                    .setData(list)
+                    .build();
+        });
+    }
+
+    @Override
+    public PaginationWrapper<List<TopCustomerResponse>> getTopCustomerBySeller(QueryWrapper queryWrapper) {
+        var account = authUtils.getUserAccountFromAuthentication();
+        var seller = account.getSeller();
+        if (seller == null) {
+            throw new ValidationException("Seller profile not found");
+        }
+
+        return orderRepository.query(queryWrapper, (param) -> (root, query, criteriaBuilder) -> {
+            List<Predicate> predicates = new ArrayList<>();
+
+            Join<OrderEntity, OrderItemEntity> itemJoin = root.join("orderItems");
+            Join<OrderItemEntity, OrderComboEntity> comboJoin = itemJoin.join("orderCombo");
+            Join<OrderComboEntity, SellerEntity> sellerJoin = comboJoin.join("seller");
+            Join<OrderComboEntity, OrderStatusEntity> statusJoin = comboJoin.join("orderStatus");
+
+            predicates.add(criteriaBuilder.equal(sellerJoin.get("id"), seller.getId()));
+
+            predicates.add(criteriaBuilder.equal(statusJoin.get("code"), "PAYMENT_CONFIRMATION"));
+
+            if (param != null && param.containsKey("search")) {
+                String searchValue = (String) param.get("search").getValue();
+                if (searchValue != null && !searchValue.trim().isEmpty()) {
+                    String searchPattern = "%" + searchValue.toLowerCase() + "%";
+                    Predicate customerNamePredicate = criteriaBuilder.like(
+                            criteriaBuilder.lower(root.get("customer").get("name")), searchPattern);
+                    Predicate customerEmailPredicate = criteriaBuilder.like(
+                            criteriaBuilder.lower(root.get("customer").get("email")), searchPattern);
+                    predicates.add(criteriaBuilder.or(customerNamePredicate, customerEmailPredicate));
+                }
+            }
+
+            return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
+        }, (items) -> {
+            Map<String, TopCustomerResponse.TopCustomerResponseBuilder> customerMap = new HashMap<>();
+
+            items.forEach(order -> {
+                order.getOrderItems().forEach(item -> {
+                    if (item.getOrderCombo() != null &&
+                            item.getOrderCombo().getSeller() != null &&
+                            item.getOrderCombo().getOrderStatus() != null &&
+                            "PAYMENT_CONFIRMATION".equals(item.getOrderCombo().getOrderStatus().getCode()) &&
+                            order.getCustomer() != null) {
+
+                        String customerId = order.getCustomer().getId();
+                        String customerName = order.getCustomer().getFirstName(); // Adjust based on your CustomerEntity field
+
+                        customerMap.computeIfAbsent(customerId, k ->
+                                TopCustomerResponse.builder()
+                                        .customerId(customerId)
+                                        .customerName(customerName)
+                                        .orderCount(0L)
+                        );
+
+                        TopCustomerResponse.TopCustomerResponseBuilder builder = customerMap.get(customerId);
+                        TopCustomerResponse current = builder.build();
+
+                        // Increment order count
+                        builder.orderCount(current.getOrderCount() + 1);
+                    }
+                });
+            });
+
+            List<TopCustomerResponse> list = customerMap.values().stream()
+                    .map(builder -> builder.build())
+                    .sorted((a, b) -> Long.compare(b.getOrderCount(), a.getOrderCount()))
+                    .collect(Collectors.toList());
+
+            return new PaginationWrapper.Builder<List<TopCustomerResponse>>()
+                    .setPaginationInfo(items)
+                    .setData(list)
+                    .build();
+        });
+    }
+
+
 
 
     private CustomerEntity getCurrentCustomerAccount() {
