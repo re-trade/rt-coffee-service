@@ -19,7 +19,6 @@
  import org.springframework.data.domain.Page;
  import org.springframework.stereotype.Service;
  import org.springframework.transaction.annotation.Transactional;
-import jakarta.persistence.criteria.*;
 
  import java.math.BigDecimal;
  import java.math.RoundingMode;
@@ -240,9 +239,6 @@ public class OrderServiceImpl implements OrderService {
                 .collect(Collectors.toList());
     }
 
-
-
-
     @Override
     @Transactional(readOnly = true)
     public PaginationWrapper<List<TopSellersResponse>> getTopSellers(QueryWrapper queryWrapper) {
@@ -272,33 +268,6 @@ public class OrderServiceImpl implements OrderService {
                     .setData(list)
                     .build();
         });
-    }
-
-    private Map<String, TopSellersResponse.TopSellersResponseBuilder> buildSellerMap(Page<OrderEntity> items) {
-        Map<String, TopSellersResponse.TopSellersResponseBuilder> sellerMap = new HashMap<>();
-
-        items.getContent().forEach(order -> {
-            if (order.getOrderItems() != null && !order.getOrderItems().isEmpty()) {
-                OrderComboEntity orderCombo = order.getOrderItems().iterator().next().getOrderCombo();
-                if (orderCombo != null && orderCombo.getSeller() != null) {
-                    String sellerId = orderCombo.getSeller().getId();
-                    String sellerName = orderCombo.getSeller().getShopName();
-
-                    sellerMap.computeIfAbsent(sellerId, k ->
-                            TopSellersResponse.builder()
-                                    .id(sellerId)
-                                    .name(sellerName)
-                                    .orderCount(0L)
-                    );
-
-                    TopSellersResponse.TopSellersResponseBuilder builder = sellerMap.get(sellerId);
-                    TopSellersResponse current = builder.build();
-                    builder.orderCount(current.getOrderCount() + 1);
-                }
-            }
-        });
-
-        return sellerMap;
     }
 
     @Override
@@ -346,33 +315,6 @@ public class OrderServiceImpl implements OrderService {
                     .setData(list)
                     .build();
         });
-    }
-
-    private List<TopCustomerResponse> buildCustomerMap(Page<OrderEntity> items) {
-        Map<String, TopCustomerResponse.TopCustomerResponseBuilder> customerMap = new HashMap<>();
-
-        items.getContent().forEach(order -> {
-            if (order.getCustomer() != null && order.getOrderItems() != null && !order.getOrderItems().isEmpty()) {
-                String customerId = order.getCustomer().getId();
-                String customerName = order.getCustomer().getLastName();
-
-                customerMap.computeIfAbsent(customerId, k ->
-                        TopCustomerResponse.builder()
-                                .customerId(customerId)
-                                .customerName(customerName)
-                                .orderCount(0L)
-                );
-
-                TopCustomerResponse.TopCustomerResponseBuilder builder = customerMap.get(customerId);
-                TopCustomerResponse current = builder.build();
-                builder.orderCount(current.getOrderCount() + 1);
-            }
-        });
-
-        return customerMap.values().stream()
-                .map(TopCustomerResponse.TopCustomerResponseBuilder::build)
-                .sorted((a, b) -> Long.compare(b.getOrderCount(), a.getOrderCount()))
-                .collect(Collectors.toList());
     }
 
     @Override
@@ -768,4 +710,57 @@ public class OrderServiceImpl implements OrderService {
         return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
     }
 
+    private Map<String, TopSellersResponse.TopSellersResponseBuilder> buildSellerMap(Page<OrderEntity> items) {
+        Map<String, TopSellersResponse.TopSellersResponseBuilder> sellerMap = new HashMap<>();
+
+        items.getContent().forEach(order -> {
+            if (order.getOrderItems() != null && !order.getOrderItems().isEmpty()) {
+                OrderComboEntity orderCombo = order.getOrderItems().iterator().next().getOrderCombo();
+                if (orderCombo != null && orderCombo.getSeller() != null) {
+                    String sellerId = orderCombo.getSeller().getId();
+                    String sellerName = orderCombo.getSeller().getShopName();
+
+                    sellerMap.computeIfAbsent(sellerId, k ->
+                            TopSellersResponse.builder()
+                                    .id(sellerId)
+                                    .name(sellerName)
+                                    .orderCount(0L)
+                    );
+
+                    TopSellersResponse.TopSellersResponseBuilder builder = sellerMap.get(sellerId);
+                    TopSellersResponse current = builder.build();
+                    builder.orderCount(current.getOrderCount() + 1);
+                }
+            }
+        });
+
+        return sellerMap;
+    }
+
+    private List<TopCustomerResponse> buildCustomerMap(Page<OrderEntity> items) {
+        Map<String, TopCustomerResponse.TopCustomerResponseBuilder> customerMap = new HashMap<>();
+
+        items.getContent().forEach(order -> {
+            if (order.getCustomer() != null && order.getOrderItems() != null && !order.getOrderItems().isEmpty()) {
+                String customerId = order.getCustomer().getId();
+                String customerName = order.getCustomer().getLastName();
+
+                customerMap.computeIfAbsent(customerId, k ->
+                        TopCustomerResponse.builder()
+                                .customerId(customerId)
+                                .customerName(customerName)
+                                .orderCount(0L)
+                );
+
+                TopCustomerResponse.TopCustomerResponseBuilder builder = customerMap.get(customerId);
+                TopCustomerResponse current = builder.build();
+                builder.orderCount(current.getOrderCount() + 1);
+            }
+        });
+
+        return customerMap.values().stream()
+                .map(TopCustomerResponse.TopCustomerResponseBuilder::build)
+                .sorted((a, b) -> Long.compare(b.getOrderCount(), a.getOrderCount()))
+                .collect(Collectors.toList());
+    }
 }
