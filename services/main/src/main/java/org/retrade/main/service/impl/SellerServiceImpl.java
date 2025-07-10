@@ -1,7 +1,13 @@
 package org.retrade.main.service.impl;
 
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Root;
 import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
+import org.retrade.common.model.dto.request.QueryFieldWrapper;
+import org.retrade.common.model.dto.request.QueryWrapper;
+import org.retrade.common.model.dto.response.PaginationWrapper;
 import org.retrade.common.model.exception.ActionFailedException;
 import org.retrade.common.model.exception.ValidationException;
 import org.retrade.main.model.constant.IdentityVerifiedStatusEnum;
@@ -26,7 +32,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.util.Optional;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -103,6 +109,20 @@ public class SellerServiceImpl implements SellerService {
     }
 
     @Override
+    public PaginationWrapper<List<SellerBaseResponse>> getSellers(QueryWrapper wrapper) {
+        return sellerRepository.query(wrapper, (param) -> (root, query, criteriaBuilder) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            return getSellerPredicate(param, root, criteriaBuilder, predicates);
+        }, (items) -> {
+            var list = items.map(this::wrapSellerBaseResponse).stream().toList();
+            return new PaginationWrapper.Builder<List<SellerBaseResponse>>()
+                    .setPaginationInfo(items)
+                    .setData(list)
+                    .build();
+        });
+    }
+
+    @Override
     public SellerRegisterResponse cccdSubmit(String front, String back) {
         var sellerEntity = getSellerEntity(front, back);
         if (sellerEntity.getIdentityVerified() == IdentityVerifiedStatusEnum.VERIFIED) {
@@ -142,10 +162,10 @@ public class SellerServiceImpl implements SellerService {
     @Override
     public SellerBaseResponse updateSellerProfile(SellerUpdateRequest request) {
         var accountEntity = authUtils.getUserAccountFromAuthentication();
-        if (accountEntity.getSeller() == null) {
+        var sellerEntity = accountEntity.getSeller();
+        if (sellerEntity == null) {
             throw new ValidationException("Account is not a seller");
         }
-        var sellerEntity = accountEntity.getSeller();
         sellerEntity.setAvatarUrl(request.getAvatarUrl());
         sellerEntity.setBackground(request.getBackground());
         sellerEntity.setShopName(request.getShopName());
@@ -296,6 +316,14 @@ public class SellerServiceImpl implements SellerService {
                 .createdAt(sellerEntity.getCreatedDate().toLocalDateTime())
                 .updatedAt(sellerEntity.getUpdatedDate().toLocalDateTime())
                 .build();
+    }
+
+    private Predicate getSellerPredicate(Map<String, QueryFieldWrapper> param, Root<SellerEntity> root, CriteriaBuilder criteriaBuilder, List<Predicate> predicates) {
+        if (param != null && !param.isEmpty()) {
+            Predicate[] defaultPredicates = sellerRepository.createDefaultPredicate(criteriaBuilder, root, param);
+            predicates.addAll(Arrays.asList(defaultPredicates));
+        }
+        return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
     }
 
 }
