@@ -208,9 +208,6 @@ public class AccountServiceImpl implements AccountService {
         account.setEnabled(false);
 
         Set<AccountRoleEntity> accountRoles = account.getAccountRoles();
-        accountRoles.forEach(accountRoleEntity -> {
-            accountRoleEntity.setEnabled(false);
-        });
 
 
         return mapToAccountResponse(account);
