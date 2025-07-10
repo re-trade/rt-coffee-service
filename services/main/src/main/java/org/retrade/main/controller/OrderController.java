@@ -265,10 +265,14 @@ public class OrderController {
     @PreAuthorize("hasRole('ROLE_SELLER')")
     @GetMapping("seller/combo")
     public ResponseEntity<ResponseObject<List<SellerOrderComboResponse>>> getAllOrderCombosBySeller(
-            @RequestParam(required = false) String search,
+            @Parameter(description = "Search query to filter products") @RequestParam(required = false, name = "q") String search,
             @RequestParam(required = false) String orderStatus,
             @PageableDefault Pageable pageable) {
-        var queryWrapper = new QueryWrapper.QueryWrapperBuilder().search(search).wrapSort(pageable).build();
+        var queryWrapper = new QueryWrapper
+                .QueryWrapperBuilder()
+                .search(search)
+                .wrapSort(pageable)
+                .build();
         var orders = orderService.getAllOrderCombosBySeller(queryWrapper,orderStatus);
         return ResponseEntity.ok(new ResponseObject.Builder<List<SellerOrderComboResponse>>()
                 .success(true)

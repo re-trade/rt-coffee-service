@@ -552,7 +552,7 @@ public class OrderServiceImpl implements OrderService {
         }else if(combo.getOrderStatus().getCode().equals("PAYMENT_CANCELLED")){
             paymentStatus = "PAYMENT_CANCELLED";
         }else {
-            paymentStatus = "PAYMENT_SUCCESS";
+            paymentStatus = "PAYMENT_CONFIRMATION";
         }
         var seller = combo.getSeller();
         var orderStatus = OrderStatusResponse.builder()
