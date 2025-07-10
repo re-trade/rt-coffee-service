@@ -316,35 +316,30 @@ public class OrderServiceImpl implements OrderService {
             if (query != null) {
                 query.distinct(true);
             }
-            Join<OrderEntity, OrderItemEntity> itemJoin = root.join("orderItems");
-            Join<OrderItemEntity, OrderComboEntity> comboJoin = itemJoin.join("orderCombo");
-            Join<OrderComboEntity, SellerEntity> sellerJoin = comboJoin.join("seller");
-            Join<OrderComboEntity, OrderStatusEntity> statusJoin = comboJoin.join("orderStatus");
+
+            Join<OrderEntity, OrderItemEntity> itemJoin = root.join("orderItems", JoinType.LEFT);
+            Join<OrderItemEntity, OrderComboEntity> comboJoin = itemJoin.join("orderCombo", JoinType.LEFT);
+            Join<OrderComboEntity, SellerEntity> sellerJoin = comboJoin.join("seller", JoinType.LEFT);
+            Join<OrderComboEntity, OrderStatusEntity> statusJoin = comboJoin.join("orderStatus", JoinType.LEFT);
 
             predicates.add(criteriaBuilder.equal(sellerJoin.get("id"), seller.getId()));
 
             predicates.add(criteriaBuilder.equal(statusJoin.get("code"), "PAYMENT_CONFIRMATION"));
 
-            if (param != null && param.containsKey("search")) {
-                String searchValue = (String) param.get("search").getValue();
-                if (searchValue != null && !searchValue.trim().isEmpty()) {
-                    String searchPattern = "%" + searchValue.toLowerCase() + "%";
-                    Predicate customerNamePredicate = criteriaBuilder.like(
-                            criteriaBuilder.lower(root.get("customer").get("name")), searchPattern);
-                    Predicate customerEmailPredicate = criteriaBuilder.like(
-                            criteriaBuilder.lower(root.get("customer").get("email")), searchPattern);
-                    predicates.add(criteriaBuilder.or(customerNamePredicate, customerEmailPredicate));
-                }
+            Map<String, QueryFieldWrapper> searchParams = queryWrapper.search();
+            QueryFieldWrapper search = searchParams != null ? searchParams.get("keyword") : null;
+            if (search != null && search.getValue() != null && !search.getValue().toString().trim().isEmpty()) {
+                String searchPattern = "%" + search.getValue().toString().toLowerCase() + "%";
+                Predicate customerNamePredicate = criteriaBuilder.like(
+                        criteriaBuilder.lower(root.get("customer").get("name")), searchPattern);
+                Predicate customerEmailPredicate = criteriaBuilder.like(
+                        criteriaBuilder.lower(root.get("customer").get("email")), searchPattern);
+                predicates.add(criteriaBuilder.or(customerNamePredicate, customerEmailPredicate));
             }
 
             return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
         }, (items) -> {
-            Map<String, TopCustomerResponse.TopCustomerResponseBuilder> customerMap = buildCustomerMap(items);
-
-            List<TopCustomerResponse> list = customerMap.values().stream()
-                    .map(TopCustomerResponse.TopCustomerResponseBuilder::build)
-                    .sorted((a, b) -> Long.compare(b.getOrderCount(), a.getOrderCount()))
-                    .collect(Collectors.toList());
+            List<TopCustomerResponse> list = buildCustomerMap(items);
 
             return new PaginationWrapper.Builder<List<TopCustomerResponse>>()
                     .setPaginationInfo(items)
@@ -353,14 +348,13 @@ public class OrderServiceImpl implements OrderService {
         });
     }
 
-    private Map<String, TopCustomerResponse.TopCustomerResponseBuilder> buildCustomerMap(Page<OrderEntity> items) {
+    private List<TopCustomerResponse> buildCustomerMap(Page<OrderEntity> items) {
         Map<String, TopCustomerResponse.TopCustomerResponseBuilder> customerMap = new HashMap<>();
-
 
         items.getContent().forEach(order -> {
             if (order.getCustomer() != null && order.getOrderItems() != null && !order.getOrderItems().isEmpty()) {
                 String customerId = order.getCustomer().getId();
-                String customerName = order.getCustomer().getFirstName() + order.getCustomer().getLastName();
+                String customerName = order.getCustomer().getLastName();
 
                 customerMap.computeIfAbsent(customerId, k ->
                         TopCustomerResponse.builder()
@@ -375,7 +369,10 @@ public class OrderServiceImpl implements OrderService {
             }
         });
 
-        return customerMap;
+        return customerMap.values().stream()
+                .map(TopCustomerResponse.TopCustomerResponseBuilder::build)
+                .sorted((a, b) -> Long.compare(b.getOrderCount(), a.getOrderCount()))
+                .collect(Collectors.toList());
     }
 
     @Override
