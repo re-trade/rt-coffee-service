@@ -20,6 +20,7 @@ import org.retrade.main.model.dto.response.PaymentOrderStatusResponse;
 import org.retrade.main.model.entity.CustomerEntity;
 import org.retrade.main.model.entity.PaymentHistoryEntity;
 import org.retrade.main.model.entity.PaymentMethodEntity;
+import org.retrade.main.model.other.PaymentAPICallback;
 import org.retrade.main.model.other.PaymentProviderCallbackWrapper;
 import org.retrade.main.repository.*;
 import org.retrade.main.service.PaymentService;
@@ -92,32 +93,7 @@ public class PaymentServiceImpl implements PaymentService {
                     .orElseThrow(() -> new ValidationException("This payment method is currently not supported"));
 
             var paymentCallback = paymentHandler.capturePayment(request);
-            var paymentEntity = paymentHistoryRepository.findByPaymentCode(String.valueOf(paymentCallback.getId()))
-                    .orElseThrow(() -> new ValidationException("Not found payment with this id"));
-            paymentEntity.setPaymentTime(LocalDateTime.now());
-            var order = paymentEntity.getOrder();
-            if (paymentCallback.isStatus()) {
-                paymentEntity.setPaymentStatus(PaymentStatusEnum.PAID);
-                var orderStatus = orderStatusRepository.findByCode("PAYMENT_CONFIRMATION")
-                        .orElseThrow(() -> new ValidationException("Not found order status"));
-                var orderCombos = orderComboRepository.findByOrderItems_Order_Id(order.getId());
-                orderCombos.forEach(orderCombo -> {
-                    orderCombo.setOrderStatus(orderStatus);
-                });
-                orderComboRepository.saveAll(orderCombos);
-            } else {
-                paymentEntity.setPaymentStatus(PaymentStatusEnum.CANCELED);
-            }
-            try {
-                paymentHistoryRepository.save(paymentEntity);
-                orderRepository.save(order);
-            } catch (Exception ex) {
-                throw new ActionFailedException("Failed to update payment/order: " + ex.getMessage());
-            }
-            if (paymentCallback.isStatus()) {
-                return handleSuccessCallback(methodCode);
-            }
-            return handleErrorCallback(methodCode, "Payment has been cancelled");
+            return getPaymentProviderCallbackWrapper(methodCode, paymentCallback);
         } catch (ValidationException e) {
             TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
             return handleErrorCallback(methodCode, e.getMessage());
@@ -125,6 +101,53 @@ public class PaymentServiceImpl implements PaymentService {
             TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
             return handleErrorCallback(methodCode, "Something went wrong with our third-party payment method");
         }
+    }
+
+    @Transactional
+    @Override
+    public PaymentProviderCallbackWrapper handleIPNWebhookCallback(HttpServletRequest request, String methodCode) {
+        try {
+            var paymentHandler = getPaymentHandler(methodCode.toUpperCase())
+                    .orElseThrow(() -> new ValidationException("This payment method is currently not supported"));
+
+            var paymentCallback = paymentHandler.captureWebhook(request);
+            return getPaymentProviderCallbackWrapper(methodCode, paymentCallback);
+        } catch (ValidationException e) {
+            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+            return handleErrorCallback(methodCode, e.getMessage());
+        } catch (Exception ex) {
+            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+            return handleErrorCallback(methodCode, "Something went wrong with our third-party payment method");
+        }
+    }
+
+    private PaymentProviderCallbackWrapper getPaymentProviderCallbackWrapper(String methodCode, PaymentAPICallback paymentCallback) {
+        var paymentEntity = paymentHistoryRepository.findByPaymentCode(String.valueOf(paymentCallback.getId()))
+                .orElseThrow(() -> new ValidationException("Not found payment with this id"));
+        paymentEntity.setPaymentTime(LocalDateTime.now());
+        var order = paymentEntity.getOrder();
+        if (paymentCallback.isStatus()) {
+            paymentEntity.setPaymentStatus(PaymentStatusEnum.PAID);
+            var orderStatus = orderStatusRepository.findByCode("PAYMENT_CONFIRMATION")
+                    .orElseThrow(() -> new ValidationException("Not found order status"));
+            var orderCombos = orderComboRepository.findByOrderItems_Order_Id(order.getId());
+            orderCombos.forEach(orderCombo -> {
+                orderCombo.setOrderStatus(orderStatus);
+            });
+            orderComboRepository.saveAll(orderCombos);
+        } else {
+            paymentEntity.setPaymentStatus(PaymentStatusEnum.CANCELED);
+        }
+        try {
+            paymentHistoryRepository.save(paymentEntity);
+            orderRepository.save(order);
+        } catch (Exception ex) {
+            throw new ActionFailedException("Failed to update payment/order: " + ex.getMessage());
+        }
+        if (paymentCallback.isStatus()) {
+            return handleSuccessCallback(methodCode);
+        }
+        return handleErrorCallback(methodCode, "Payment has been cancelled");
     }
 
 
@@ -146,14 +169,14 @@ public class PaymentServiceImpl implements PaymentService {
     public PaginationWrapper<List<PaymentHistoryResponse>> getPaymentHistoriesByCustomerId(String customerId, QueryWrapper queryWrapper) {
         var customer = customerRepository.findById(customerId)
                 .orElseThrow(() -> new ValidationException("Seller not found"));
-        return getPaymentHistorysByCustomer(customer, queryWrapper);
+        return getPaymentHistoriesByCustomer(customer, queryWrapper);
     }
 
     @Override
     public PaginationWrapper<List<PaymentHistoryResponse>> getPaymentHistoriesByCurrentCustomer(QueryWrapper queryWrapper) {
         var customer = getCurrentCustomerAccount();
 
-        return getPaymentHistorysByCustomer(customer, queryWrapper);
+        return getPaymentHistoriesByCustomer(customer, queryWrapper);
     }
 
     @Override
@@ -198,7 +221,7 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
 
-    private PaginationWrapper<List<PaymentHistoryResponse>> getPaymentHistorysByCustomer(CustomerEntity customer, QueryWrapper queryWrapper) {
+    private PaginationWrapper<List<PaymentHistoryResponse>> getPaymentHistoriesByCustomer(CustomerEntity customer, QueryWrapper queryWrapper) {
         return paymentHistoryRepository.query(queryWrapper, (param) -> (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
             predicates.add(criteriaBuilder.equal(root.get("order").get("customer"), customer));
