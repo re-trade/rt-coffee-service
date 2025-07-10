@@ -22,20 +22,4 @@ public interface OrderRepository extends BaseJpaRepository<OrderEntity, String> 
     WHERE oc.id = :orderComboId
     """)
     Optional<OrderEntity> findOrderByOrderComboId(@Param("orderComboId") String orderComboId);
-
-
-    @Query("SELECT o. " +
-            "FROM orders o JOIN o.orderHistories oh " +
-            "WHERE oh.seller.id = :sellerId " +
-            "GROUP BY o.customer " +
-            "ORDER BY COUNT(o) DESC LIMIT 10")
-    List<CustomerEntity> findTopCustomerOrdersBySeller(@Param("sellerId") String sellerId);
-
-    @Query("SELECT COUNT(o) " +
-            "FROM orders o JOIN o.orderHistories oh " +
-            "WHERE o.customer.id = :customerId AND oh.seller.id = :sellerId")
-    long countOrdersByCustomerAndSeller(@Param("customerId") String customerId, @Param("sellerId") String sellerId);
-
-
-
 }

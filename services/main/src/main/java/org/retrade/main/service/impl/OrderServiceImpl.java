@@ -18,6 +18,7 @@
  import org.retrade.main.service.CartService;
  import org.retrade.main.service.OrderService;
  import org.retrade.main.util.AuthUtils;
+ import org.springframework.data.domain.Page;
  import org.springframework.stereotype.Service;
  import org.springframework.transaction.annotation.Transactional;
 import jakarta.persistence.criteria.*;
@@ -250,53 +251,21 @@ public class OrderServiceImpl implements OrderService {
         return orderRepository.query(queryWrapper, (param) -> (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
 
+            if (query != null) {
+                query.distinct(true);
+            }
             Join<OrderEntity, OrderItemEntity> itemJoin = root.join("orderItems");
             Join<OrderItemEntity, OrderComboEntity> comboJoin = itemJoin.join("orderCombo");
             Join<OrderComboEntity, OrderStatusEntity> statusJoin = comboJoin.join("orderStatus");
-            Join<OrderComboEntity, OrderHistoryEntity> historyJoin = comboJoin.join("orderHistories");
 
             predicates.add(criteriaBuilder.equal(statusJoin.get("code"), "PAYMENT_CONFIRMATION"));
 
-            if (param != null) {
-                if (param.containsKey("startDate")) {
-                    QueryFieldWrapper startDateField = param.get("startDate");
-                    predicates.add(criteriaBuilder.greaterThanOrEqualTo(
-                            historyJoin.get("createdAt"), (java.time.LocalDateTime) startDateField.getValue()));
-                }
-                if (param.containsKey("endDate")) {
-                    QueryFieldWrapper endDateField = param.get("endDate");
-                    predicates.add(criteriaBuilder.lessThanOrEqualTo(
-                            historyJoin.get("createdAt"), (java.time.LocalDateTime) endDateField.getValue()));
-                }
-            }
-
-
             return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
         }, (items) -> {
-            Map<String, TopSellersResponse.TopSellersResponseBuilder> sellerMap = new HashMap<>();
-
-            items.forEach(order -> {
-                order.getOrderItems().forEach(item -> {
-                    if (item.getOrderCombo() != null &&
-                            item.getOrderCombo().getSeller() != null &&
-                            item.getOrderCombo().getOrderStatus() != null &&
-                            "PAYMENT_CONFIRMATION".equals(item.getOrderCombo().getOrderStatus().getCode())) {
-
-                        String sellerId = item.getOrderCombo().getSeller().getId();
-                        String sellerName = item.getOrderCombo().getSeller().getShopName();
-
-                        sellerMap.computeIfAbsent(sellerId, k ->
-                                TopSellersResponse.builder()
-                                        .id(sellerId)
-                                        .name(sellerName)
-                                        .orderCount(0L)
-                        ).orderCount(sellerMap.get(sellerId).build().getOrderCount() + 1);
-                    }
-                });
-            });
+            Map<String, TopSellersResponse.TopSellersResponseBuilder> sellerMap = buildSellerMap(items);
 
             List<TopSellersResponse> list = sellerMap.values().stream()
-                    .map(builder -> builder.build())
+                    .map(TopSellersResponse.TopSellersResponseBuilder::build)
                     .sorted((a, b) -> Long.compare(b.getOrderCount(), a.getOrderCount()))
                     .collect(Collectors.toList());
 
@@ -307,7 +276,35 @@ public class OrderServiceImpl implements OrderService {
         });
     }
 
+    private Map<String, TopSellersResponse.TopSellersResponseBuilder> buildSellerMap(Page<OrderEntity> items) {
+        Map<String, TopSellersResponse.TopSellersResponseBuilder> sellerMap = new HashMap<>();
+
+        items.getContent().forEach(order -> {
+            if (order.getOrderItems() != null && !order.getOrderItems().isEmpty()) {
+                OrderComboEntity orderCombo = order.getOrderItems().iterator().next().getOrderCombo();
+                if (orderCombo != null && orderCombo.getSeller() != null) {
+                    String sellerId = orderCombo.getSeller().getId();
+                    String sellerName = orderCombo.getSeller().getShopName();
+
+                    sellerMap.computeIfAbsent(sellerId, k ->
+                            TopSellersResponse.builder()
+                                    .id(sellerId)
+                                    .name(sellerName)
+                                    .orderCount(0L)
+                    );
+
+                    TopSellersResponse.TopSellersResponseBuilder builder = sellerMap.get(sellerId);
+                    TopSellersResponse current = builder.build();
+                    builder.orderCount(current.getOrderCount() + 1);
+                }
+            }
+        });
+
+        return sellerMap;
+    }
+
     @Override
+    @Transactional(readOnly = true)
     public PaginationWrapper<List<TopCustomerResponse>> getTopCustomerBySeller(QueryWrapper queryWrapper) {
         var account = authUtils.getUserAccountFromAuthentication();
         var seller = account.getSeller();
@@ -318,6 +315,9 @@ public class OrderServiceImpl implements OrderService {
         return orderRepository.query(queryWrapper, (param) -> (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
 
+            if (query != null) {
+                query.distinct(true);
+            }
             Join<OrderEntity, OrderItemEntity> itemJoin = root.join("orderItems");
             Join<OrderItemEntity, OrderComboEntity> comboJoin = itemJoin.join("orderCombo");
             Join<OrderComboEntity, SellerEntity> sellerJoin = comboJoin.join("seller");
@@ -341,37 +341,10 @@ public class OrderServiceImpl implements OrderService {
 
             return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
         }, (items) -> {
-            Map<String, TopCustomerResponse.TopCustomerResponseBuilder> customerMap = new HashMap<>();
-
-            items.forEach(order -> {
-                order.getOrderItems().forEach(item -> {
-                    if (item.getOrderCombo() != null &&
-                            item.getOrderCombo().getSeller() != null &&
-                            item.getOrderCombo().getOrderStatus() != null &&
-                            "PAYMENT_CONFIRMATION".equals(item.getOrderCombo().getOrderStatus().getCode()) &&
-                            order.getCustomer() != null) {
-
-                        String customerId = order.getCustomer().getId();
-                        String customerName = order.getCustomer().getFirstName(); // Adjust based on your CustomerEntity field
-
-                        customerMap.computeIfAbsent(customerId, k ->
-                                TopCustomerResponse.builder()
-                                        .customerId(customerId)
-                                        .customerName(customerName)
-                                        .orderCount(0L)
-                        );
-
-                        TopCustomerResponse.TopCustomerResponseBuilder builder = customerMap.get(customerId);
-                        TopCustomerResponse current = builder.build();
-
-                        // Increment order count
-                        builder.orderCount(current.getOrderCount() + 1);
-                    }
-                });
-            });
+            Map<String, TopCustomerResponse.TopCustomerResponseBuilder> customerMap = buildCustomerMap(items);
 
             List<TopCustomerResponse> list = customerMap.values().stream()
-                    .map(builder -> builder.build())
+                    .map(TopCustomerResponse.TopCustomerResponseBuilder::build)
                     .sorted((a, b) -> Long.compare(b.getOrderCount(), a.getOrderCount()))
                     .collect(Collectors.toList());
 
@@ -382,7 +355,29 @@ public class OrderServiceImpl implements OrderService {
         });
     }
 
+    private Map<String, TopCustomerResponse.TopCustomerResponseBuilder> buildCustomerMap(Page<OrderEntity> items) {
+        Map<String, TopCustomerResponse.TopCustomerResponseBuilder> customerMap = new HashMap<>();
 
+        items.getContent().forEach(order -> {
+            if (order.getCustomer() != null && order.getOrderItems() != null && !order.getOrderItems().isEmpty()) {
+                String customerId = order.getCustomer().getId();
+                String customerName = order.getCustomer().getFirstName() + order.getCustomer().getLastName();
+
+                customerMap.computeIfAbsent(customerId, k ->
+                        TopCustomerResponse.builder()
+                                .customerId(customerId)
+                                .customerName(customerName)
+                                .orderCount(0L)
+                );
+
+                TopCustomerResponse.TopCustomerResponseBuilder builder = customerMap.get(customerId);
+                TopCustomerResponse current = builder.build();
+                builder.orderCount(current.getOrderCount() + 1);
+            }
+        });
+
+        return customerMap;
+    }
 
     @Override
     @Transactional(readOnly = true)
