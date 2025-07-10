@@ -13,6 +13,7 @@ import org.retrade.main.model.dto.request.UpdatePasswordRequest;
 import org.retrade.main.model.dto.request.UpdateUsernameRequest;
 import org.retrade.main.model.dto.response.AccountResponse;
 import org.retrade.main.model.entity.AccountEntity;
+import org.retrade.main.model.entity.AccountRoleEntity;
 import org.retrade.main.model.entity.CustomerEntity;
 import org.retrade.main.model.message.EmailNotificationMessage;
 import org.retrade.main.repository.AccountRepository;
@@ -205,6 +206,9 @@ public class AccountServiceImpl implements AccountService {
         AccountEntity account = customer.getAccount();
         account.setLocked(true);
         account.setEnabled(false);
+
+        Set<AccountRoleEntity> accountRoles = account.getAccountRoles();
+
 
         return mapToAccountResponse(account);
     }

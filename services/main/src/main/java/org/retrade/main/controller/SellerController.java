@@ -8,7 +8,9 @@ import org.retrade.main.model.dto.request.SellerRegisterRequest;
 import org.retrade.main.model.dto.request.SellerUpdateRequest;
 import org.retrade.main.model.dto.response.SellerBaseResponse;
 import org.retrade.main.model.dto.response.SellerRegisterResponse;
+import org.retrade.main.model.dto.response.TopSellersResponse;
 import org.retrade.main.service.FileService;
+import org.retrade.main.service.OrderService;
 import org.retrade.main.service.SellerService;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -16,12 +18,16 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
+
 @RequestMapping("sellers")
 @RestController
 @RequiredArgsConstructor
 public class SellerController {
     private final SellerService sellerService;
     private final FileService fileService;
+    private final OrderService orderService;
+
     @PostMapping(path = "register")
     public ResponseEntity<ResponseObject<SellerRegisterResponse>> registerAsASeller(
             @Valid @RequestBody SellerRegisterRequest sellerRegisterRequest

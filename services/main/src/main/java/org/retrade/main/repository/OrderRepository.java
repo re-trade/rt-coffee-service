@@ -1,10 +1,10 @@
 package org.retrade.main.repository;
 
+import io.lettuce.core.dynamic.annotation.Param;
 import org.retrade.common.repository.BaseJpaRepository;
 import org.retrade.main.model.entity.CustomerEntity;
 import org.retrade.main.model.entity.OrderEntity;
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
@@ -22,5 +22,4 @@ public interface OrderRepository extends BaseJpaRepository<OrderEntity, String> 
     WHERE oc.id = :orderComboId
     """)
     Optional<OrderEntity> findOrderByOrderComboId(@Param("orderComboId") String orderComboId);
-
 }

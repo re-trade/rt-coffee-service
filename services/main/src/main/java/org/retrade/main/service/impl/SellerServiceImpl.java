@@ -10,6 +10,7 @@ import org.retrade.main.model.dto.request.SellerRegisterRequest;
 import org.retrade.main.model.dto.request.SellerUpdateRequest;
 import org.retrade.main.model.dto.response.SellerBaseResponse;
 import org.retrade.main.model.dto.response.SellerRegisterResponse;
+import org.retrade.main.model.dto.response.TopSellersResponse;
 import org.retrade.main.model.entity.AccountRoleEntity;
 import org.retrade.main.model.entity.RoleEntity;
 import org.retrade.main.model.entity.SellerEntity;
@@ -17,15 +18,19 @@ import org.retrade.main.model.message.CCCDVerificationMessage;
 import org.retrade.main.model.message.CCCDVerificationResultMessage;
 import org.retrade.main.model.other.SellerWrapperBase;
 import org.retrade.main.repository.AccountRoleRepository;
+import org.retrade.main.repository.PaymentHistoryRepository;
 import org.retrade.main.repository.RoleRepository;
 import org.retrade.main.repository.SellerRepository;
 import org.retrade.main.service.MessageProducerService;
 import org.retrade.main.service.SellerService;
 import org.retrade.main.util.AuthUtils;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.awt.print.Pageable;
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -36,6 +41,8 @@ public class SellerServiceImpl implements SellerService {
     private final AuthUtils authUtils;
     private final RoleRepository roleRepository;
     private final AccountRoleRepository accountRoleRepository;
+    private final PaymentHistoryRepository orderHistoryRepository;
+    private final PaymentHistoryRepository paymentHistoryRepository;
 
     @Override
     public SellerRegisterResponse createSeller(SellerRegisterRequest request) {
