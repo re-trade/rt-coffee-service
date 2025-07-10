@@ -22,5 +22,4 @@ public interface OrderRepository extends BaseJpaRepository<OrderEntity, String> 
     WHERE oc.id = :orderComboId
     """)
     Optional<OrderEntity> findOrderByOrderComboId(@Param("orderComboId") String orderComboId);
-
 }

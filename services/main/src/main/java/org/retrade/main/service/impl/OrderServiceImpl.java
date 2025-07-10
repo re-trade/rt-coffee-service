@@ -16,6 +16,7 @@
  import org.retrade.main.service.CartService;
  import org.retrade.main.service.OrderService;
  import org.retrade.main.util.AuthUtils;
+ import org.springframework.data.domain.Page;
  import org.springframework.stereotype.Service;
  import org.springframework.transaction.annotation.Transactional;
 
@@ -23,6 +24,7 @@
  import java.math.RoundingMode;
  import java.util.*;
  import java.util.stream.Collectors;
+
 
 @Service
 @RequiredArgsConstructor
@@ -239,6 +241,84 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     @Transactional(readOnly = true)
+    public PaginationWrapper<List<TopSellersResponse>> getTopSellers(QueryWrapper queryWrapper) {
+        return orderRepository.query(queryWrapper, (param) -> (root, query, criteriaBuilder) -> {
+            List<Predicate> predicates = new ArrayList<>();
+
+            if (query != null) {
+                query.distinct(true);
+            }
+            Join<OrderEntity, OrderItemEntity> itemJoin = root.join("orderItems");
+            Join<OrderItemEntity, OrderComboEntity> comboJoin = itemJoin.join("orderCombo");
+            Join<OrderComboEntity, OrderStatusEntity> statusJoin = comboJoin.join("orderStatus");
+
+            predicates.add(criteriaBuilder.equal(statusJoin.get("code"), "PAYMENT_CONFIRMATION"));
+
+            return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
+        }, (items) -> {
+            Map<String, TopSellersResponse.TopSellersResponseBuilder> sellerMap = buildSellerMap(items);
+
+            List<TopSellersResponse> list = sellerMap.values().stream()
+                    .map(TopSellersResponse.TopSellersResponseBuilder::build)
+                    .sorted((a, b) -> Long.compare(b.getOrderCount(), a.getOrderCount()))
+                    .collect(Collectors.toList());
+
+            return new PaginationWrapper.Builder<List<TopSellersResponse>>()
+                    .setPaginationInfo(items)
+                    .setData(list)
+                    .build();
+        });
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PaginationWrapper<List<TopCustomerResponse>> getTopCustomerBySeller(QueryWrapper queryWrapper) {
+        var account = authUtils.getUserAccountFromAuthentication();
+        var seller = account.getSeller();
+        if (seller == null) {
+            throw new ValidationException("Seller profile not found");
+        }
+
+        return orderRepository.query(queryWrapper, (param) -> (root, query, criteriaBuilder) -> {
+            List<Predicate> predicates = new ArrayList<>();
+
+            if (query != null) {
+                query.distinct(true);
+            }
+
+            Join<OrderEntity, OrderItemEntity> itemJoin = root.join("orderItems", JoinType.LEFT);
+            Join<OrderItemEntity, OrderComboEntity> comboJoin = itemJoin.join("orderCombo", JoinType.LEFT);
+            Join<OrderComboEntity, SellerEntity> sellerJoin = comboJoin.join("seller", JoinType.LEFT);
+            Join<OrderComboEntity, OrderStatusEntity> statusJoin = comboJoin.join("orderStatus", JoinType.LEFT);
+
+            predicates.add(criteriaBuilder.equal(sellerJoin.get("id"), seller.getId()));
+
+            predicates.add(criteriaBuilder.equal(statusJoin.get("code"), "PAYMENT_CONFIRMATION"));
+
+            Map<String, QueryFieldWrapper> searchParams = queryWrapper.search();
+            QueryFieldWrapper search = searchParams != null ? searchParams.get("keyword") : null;
+            if (search != null && search.getValue() != null && !search.getValue().toString().trim().isEmpty()) {
+                String searchPattern = "%" + search.getValue().toString().toLowerCase() + "%";
+                Predicate customerNamePredicate = criteriaBuilder.like(
+                        criteriaBuilder.lower(root.get("customer").get("name")), searchPattern);
+                Predicate customerEmailPredicate = criteriaBuilder.like(
+                        criteriaBuilder.lower(root.get("customer").get("email")), searchPattern);
+                predicates.add(criteriaBuilder.or(customerNamePredicate, customerEmailPredicate));
+            }
+
+            return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
+        }, (items) -> {
+            List<TopCustomerResponse> list = buildCustomerMap(items);
+
+            return new PaginationWrapper.Builder<List<TopCustomerResponse>>()
+                    .setPaginationInfo(items)
+                    .setData(list)
+                    .build();
+        });
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public PaginationWrapper<List<SellerOrderComboResponse>> getAllOrderCombosBySeller(QueryWrapper queryWrapper, String orderStatus) {
         var account = authUtils.getUserAccountFromAuthentication();
         var seller = account.getSeller();
@@ -295,7 +375,7 @@ public class OrderServiceImpl implements OrderService {
                 .id(orderStatus.getId())
                 .code(orderStatus.getCode())
                 .name(orderStatus.getName())
-                .enabled(orderStatus.getEnabled())
+                //.enabled(orderStatus.getEnabled())
                 .build();
     }
 
@@ -630,4 +710,57 @@ public class OrderServiceImpl implements OrderService {
         return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
     }
 
+    private Map<String, TopSellersResponse.TopSellersResponseBuilder> buildSellerMap(Page<OrderEntity> items) {
+        Map<String, TopSellersResponse.TopSellersResponseBuilder> sellerMap = new HashMap<>();
+
+        items.getContent().forEach(order -> {
+            if (order.getOrderItems() != null && !order.getOrderItems().isEmpty()) {
+                OrderComboEntity orderCombo = order.getOrderItems().iterator().next().getOrderCombo();
+                if (orderCombo != null && orderCombo.getSeller() != null) {
+                    String sellerId = orderCombo.getSeller().getId();
+                    String sellerName = orderCombo.getSeller().getShopName();
+
+                    sellerMap.computeIfAbsent(sellerId, k ->
+                            TopSellersResponse.builder()
+                                    .id(sellerId)
+                                    .name(sellerName)
+                                    .orderCount(0L)
+                    );
+
+                    TopSellersResponse.TopSellersResponseBuilder builder = sellerMap.get(sellerId);
+                    TopSellersResponse current = builder.build();
+                    builder.orderCount(current.getOrderCount() + 1);
+                }
+            }
+        });
+
+        return sellerMap;
+    }
+
+    private List<TopCustomerResponse> buildCustomerMap(Page<OrderEntity> items) {
+        Map<String, TopCustomerResponse.TopCustomerResponseBuilder> customerMap = new HashMap<>();
+
+        items.getContent().forEach(order -> {
+            if (order.getCustomer() != null && order.getOrderItems() != null && !order.getOrderItems().isEmpty()) {
+                String customerId = order.getCustomer().getId();
+                String customerName = order.getCustomer().getLastName();
+
+                customerMap.computeIfAbsent(customerId, k ->
+                        TopCustomerResponse.builder()
+                                .customerId(customerId)
+                                .customerName(customerName)
+                                .orderCount(0L)
+                );
+
+                TopCustomerResponse.TopCustomerResponseBuilder builder = customerMap.get(customerId);
+                TopCustomerResponse current = builder.build();
+                builder.orderCount(current.getOrderCount() + 1);
+            }
+        });
+
+        return customerMap.values().stream()
+                .map(TopCustomerResponse.TopCustomerResponseBuilder::build)
+                .sorted((a, b) -> Long.compare(b.getOrderCount(), a.getOrderCount()))
+                .collect(Collectors.toList());
+    }
 }

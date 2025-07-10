@@ -12,6 +12,8 @@ import org.retrade.common.model.dto.response.ResponseObject;
 import org.retrade.main.model.dto.request.CreateOrderRequest;
 import org.retrade.main.model.dto.response.CustomerOrderComboResponse;
 import org.retrade.main.model.dto.response.OrderResponse;
+import org.retrade.main.model.dto.response.TopSellersResponse;
+import org.retrade.main.model.dto.response.SellerOrderComboResponse;
 import org.retrade.main.model.dto.response.OrderStatusResponse;
 import org.retrade.main.model.dto.response.SellerOrderComboResponse;
 import org.retrade.main.service.OrderService;
@@ -144,6 +146,50 @@ public class OrderController {
                 .build());
     }
 
+    @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_SELLER')")
+    @GetMapping("/top-sellers")
+    public ResponseEntity<ResponseObject<List<TopSellersResponse>>> getTopSellers(
+            @Parameter(description = "Search query")
+            @RequestParam(required = false, name = "q") String search,
+            @PageableDefault(size = 10) Pageable pageable) {
+
+        var queryWrapper = new QueryWrapper.QueryWrapperBuilder()
+                .search(search)
+                .wrapSort(pageable)
+                .build();
+
+        var result = orderService.getTopSellers(queryWrapper);
+
+        return ResponseEntity.ok(new ResponseObject.Builder<List<TopSellersResponse>>()
+                .success(true)
+                .code("SUCCESS")
+                .unwrapPaginationWrapper(result)
+                .messages("Top sellers retrieved successfully")
+                .build());
+    }
+
+    @PreAuthorize("hasRole('ROLE_SELLER')")
+    @GetMapping("/top-customers-by-seller")
+    public ResponseEntity<ResponseObject<List<TopSellersResponse>>> getTopCustomersBySeller(
+            @PathVariable String sellerId,
+            @RequestParam(required = false, name = "q") String search,
+            @PageableDefault(size = 10) Pageable pageable) {
+
+        var queryWrapper = new QueryWrapper.QueryWrapperBuilder()
+                .search(search)
+                .wrapSort(pageable)
+                .build();
+
+        var result = orderService.getTopCustomerBySeller(queryWrapper);
+
+        return ResponseEntity.ok(new ResponseObject.Builder<List<TopSellersResponse>>()
+                .success(true)
+                .code("SUCCESS")
+                .unwrapPaginationWrapper(result)
+                .messages("Top customers by sellers retrieved successfully")
+                .build());
+    }
+
     @PutMapping("{orderId}/status")
     @Operation(summary = "Update order status", description = "Updates the status of an order")
     @ApiResponses(value = {
@@ -268,5 +314,7 @@ public class OrderController {
                 .messages("Orders retrieved successfully")
                 .build());
     }
+
+
 
 }

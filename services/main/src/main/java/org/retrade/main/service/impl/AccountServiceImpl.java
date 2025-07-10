@@ -13,9 +13,11 @@ import org.retrade.main.model.dto.request.UpdatePasswordRequest;
 import org.retrade.main.model.dto.request.UpdateUsernameRequest;
 import org.retrade.main.model.dto.response.AccountResponse;
 import org.retrade.main.model.entity.AccountEntity;
+import org.retrade.main.model.entity.AccountRoleEntity;
 import org.retrade.main.model.entity.CustomerEntity;
 import org.retrade.main.model.message.EmailNotificationMessage;
 import org.retrade.main.repository.AccountRepository;
+import org.retrade.main.repository.AccountRoleRepository;
 import org.retrade.main.repository.CustomerRepository;
 import org.retrade.main.service.AccountService;
 import org.retrade.main.service.JwtService;
@@ -39,6 +41,7 @@ public class AccountServiceImpl implements AccountService {
     private final PasswordEncoder passwordEncoder;
     private final AuthUtils authUtils;
     private final CustomerRepository customerRepository;
+    private final AccountRoleRepository accountRoleRepository;
 
     @Override
     public AccountResponse getMe() {
@@ -188,6 +191,7 @@ public class AccountServiceImpl implements AccountService {
     }
 
     @Override
+    @Transactional(rollbackFor = {ActionFailedException.class, Exception.class})
     public AccountResponse disableCustomerAccount(String customerId) {
         var roles = authUtils.getRolesFromAuthUser();
 
@@ -206,6 +210,13 @@ public class AccountServiceImpl implements AccountService {
         account.setLocked(true);
         account.setEnabled(false);
 
+        Set<AccountRoleEntity> accountRoles = account.getAccountRoles();
+        accountRoles.forEach(accountRole -> {
+            if (accountRole.getRole().getName().equals("ROLE_CUSTOMER")) {
+                accountRole.setEnabled(false);
+            }
+        });
+        accountRoleRepository.saveAll(accountRoles);
         return mapToAccountResponse(account);
     }
 
