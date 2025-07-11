@@ -62,7 +62,6 @@ public class DeliveryServiceImpl implements DeliveryService {
                 .seller(seller)
                 .status(true)
                 .notes(note)
-                .createdBy(seller.getShopName())
                 .build();
         try {
             orderHistoryRepository.save(orderLogs);
