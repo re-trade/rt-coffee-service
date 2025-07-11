@@ -2,19 +2,26 @@ package org.retrade.main.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.retrade.common.model.dto.request.QueryWrapper;
 import org.retrade.common.model.dto.response.ResponseObject;
 import org.retrade.main.model.dto.request.ApproveSellerRequest;
 import org.retrade.main.model.dto.request.SellerRegisterRequest;
 import org.retrade.main.model.dto.request.SellerUpdateRequest;
 import org.retrade.main.model.dto.response.SellerBaseResponse;
 import org.retrade.main.model.dto.response.SellerRegisterResponse;
+import org.retrade.main.model.dto.response.TopSellersResponse;
 import org.retrade.main.service.FileService;
+import org.retrade.main.service.OrderService;
 import org.retrade.main.service.SellerService;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
 
 @RequestMapping("sellers")
 @RestController
@@ -22,6 +29,8 @@ import org.springframework.web.multipart.MultipartFile;
 public class SellerController {
     private final SellerService sellerService;
     private final FileService fileService;
+    private final OrderService orderService;
+
     @PostMapping(path = "register")
     public ResponseEntity<ResponseObject<SellerRegisterResponse>> registerAsASeller(
             @Valid @RequestBody SellerRegisterRequest sellerRegisterRequest
@@ -49,6 +58,34 @@ public class SellerController {
                 .content(result)
                 .messages("CCCD Seller Submit Successfully")
                 .build());
+    }
+
+    @GetMapping("profile")
+    public ResponseEntity<ResponseObject<SellerBaseResponse>> getMySellers() {
+        var result = sellerService.getMySellers();
+        return  ResponseEntity.ok(new ResponseObject.Builder<SellerBaseResponse>()
+                .success(true)
+                .code("SUCCESS")
+                .messages("Profile Seller get Successfully")
+                .content(result)
+                .build());
+    }
+
+    @GetMapping()
+    public ResponseEntity<ResponseObject<List<SellerBaseResponse>>> getSellers(
+            @RequestParam(required = false, name = "q") String search,
+            @PageableDefault(size = 10) Pageable pageable
+    ) {
+        var result = sellerService.getSellers(QueryWrapper.builder()
+                        .wrapSort(pageable)
+                        .search(search)
+                .build());
+        return ResponseEntity.ok(new ResponseObject.Builder<List<SellerBaseResponse>>()
+                        .unwrapPaginationWrapper(result)
+                        .success(true)
+                        .code("SUCCESS")
+                        .messages("Get Sellers Successfully")
+                        .build());
     }
 
     @PutMapping(path = "profile")
@@ -84,17 +121,7 @@ public class SellerController {
                 .build());
     }
 
-    @GetMapping
-    public ResponseEntity<ResponseObject<SellerBaseResponse>> getMySellers() {
 
-        var result = sellerService.getMySellers();
-        return  ResponseEntity.ok(new ResponseObject.Builder<SellerBaseResponse>()
-                .success(true)
-                .code("SUCCESS")
-                .messages("Profile Seller get Successfully")
-                .content(result)
-                .build());
-    }
 
     @PutMapping("{id}/ban-seller")
     @PreAuthorize("hasRole('ROLE_ADMIN')")

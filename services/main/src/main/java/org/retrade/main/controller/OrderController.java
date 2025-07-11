@@ -12,8 +12,10 @@ import org.retrade.common.model.dto.response.ResponseObject;
 import org.retrade.main.model.dto.request.CreateOrderRequest;
 import org.retrade.main.model.dto.response.CustomerOrderComboResponse;
 import org.retrade.main.model.dto.response.OrderResponse;
+import org.retrade.main.model.dto.response.TopSellersResponse;
 import org.retrade.main.model.dto.response.SellerOrderComboResponse;
 import org.retrade.main.model.dto.response.OrderStatusResponse;
+import org.retrade.main.model.dto.response.SellerOrderComboResponse;
 import org.retrade.main.service.OrderService;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
@@ -101,7 +103,7 @@ public class OrderController {
         @ApiResponse(responseCode = "404", description = "Customer not found"),
         @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    @PreAuthorize("hasRole('ROLE_CUSTOMER') or hasRole('ROLE_SELLER') or hasRole('ROLE_ADMIN')")
+    @PreAuthorize("hasRole('ROLE_CUSTOMER')")
     public ResponseEntity<ResponseObject<List<OrderResponse>>> getOrdersByCustomer(
             @Parameter(description = "Customer ID", required = true)
             @PathVariable String customerId) {
@@ -123,7 +125,7 @@ public class OrderController {
         @ApiResponse(responseCode = "401", description = "Unauthorized"),
         @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_SELLER')")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     public ResponseEntity<ResponseObject<List<OrderResponse>>> getAllOrders(
             @Parameter(description = "Search query")
             @RequestParam(required = false, name = "q") String search,
@@ -141,6 +143,50 @@ public class OrderController {
                 .code("SUCCESS")
                 .unwrapPaginationWrapper(result)
                 .messages("Orders retrieved successfully")
+                .build());
+    }
+
+    @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_SELLER')")
+    @GetMapping("/top-sellers")
+    public ResponseEntity<ResponseObject<List<TopSellersResponse>>> getTopSellers(
+            @Parameter(description = "Search query")
+            @RequestParam(required = false, name = "q") String search,
+            @PageableDefault(size = 10) Pageable pageable) {
+
+        var queryWrapper = new QueryWrapper.QueryWrapperBuilder()
+                .search(search)
+                .wrapSort(pageable)
+                .build();
+
+        var result = orderService.getTopSellers(queryWrapper);
+
+        return ResponseEntity.ok(new ResponseObject.Builder<List<TopSellersResponse>>()
+                .success(true)
+                .code("SUCCESS")
+                .unwrapPaginationWrapper(result)
+                .messages("Top sellers retrieved successfully")
+                .build());
+    }
+
+    @PreAuthorize("hasRole('ROLE_SELLER')")
+    @GetMapping("/top-customers-by-seller")
+    public ResponseEntity<ResponseObject<List<TopSellersResponse>>> getTopCustomersBySeller(
+            @PathVariable String sellerId,
+            @RequestParam(required = false, name = "q") String search,
+            @PageableDefault(size = 10) Pageable pageable) {
+
+        var queryWrapper = new QueryWrapper.QueryWrapperBuilder()
+                .search(search)
+                .wrapSort(pageable)
+                .build();
+
+        var result = orderService.getTopCustomerBySeller(queryWrapper);
+
+        return ResponseEntity.ok(new ResponseObject.Builder<List<TopSellersResponse>>()
+                .success(true)
+                .code("SUCCESS")
+                .unwrapPaginationWrapper(result)
+                .messages("Top customers by sellers retrieved successfully")
                 .build());
     }
 
@@ -249,19 +295,6 @@ public class OrderController {
                 .build());
     }
 
-    @PreAuthorize("hasRole('ROLE_CUSTOMER')")
-    public ResponseEntity<ResponseObject<List<OrderResponse>>> getOrdersByCurrentCustomer() {
-
-        List<OrderResponse> orders = orderService.getOrdersByCurrentCustomer();
-
-        return ResponseEntity.ok(new ResponseObject.Builder<List<OrderResponse>>()
-                .success(true)
-                .code("SUCCESS")
-                .content(orders)
-                .messages("Orders retrieved successfully")
-                .build());
-    }
-
     @PreAuthorize("hasRole('ROLE_SELLER')")
     @GetMapping("seller/combo")
     public ResponseEntity<ResponseObject<List<SellerOrderComboResponse>>> getAllOrderCombosBySeller(
@@ -305,5 +338,6 @@ public class OrderController {
                 .messages("Order cancelled successfully")
                 .build());
     }
+
 
 }

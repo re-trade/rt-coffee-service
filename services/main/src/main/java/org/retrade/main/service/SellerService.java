@@ -1,19 +1,25 @@
 package org.retrade.main.service;
 
+import org.retrade.common.model.dto.request.QueryWrapper;
+import org.retrade.common.model.dto.response.PaginationWrapper;
 import org.retrade.main.model.dto.request.ApproveSellerRequest;
 import org.retrade.main.model.dto.request.SellerRegisterRequest;
 import org.retrade.main.model.dto.request.SellerUpdateRequest;
 import org.retrade.main.model.dto.response.SellerBaseResponse;
 import org.retrade.main.model.dto.response.SellerRegisterResponse;
+import org.retrade.main.model.dto.response.TopSellersResponse;
 import org.retrade.main.model.message.CCCDVerificationResultMessage;
 import org.retrade.main.model.other.SellerWrapperBase;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface SellerService {
     SellerRegisterResponse createSeller(SellerRegisterRequest request);
 
     void approveSeller(ApproveSellerRequest request);
+
+    PaginationWrapper<List<SellerBaseResponse>> getSellers (QueryWrapper wrapper);
 
     SellerRegisterResponse cccdSubmit(String front, String back);
 
@@ -30,4 +36,5 @@ public interface SellerService {
     SellerBaseResponse banSeller(String sellerId);
 
     SellerBaseResponse unbanSeller(String sellerId);
+
 }

@@ -2,7 +2,6 @@ package org.retrade.main.controller;
 
 import lombok.RequiredArgsConstructor;
 import org.retrade.common.model.dto.response.ResponseObject;
-import org.retrade.main.model.dto.response.OrderResponse;
 import org.retrade.main.model.dto.response.OrderStatusResponse;
 import org.retrade.main.service.OrderStatusService;
 import org.springframework.http.ResponseEntity;
@@ -33,7 +32,7 @@ public class OrderStatusController {
     }
 
     @PreAuthorize("hasRole('ROLE_CUSTOMER') or hasRole('ROLE_ADMIN')")
-    @GetMapping()
+    @GetMapping("all")
     public ResponseEntity<ResponseObject<List<OrderStatusResponse>>> getAllStatusTrueForSellerChange() {
         List<OrderStatusResponse> result = orderStatusService.getAllStatusTrueForSellerChange();
         return ResponseEntity.ok(new ResponseObject.Builder<List<OrderStatusResponse>>()

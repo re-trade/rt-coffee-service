@@ -84,7 +84,7 @@ public class ProductController {
                 .build());
     }
 
-    @GetMapping("product-price-history/{id}")
+    @GetMapping("{id}/price-histories")
     public ResponseEntity<ResponseObject<List<ProductPriceHistoryResponse>>> getProductPriceHistoryById(@PathVariable String id) {
         var result = productPriceHistoryService.getProductPriceHistoryList(id);
         return ResponseEntity.ok(new ResponseObject.Builder<List<ProductPriceHistoryResponse>>()
