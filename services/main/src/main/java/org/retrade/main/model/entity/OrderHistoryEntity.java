@@ -21,8 +21,8 @@ public class OrderHistoryEntity extends BaseSQLEntity {
     private Boolean status;
     @Column(name = "notes", columnDefinition = "TEXT")
     private String notes;
-//    @Column(name = "created_by")
-//    private String createdBy;
+    @Column(name = "created_by")
+    private String createdBy;
     @ManyToOne(targetEntity = OrderStatusEntity.class, fetch = FetchType.EAGER, optional = false)
     @JoinColumn(name = "old_order_status", nullable = false)
     private OrderStatusEntity oldOrderStatus;
