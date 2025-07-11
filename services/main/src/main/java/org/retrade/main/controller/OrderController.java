@@ -282,4 +282,28 @@ public class OrderController {
                 .build());
     }
 
+    @PutMapping("cancel/{orderId}")
+    @Operation(summary = "Cancel order", description = "Cancels an order")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Order cancelled successfully"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized"),
+            @ApiResponse(responseCode = "404", description = "Order not found"),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    @PreAuthorize("hasRole('ROLE_CUSTOMER') or hasRole('ROLE_SELLER')")
+    public ResponseEntity<ResponseObject<Void>> cancelOrderCustomer(
+            @Parameter(description = "Order ID", required = true)
+            @PathVariable String orderId,
+            @Parameter(description = "Cancellation reason")
+            @RequestParam(required = false) String reason) {
+
+        orderService.cancelOrderCustomer(orderId, reason);
+
+        return ResponseEntity.ok(new ResponseObject.Builder<Void>()
+                .success(true)
+                .code("SUCCESS")
+                .messages("Order cancelled successfully")
+                .build());
+    }
+
 }
