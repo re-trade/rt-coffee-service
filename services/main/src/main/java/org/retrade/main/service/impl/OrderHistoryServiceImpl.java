@@ -1,5 +1,6 @@
 package org.retrade.main.service.impl;
 
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.retrade.common.model.exception.ValidationException;
 import org.retrade.main.model.dto.request.CreateOrderHistoryRequest;
@@ -26,6 +27,7 @@ import java.util.stream.Collectors;
 public class OrderHistoryServiceImpl implements OrderHistoryService {
     private final OrderHistoryRepository  orderHistoryRepository;
     private final OrderComboRepository orderComboRepository;
+    private final OrderStatusRepository orderStatusRepository;
     private final AuthUtils authUtils;
     @Override
     public List<OrderHistoryResponse> getAllNotesByOrderComboId(String id) {
@@ -43,9 +45,36 @@ public class OrderHistoryServiceImpl implements OrderHistoryService {
         return mapEntityToResponse(orderHistoryEntity);
     }
 
+    @Transactional
     @Override
     public OrderHistoryResponse createOrderHistory(CreateOrderHistoryRequest request) {
-        return null;
+        var seller = getSellerEntity();
+        if (seller == null) {
+            throw new ValidationException("Seller not found");
+        }
+        Optional<OrderComboEntity> orderCombo = orderComboRepository.findByIdAndSeller(request.getOrderComboId(), seller);
+        if (orderCombo.isEmpty()) {
+            throw new ValidationException("This order does not belong to you");
+        }
+        OrderStatusEntity orderNewStatus = orderStatusRepository.findById(request.getNewStatusId()).orElseThrow(
+                ()-> new ValidationException("Order status not found")
+        );
+
+        OrderHistoryEntity orderHistoryEntity = new OrderHistoryEntity();
+        orderHistoryEntity.setOrderCombo(orderCombo.get());
+        orderHistoryEntity.setSeller(seller);
+        orderHistoryEntity.setNotes(request.getNotes());
+        orderHistoryEntity.setNewOrderStatus(orderNewStatus);
+        orderHistoryEntity.setOldOrderStatus(orderCombo.get().getOrderStatus());
+        orderHistoryEntity.setStatus(true);
+        try {
+            orderHistoryRepository.save(orderHistoryEntity);
+            return mapEntityToResponse(orderHistoryEntity);
+        }catch (Exception e) {
+            throw new ValidationException(e.getMessage());
+        }
+
+
     }
 
     @Override
