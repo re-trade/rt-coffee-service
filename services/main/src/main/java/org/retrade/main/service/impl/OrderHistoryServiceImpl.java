@@ -33,6 +33,7 @@ public class OrderHistoryServiceImpl implements OrderHistoryService {
     private final OrderHistoryRepository  orderHistoryRepository;
     private final OrderComboRepository orderComboRepository;
     private final OrderStatusRepository orderStatusRepository;
+    private final OrderStatusValidator orderStatusValidator;
     private final AuthUtils authUtils;
     @Override
     public List<OrderHistoryResponse> getAllNotesByOrderComboId(String id) {
@@ -75,8 +76,8 @@ public class OrderHistoryServiceImpl implements OrderHistoryService {
         String newStatusCode = orderNewStatus.getCode();
 
         // Validate chuyển đổi status có hợp lệ không
-        if (!OrderStatusValidator.isValidStatusTransition(currentStatusCode, newStatusCode)) {
-            Set<String> validNextStatuses = OrderStatusValidator.getValidNextStatuses(currentStatusCode);
+        if (!orderStatusValidator.isValidStatusTransition(currentStatusCode, newStatusCode)) {
+            Set<String> validNextStatuses = orderStatusValidator.getValidNextStatuses(currentStatusCode);
             String validStatusesStr = String.join(", ", validNextStatuses);
 
             throw new ValidationException(
