@@ -7,9 +7,12 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.retrade.common.model.dto.request.QueryWrapper;
 import org.retrade.common.model.dto.response.ResponseObject;
+import org.retrade.main.model.dto.request.CustomerBankInfoRequest;
 import org.retrade.main.model.dto.request.UpdateCustomerProfileRequest;
 import org.retrade.main.model.dto.request.UpdatePhoneRequest;
+import org.retrade.main.model.dto.response.CustomerBankInfoResponse;
 import org.retrade.main.model.dto.response.CustomerResponse;
+import org.retrade.main.service.CustomerBankInfoService;
 import org.retrade.main.service.CustomerService;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
@@ -25,6 +28,7 @@ import java.util.List;
 @Tag(name = "Customer Management", description = "Customer profile and management endpoints")
 public class CustomerController {
     private final CustomerService customerService;
+    private final CustomerBankInfoService customerBankInfoService;
 
     @Operation(
             summary = "Get current customer profile",
@@ -95,6 +99,60 @@ public class CustomerController {
                 .code("SUCCESS")
                 .unwrapPaginationWrapper(result)
                 .messages("Customers retrieved successfully")
+                .build());
+    }
+
+    @GetMapping("me/bank-info/{id}")
+    @PreAuthorize("hasRole('ROLE_CUSTOMER')")
+    public ResponseEntity<ResponseObject<CustomerBankInfoResponse>> getCustomerBankById(@PathVariable String id) {
+        var result = customerBankInfoService.getCustomerBankInfoById(id);
+        return ResponseEntity.ok(
+                new ResponseObject.Builder<CustomerBankInfoResponse>()
+                        .code("SUCCESS")
+                        .success(true)
+                        .content(result)
+                        .messages("Customer bank info retrieved successfully")
+                        .build()
+        );
+    }
+
+    @GetMapping("me/bank-info")
+    @PreAuthorize("hasRole('ROLE_CUSTOMER')")
+    public ResponseEntity<ResponseObject<List<CustomerBankInfoResponse>>> getCustomerById(@PageableDefault Pageable pageable, @RequestParam(required = false) String q) {
+        var result = customerBankInfoService.getCustomerBankInfos(QueryWrapper.builder()
+                        .search(q)
+                        .wrapSort(pageable)
+                .build());
+        return ResponseEntity.ok(
+                new ResponseObject.Builder<List<CustomerBankInfoResponse>>()
+                        .code("SUCCESS")
+                        .success(true)
+                        .unwrapPaginationWrapper(result)
+                        .messages("Customer bank info retrieved successfully")
+                        .build()
+        );
+    }
+
+    @PostMapping("me/bank-info")
+    @PreAuthorize("hasRole('ROLE_CUSTOMER')")
+    public ResponseEntity<ResponseObject<CustomerBankInfoResponse>> createCustomerBankInfo(@Valid @RequestBody CustomerBankInfoRequest request) {
+        var result = customerBankInfoService.createCustomerBankInfo(request);
+        return ResponseEntity.ok(new ResponseObject.Builder<CustomerBankInfoResponse>()
+                        .code("SUCCESS")
+                        .success(true)
+                        .content(result)
+                        .messages("Customer bank info created successfully")
+                .build());
+    }
+
+    @PutMapping("me/bank-info/{id}")
+    public ResponseEntity<ResponseObject<CustomerBankInfoResponse>> updateCustomerBankInfo(@PathVariable String id, @Valid @RequestBody CustomerBankInfoRequest request) {
+        var result = customerBankInfoService.updateCustomerBankInfo(request, id);
+        return ResponseEntity.ok(new ResponseObject.Builder<CustomerBankInfoResponse>()
+                .code("SUCCESS")
+                .success(true)
+                .content(result)
+                .messages("Customer bank info created successfully")
                 .build());
     }
 }
