@@ -10,7 +10,6 @@ import java.util.List;
 @Repository
 public interface OrderHistoryRepository extends BaseJpaRepository<OrderHistoryEntity, String> {
     List<OrderHistoryEntity> findByOrderCombo_Id(String orderComboId);
-    OrderHistoryEntity findByOrderCombo_IdAndCreatedBy(String orderComboId, String createdBy);
 
     OrderHistoryEntity findByIdAndSeller(String id, SellerEntity seller);
 }
