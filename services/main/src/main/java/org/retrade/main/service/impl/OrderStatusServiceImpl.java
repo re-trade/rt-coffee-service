@@ -26,7 +26,6 @@ import java.util.stream.Collectors;
 public class OrderStatusServiceImpl implements OrderStatusService {
     private final OrderStatusRepository orderStatusRepository;
     private final OrderStatusValidator orderStatusValidator;
-    private final OrderStatusService orderStatusService;
     private final OrderComboRepository orderComboRepository;
     private final AuthUtils authUtils;
 

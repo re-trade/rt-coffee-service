@@ -21,39 +21,38 @@ public class OrderStatusController {
     private final OrderStatusService orderStatusService;
 
     @PreAuthorize("hasRole('ROLE_CUSTOMER') or hasRole('ROLE_ADMIN')")
-    @GetMapping()
-    public ResponseEntity<ResponseObject<List<OrderStatusResponse>>> getAllStatusTrue() {
+    @GetMapping("")
+    public ResponseEntity<ResponseObject<List<OrderStatusResponse>>> getAllActiveStatuses() {
         List<OrderStatusResponse> result = orderStatusService.getAllStatusTrue();
         return ResponseEntity.ok(new ResponseObject.Builder<List<OrderStatusResponse>>()
                 .success(true)
                 .code("SUCCESS")
                 .content(result)
-                .messages("Orders status retrieved successfully")
+                .messages("Active order statuses retrieved successfully")
                 .build());
     }
 
     @PreAuthorize("hasRole('ROLE_CUSTOMER') or hasRole('ROLE_ADMIN')")
-    @GetMapping("all")
-    public ResponseEntity<ResponseObject<List<OrderStatusResponse>>> getAllStatusTrueForSellerChange() {
+    @GetMapping("seller-options")
+    public ResponseEntity<ResponseObject<List<OrderStatusResponse>>> getAvailableStatusesForSeller() {
         List<OrderStatusResponse> result = orderStatusService.getAllStatusTrueForSellerChange();
         return ResponseEntity.ok(new ResponseObject.Builder<List<OrderStatusResponse>>()
                 .success(true)
                 .code("SUCCESS")
                 .content(result)
-                .messages("Orders status retrieved successfully")
+                .messages("Available statuses for seller retrieved successfully")
                 .build());
     }
 
     @PreAuthorize("hasRole('ROLE_CUSTOMER') or hasRole('ROLE_ADMIN')")
     @GetMapping("next-step/{orderComboId}")
-    public ResponseEntity<ResponseObject<List<OrderStatusResponse>>> getAllStatusNextStep(@PathVariable String orderComboId) {
+    public ResponseEntity<ResponseObject<List<OrderStatusResponse>>> getNextAvailableStatuses(@PathVariable String orderComboId) {
         List<OrderStatusResponse> result = orderStatusService.getAllStatusNextStep(orderComboId);
         return ResponseEntity.ok(new ResponseObject.Builder<List<OrderStatusResponse>>()
                 .success(true)
                 .code("SUCCESS")
                 .content(result)
-                .messages("Orders status retrieved successfully")
+                .messages("Next order statuses retrieved successfully")
                 .build());
     }
-
 }
