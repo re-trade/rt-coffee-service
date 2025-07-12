@@ -155,4 +155,15 @@ public class CustomerController {
                 .messages("Customer bank info created successfully")
                 .build());
     }
+    
+    @DeleteMapping("me/bank-info/{id}")
+    public ResponseEntity<ResponseObject<CustomerBankInfoResponse>> deleteCustomerBankInfo(@PathVariable String id) {
+        var result = customerBankInfoService.removeCustomerBankInfo(id);
+        return ResponseEntity.ok(new ResponseObject.Builder<CustomerBankInfoResponse>()
+                .code("SUCCESS")
+                .success(true)
+                .content(result)
+                .messages("Customer bank info deleted successfully")
+                .build());
+    }
 }

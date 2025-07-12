@@ -63,15 +63,7 @@ public class CustomerBankInfoServiceImpl implements CustomerBankInfoService {
 
     @Override
     public CustomerBankInfoResponse updateCustomerBankInfo(CustomerBankInfoRequest request, String id) {
-        var account = authUtils.getUserAccountFromAuthentication();
-        var customer = account.getCustomer();
-        if (customer == null) {
-            throw new ValidationException("User is not a customer, please register customer or contact with Admin");
-        }
-        var entity = customerBankInfoRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Customer bank info not found for ID: " + id));
-        if (!customer.getId().equals(entity.getCustomer().getId())) {
-            throw new ValidationException("Customer bank info not found for ID: " + id);
-        }
+        var entity = getCustomerBankInfoEntityById(id);
         entity.setBankName(request.getBankName());
         entity.setAccountNumber(request.getAccountNumber());
         entity.setBankCode(request.getBankCode());
@@ -118,6 +110,30 @@ public class CustomerBankInfoServiceImpl implements CustomerBankInfoService {
         });
     }
 
+    @Override
+    public CustomerBankInfoResponse removeCustomerBankInfo(String id) {
+        var entity = getCustomerBankInfoEntityById(id);
+        try {
+            customerBankInfoRepository.delete(entity);
+            return wrapCustomerBankResponse(entity);
+        } catch (Exception ex) {
+            throw new ActionFailedException("Failed to remove customer bank info", ex);
+        }
+    }
+
+
+    private CustomerBankInfoEntity getCustomerBankInfoEntityById(String id) {
+        var account = authUtils.getUserAccountFromAuthentication();
+        var customer = account.getCustomer();
+        if (customer == null) {
+            throw new ValidationException("User is not a customer, please register customer or contact with Admin");
+        }
+        var entity = customerBankInfoRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Customer bank info not found for ID: " + id));
+        if (!customer.getId().equals(entity.getCustomer().getId())) {
+            throw new ValidationException("Customer bank info not found for ID: " + id);
+        }
+        return entity;
+    }
 
     private Predicate getPredicate(Map<String, QueryFieldWrapper> param, Root<CustomerBankInfoEntity> root, CriteriaBuilder criteriaBuilder, List<Predicate> predicates) {
         if (param != null && !param.isEmpty()) {

@@ -17,4 +17,6 @@ public interface CustomerBankInfoService {
     PaginationWrapper<List<CustomerBankInfoResponse>> getCustomerBankInfos(QueryWrapper queryWrapper);
 
     PaginationWrapper<List<CustomerBankInfoResponse>> getUserCustomerBankInfos(QueryWrapper queryWrapper);
+
+    CustomerBankInfoResponse removeCustomerBankInfo(String id);
 }
