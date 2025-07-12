@@ -9,4 +9,6 @@ public interface OrderStatusService {
     List<OrderStatusResponse> getAllStatusTrue();
 
     List<OrderStatusResponse> getAllStatusTrueForSellerChange();
+
+    List<OrderStatusResponse> getAllStatusNextStep(String orderComboId);
 }

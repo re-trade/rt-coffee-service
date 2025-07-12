@@ -7,6 +7,7 @@ import org.retrade.main.service.OrderStatusService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -42,4 +43,17 @@ public class OrderStatusController {
                 .messages("Orders status retrieved successfully")
                 .build());
     }
+
+    @PreAuthorize("hasRole('ROLE_CUSTOMER') or hasRole('ROLE_ADMIN')")
+    @GetMapping("next-step/{orderComboId}")
+    public ResponseEntity<ResponseObject<List<OrderStatusResponse>>> getAllStatusNextStep(@PathVariable String orderComboId) {
+        List<OrderStatusResponse> result = orderStatusService.getAllStatusNextStep(orderComboId);
+        return ResponseEntity.ok(new ResponseObject.Builder<List<OrderStatusResponse>>()
+                .success(true)
+                .code("SUCCESS")
+                .content(result)
+                .messages("Orders status retrieved successfully")
+                .build());
+    }
+
 }
