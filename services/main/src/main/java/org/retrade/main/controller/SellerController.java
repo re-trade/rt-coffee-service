@@ -125,9 +125,9 @@ public class SellerController {
 
     @PutMapping("{id}/ban-seller")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
-    public ResponseEntity<ResponseObject<Void>> banSeller(@PathVariable String id) {
+    public ResponseEntity<ResponseObject<SellerBaseResponse>> banSeller(@PathVariable String id) {
         sellerService.banSeller(id);
-        return ResponseEntity.ok(new ResponseObject.Builder<Void>()
+        return ResponseEntity.ok(new ResponseObject.Builder<SellerBaseResponse>()
                 .success(true)
                 .code("SUCCESS")
                 .messages("ban seller with" + id + "successfully")
@@ -136,12 +136,12 @@ public class SellerController {
 
     @PutMapping("{id}/unban-seller")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
-    public ResponseEntity<ResponseObject<Void>> unbanSeller(@PathVariable String id) {
-        sellerService.banSeller(id);
-        return ResponseEntity.ok(new ResponseObject.Builder<Void>()
+    public ResponseEntity<ResponseObject<SellerBaseResponse>> unbanSeller(@PathVariable String id) {
+        sellerService.unbanSeller(id);
+        return ResponseEntity.ok(new ResponseObject.Builder<SellerBaseResponse>()
                 .success(true)
                 .code("SUCCESS")
-                .messages("ban seller with" + id + "successfully")
+                .messages("ban seller with" + id + " successfully")
                 .build());
     }
 }
