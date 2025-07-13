@@ -236,6 +236,7 @@ public class SellerServiceImpl implements SellerService {
         SellerEntity seller = sellerRepository.findById(sellerId)
                 .orElseThrow(() -> new ValidationException("Seller not found with ID: " + sellerId));
         seller.setVerified(false);
+        sellerRepository.save(seller);
         return wrapSellerBaseResponse(seller);
     }
 
@@ -248,6 +249,7 @@ public class SellerServiceImpl implements SellerService {
         SellerEntity seller = sellerRepository.findById(sellerId)
                 .orElseThrow(() -> new ValidationException("Seller not found with ID: " + sellerId));
         seller.setVerified(true);
+        sellerRepository.save(seller);
         return wrapSellerBaseResponse(seller);
     }
 
