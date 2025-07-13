@@ -118,7 +118,7 @@ public class ProductReviewController {
                 .build());
     }
     @PatchMapping("{id}/create-reply")
-    public ResponseEntity<ResponseObject<ProductReviewResponse>> createReplyProductReview(@PathVariable String id, @RequestBody String content){
+    public ResponseEntity<ResponseObject<ProductReviewResponse>> createReplyProductReview(@PathVariable String id, @RequestParam String content){
         var result = productReviewService.createReplyProductReview(id,content);
         return ResponseEntity.ok(new ResponseObject.Builder<ProductReviewResponse>()
                 .success(true)
