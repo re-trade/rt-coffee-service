@@ -14,6 +14,8 @@ public class VietQrGenerateResponse {
     private String desc;
     private VietQrData data;
     @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class VietQrData {
         private String qrDataURL;
         private String qrURL;

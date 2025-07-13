@@ -34,7 +34,7 @@ public class WithdrawRequestEntity extends BaseSQLEntity {
     private String bankBin;
     @Column(name = "user_bank_name", length = 128, nullable = false)
     private String userBankName;
-    @Column(name = "qr_code_url")
+    @Column(name = "qr_code_url", columnDefinition = "TEXT")
     private String qrCodeUrl;
     @Column(name = "notes", columnDefinition = "TEXT")
     private String notes;

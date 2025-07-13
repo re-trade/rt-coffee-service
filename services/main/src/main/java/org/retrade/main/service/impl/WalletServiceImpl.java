@@ -44,7 +44,7 @@ public class WalletServiceImpl implements WalletService {
     @Override
     public void withdrawRequest(WithdrawRequest request) {
         var account = authUtils.getUserAccountFromAuthentication();
-        if (request.getAmount().compareTo(account.getBalance()) < 0) {
+        if (request.getAmount().compareTo(account.getBalance()) > 0) {
             throw new ValidationException("Insufficient balance");
         }
         var bankInfo = customerBankInfoRepository.findById(request.getBankProfileId()).orElseThrow(() -> new ValidationException("Bank profile not found"));
@@ -93,7 +93,6 @@ public class WalletServiceImpl implements WalletService {
         withdraw.setProcessedDate(new Timestamp(System.currentTimeMillis()));
         withdrawRepository.save(withdraw);
     }
-
 
     private void updateBalance(BigDecimal balance, AccountEntity account) {
         account.setBalance(balance);

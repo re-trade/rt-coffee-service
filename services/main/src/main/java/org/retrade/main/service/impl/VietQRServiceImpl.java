@@ -7,6 +7,7 @@ import org.retrade.main.model.dto.request.VietQrGenerateRequest;
 import org.retrade.main.model.dto.response.VietQrGenerateResponse;
 import org.retrade.main.service.VietQRService;
 import org.springframework.http.*;
+import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -18,14 +19,14 @@ public class VietQRServiceImpl implements VietQRService {
     @Override
     public String generateQr(VietQrGenerateRequest request) {
         RestTemplate restTemplate = new RestTemplate();
-        VietQrGenerateRequest payload = new VietQrGenerateRequest();
+        restTemplate.getMessageConverters().add(new MappingJackson2HttpMessageConverter());
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.set("x-api-key", config.getApiKey());
         headers.set("x-client-id", config.getClientId());
 
-        HttpEntity<VietQrGenerateRequest> entity = new HttpEntity<>(payload, headers);
+        HttpEntity<VietQrGenerateRequest> entity = new HttpEntity<>(request, headers);
         ResponseEntity<VietQrGenerateResponse> response = restTemplate.exchange(
                 config.getUrl(),
                 HttpMethod.POST,
@@ -34,7 +35,7 @@ public class VietQRServiceImpl implements VietQRService {
         );
         VietQrGenerateResponse body = response.getBody();
         if (body != null && "00".equals(body.getCode())) {
-            return body.getData().getQrURL();
+            return body.getData().getQrDataURL();
         } else {
             throw new ActionFailedException("Failed to generate QR: " + (body != null ? body.getDesc() : "Unknown error"));
         }
