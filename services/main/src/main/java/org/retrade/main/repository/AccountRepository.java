@@ -17,10 +17,4 @@ public interface AccountRepository extends BaseJpaRepository<AccountEntity, Stri
     Optional<AccountEntity> findByEmail(String email);
 
     boolean existsByUsername(String username);
-
-    @Query("SELECT a. FROM OrderHistoryEntity oh " +
-            "WHERE oh.status = true " +
-            "GROUP BY oh.seller " +
-            "ORDER BY COUNT(oh.id) DESC")
-    List<TopSellersResponse> findTopSellers(Pageable pageable);
 }
