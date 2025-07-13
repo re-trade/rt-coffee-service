@@ -1,7 +1,13 @@
 package org.retrade.main.service.impl;
 
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Root;
 import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
+import org.retrade.common.model.dto.request.QueryFieldWrapper;
+import org.retrade.common.model.dto.request.QueryWrapper;
+import org.retrade.common.model.dto.response.PaginationWrapper;
 import org.retrade.common.model.exception.ActionFailedException;
 import org.retrade.common.model.exception.ValidationException;
 import org.retrade.main.model.constant.IdentityVerifiedStatusEnum;
@@ -10,7 +16,6 @@ import org.retrade.main.model.dto.request.SellerRegisterRequest;
 import org.retrade.main.model.dto.request.SellerUpdateRequest;
 import org.retrade.main.model.dto.response.SellerBaseResponse;
 import org.retrade.main.model.dto.response.SellerRegisterResponse;
-import org.retrade.main.model.dto.response.TopSellersResponse;
 import org.retrade.main.model.entity.AccountRoleEntity;
 import org.retrade.main.model.entity.RoleEntity;
 import org.retrade.main.model.entity.SellerEntity;
@@ -18,20 +23,16 @@ import org.retrade.main.model.message.CCCDVerificationMessage;
 import org.retrade.main.model.message.CCCDVerificationResultMessage;
 import org.retrade.main.model.other.SellerWrapperBase;
 import org.retrade.main.repository.AccountRoleRepository;
-import org.retrade.main.repository.PaymentHistoryRepository;
 import org.retrade.main.repository.RoleRepository;
 import org.retrade.main.repository.SellerRepository;
 import org.retrade.main.service.MessageProducerService;
 import org.retrade.main.service.SellerService;
 import org.retrade.main.util.AuthUtils;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.awt.print.Pageable;
 import java.math.BigDecimal;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -41,8 +42,6 @@ public class SellerServiceImpl implements SellerService {
     private final AuthUtils authUtils;
     private final RoleRepository roleRepository;
     private final AccountRoleRepository accountRoleRepository;
-    private final PaymentHistoryRepository orderHistoryRepository;
-    private final PaymentHistoryRepository paymentHistoryRepository;
 
     @Override
     public SellerRegisterResponse createSeller(SellerRegisterRequest request) {
@@ -110,6 +109,20 @@ public class SellerServiceImpl implements SellerService {
     }
 
     @Override
+    public PaginationWrapper<List<SellerBaseResponse>> getSellers(QueryWrapper wrapper) {
+        return sellerRepository.query(wrapper, (param) -> (root, query, criteriaBuilder) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            return getSellerPredicate(param, root, criteriaBuilder, predicates);
+        }, (items) -> {
+            var list = items.map(this::wrapSellerBaseResponse).stream().toList();
+            return new PaginationWrapper.Builder<List<SellerBaseResponse>>()
+                    .setPaginationInfo(items)
+                    .setData(list)
+                    .build();
+        });
+    }
+
+    @Override
     public SellerRegisterResponse cccdSubmit(String front, String back) {
         var sellerEntity = getSellerEntity(front, back);
         if (sellerEntity.getIdentityVerified() == IdentityVerifiedStatusEnum.VERIFIED) {
@@ -149,10 +162,10 @@ public class SellerServiceImpl implements SellerService {
     @Override
     public SellerBaseResponse updateSellerProfile(SellerUpdateRequest request) {
         var accountEntity = authUtils.getUserAccountFromAuthentication();
-        if (accountEntity.getSeller() == null) {
+        var sellerEntity = accountEntity.getSeller();
+        if (sellerEntity == null) {
             throw new ValidationException("Account is not a seller");
         }
-        var sellerEntity = accountEntity.getSeller();
         sellerEntity.setAvatarUrl(request.getAvatarUrl());
         sellerEntity.setBackground(request.getBackground());
         sellerEntity.setShopName(request.getShopName());
@@ -303,6 +316,14 @@ public class SellerServiceImpl implements SellerService {
                 .createdAt(sellerEntity.getCreatedDate().toLocalDateTime())
                 .updatedAt(sellerEntity.getUpdatedDate().toLocalDateTime())
                 .build();
+    }
+
+    private Predicate getSellerPredicate(Map<String, QueryFieldWrapper> param, Root<SellerEntity> root, CriteriaBuilder criteriaBuilder, List<Predicate> predicates) {
+        if (param != null && !param.isEmpty()) {
+            Predicate[] defaultPredicates = sellerRepository.createDefaultPredicate(criteriaBuilder, root, param);
+            predicates.addAll(Arrays.asList(defaultPredicates));
+        }
+        return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
     }
 
 }

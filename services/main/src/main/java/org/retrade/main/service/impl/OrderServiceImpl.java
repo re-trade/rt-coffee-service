@@ -1,37 +1,38 @@
- package org.retrade.main.service.impl;
+package org.retrade.main.service.impl;
 
- import jakarta.persistence.criteria.*;
- import lombok.RequiredArgsConstructor;
- import lombok.extern.slf4j.Slf4j;
- import org.retrade.common.model.dto.request.QueryFieldWrapper;
- import org.retrade.common.model.dto.request.QueryWrapper;
- import org.retrade.common.model.dto.response.PaginationWrapper;
- import org.retrade.common.model.exception.ActionFailedException;
- import org.retrade.common.model.exception.ValidationException;
- import org.retrade.main.model.dto.request.CreateOrderRequest;
- import org.retrade.main.model.dto.request.OrderItemRequest;
- import org.retrade.main.model.dto.response.*;
- import org.retrade.main.model.entity.*;
- import org.retrade.main.repository.*;
- import org.retrade.main.service.CartService;
- import org.retrade.main.service.OrderService;
- import org.retrade.main.util.AuthUtils;
- import org.springframework.data.domain.Page;
- import org.springframework.stereotype.Service;
- import org.springframework.transaction.annotation.Transactional;
 import jakarta.persistence.criteria.*;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.retrade.common.model.dto.request.QueryFieldWrapper;
+import org.retrade.common.model.dto.request.QueryWrapper;
+import org.retrade.common.model.dto.response.PaginationWrapper;
+import org.retrade.common.model.exception.ActionFailedException;
+import org.retrade.common.model.exception.ValidationException;
+import org.retrade.main.model.dto.request.CreateOrderRequest;
+import org.retrade.main.model.dto.request.OrderItemRequest;
+import org.retrade.main.model.dto.response.*;
+import org.retrade.main.model.entity.*;
+import org.retrade.main.repository.*;
+import org.retrade.main.service.CartService;
+import org.retrade.main.service.OrderService;
+import org.retrade.main.util.AuthUtils;
+import org.springframework.data.domain.Page;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
- import java.math.BigDecimal;
- import java.math.RoundingMode;
- import java.util.*;
- import java.util.stream.Collectors;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
+import java.util.*;
+import java.util.stream.Collectors;
 
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class OrderServiceImpl implements OrderService {
-    
+
     private final OrderRepository orderRepository;
     private final OrderItemRepository orderItemRepository;
     private final OrderComboRepository orderComboRepository;
@@ -42,9 +43,9 @@ public class OrderServiceImpl implements OrderService {
     private final CustomerContactRepository customerContactRepository;
     private final CartService cartService;
     private final AuthUtils authUtils;
-    
+
     private static final BigDecimal TAX_RATE = new BigDecimal("0.10");
-    
+
     @Override
     @Transactional(rollbackFor = {ActionFailedException.class, Exception.class})
     public OrderResponse createOrder(CreateOrderRequest request) {
@@ -53,9 +54,9 @@ public class OrderServiceImpl implements OrderService {
         validateCreateOrderRequest(request);
         var orderDestinationEntity = wrapOrderDestination(contact);
         List<ProductEntity> products = validateAndGetProducts(request.getItems());
-        
+
         Map<SellerEntity, List<ProductEntity>> productsBySeller = groupProductsBySeller(products);
-        
+
         BigDecimal subtotal = calculateSubtotal(products);
         BigDecimal taxTotal = calculateTax(subtotal);
         BigDecimal discountTotal = BigDecimal.ZERO;
@@ -73,7 +74,7 @@ public class OrderServiceImpl implements OrderService {
             throw new ActionFailedException("Failed to save order destination", e);
         }
         List<OrderComboEntity> orderCombos = createOrderCombos(productsBySeller, orderDestination);
-        
+
         createOrderItems(savedOrder, products, orderCombos);
 
         cartService.clearCart();
@@ -176,6 +177,62 @@ public class OrderServiceImpl implements OrderService {
             orderComboRepository.save(combo);
         }
     }
+
+    @Override
+    @Transactional(rollbackFor = {ActionFailedException.class, Exception.class})
+    public void cancelOrderCustomer(String orderId, String reason) {
+        var account = authUtils.getUserAccountFromAuthentication();
+        var customerEntity = account.getCustomer();
+
+        if (customerEntity == null) {
+            throw new ValidationException("Account is not a customer");
+        }
+        Optional<OrderEntity> order = orderRepository.findByIdAndCustomer(orderId, customerEntity);
+        if (order.isEmpty()) {
+            throw new ValidationException("This order does not belong to you");
+        }
+        OrderStatusEntity cancelledStatus = orderStatusRepository.findByCode("CANCELLED")
+                .orElseThrow(() -> new ValidationException("Cancelled order status not found"));
+
+        List<OrderComboEntity> orderCombos = orderComboRepository.findByOrderDestination(order.get().getOrderDestination());
+        try {
+            for (OrderComboEntity combo : orderCombos) {
+                combo.setCancelledReason(reason);
+                combo.setReasonCreatedDate(Timestamp.valueOf(LocalDateTime.now()));
+                combo.setOrderStatus(cancelledStatus);
+                orderComboRepository.save(combo);
+            }
+        } catch (Exception e) {
+            throw new ValidationException(e.getMessage());
+        }
+
+    }
+
+    @Transactional(rollbackFor = {ActionFailedException.class, Exception.class})
+    public void cancelOrderSeller(String orderComboId, String reason) {
+        var account = authUtils.getUserAccountFromAuthentication();
+        var seller = account.getSeller();
+        if (seller == null) {
+            throw new ValidationException("the account not role seller");
+        }
+        Optional<OrderComboEntity> optionalOrderCombo = orderComboRepository.findByIdAndSeller(orderComboId, seller);
+        if (optionalOrderCombo.isEmpty()) {
+            throw new ValidationException(" There is not your order combo");
+        }
+        OrderStatusEntity cancelledStatus = orderStatusRepository.findByCode("CANCELLED")
+                .orElseThrow(() -> new ValidationException("Cancelled order status not found"));
+
+        optionalOrderCombo.get().setCancelledReason(reason);
+        optionalOrderCombo.get().setOrderStatus(cancelledStatus);
+        optionalOrderCombo.get().setReasonCreatedDate(Timestamp.valueOf(LocalDateTime.now()));
+        try {
+            orderComboRepository.save(optionalOrderCombo.get());
+        } catch (Exception e) {
+            throw new ValidationException(e.getMessage());
+        }
+    }
+
+
     @Override
     @Transactional(readOnly = true)
     public PaginationWrapper<List<CustomerOrderComboResponse>> getSellerOrderCombos(QueryWrapper queryFieldWrapper) {
@@ -240,9 +297,6 @@ public class OrderServiceImpl implements OrderService {
                 .collect(Collectors.toList());
     }
 
-
-
-
     @Override
     @Transactional(readOnly = true)
     public PaginationWrapper<List<TopSellersResponse>> getTopSellers(QueryWrapper queryWrapper) {
@@ -272,33 +326,6 @@ public class OrderServiceImpl implements OrderService {
                     .setData(list)
                     .build();
         });
-    }
-
-    private Map<String, TopSellersResponse.TopSellersResponseBuilder> buildSellerMap(Page<OrderEntity> items) {
-        Map<String, TopSellersResponse.TopSellersResponseBuilder> sellerMap = new HashMap<>();
-
-        items.getContent().forEach(order -> {
-            if (order.getOrderItems() != null && !order.getOrderItems().isEmpty()) {
-                OrderComboEntity orderCombo = order.getOrderItems().iterator().next().getOrderCombo();
-                if (orderCombo != null && orderCombo.getSeller() != null) {
-                    String sellerId = orderCombo.getSeller().getId();
-                    String sellerName = orderCombo.getSeller().getShopName();
-
-                    sellerMap.computeIfAbsent(sellerId, k ->
-                            TopSellersResponse.builder()
-                                    .id(sellerId)
-                                    .name(sellerName)
-                                    .orderCount(0L)
-                    );
-
-                    TopSellersResponse.TopSellersResponseBuilder builder = sellerMap.get(sellerId);
-                    TopSellersResponse current = builder.build();
-                    builder.orderCount(current.getOrderCount() + 1);
-                }
-            }
-        });
-
-        return sellerMap;
     }
 
     @Override
@@ -346,33 +373,6 @@ public class OrderServiceImpl implements OrderService {
                     .setData(list)
                     .build();
         });
-    }
-
-    private List<TopCustomerResponse> buildCustomerMap(Page<OrderEntity> items) {
-        Map<String, TopCustomerResponse.TopCustomerResponseBuilder> customerMap = new HashMap<>();
-
-        items.getContent().forEach(order -> {
-            if (order.getCustomer() != null && order.getOrderItems() != null && !order.getOrderItems().isEmpty()) {
-                String customerId = order.getCustomer().getId();
-                String customerName = order.getCustomer().getLastName();
-
-                customerMap.computeIfAbsent(customerId, k ->
-                        TopCustomerResponse.builder()
-                                .customerId(customerId)
-                                .customerName(customerName)
-                                .orderCount(0L)
-                );
-
-                TopCustomerResponse.TopCustomerResponseBuilder builder = customerMap.get(customerId);
-                TopCustomerResponse current = builder.build();
-                builder.orderCount(current.getOrderCount() + 1);
-            }
-        });
-
-        return customerMap.values().stream()
-                .map(TopCustomerResponse.TopCustomerResponseBuilder::build)
-                .sorted((a, b) -> Long.compare(b.getOrderCount(), a.getOrderCount()))
-                .collect(Collectors.toList());
     }
 
     @Override
@@ -685,12 +685,12 @@ public class OrderServiceImpl implements OrderService {
     private SellerOrderComboResponse wrapSellerOrderComboResponse(OrderComboEntity combo) {
         var orderItems = combo.getOrderItems();
         var paymentStatus = "";
-        if(combo.getOrderStatus().getCode().equals("PAYMENT_FAILED")){
+        if (combo.getOrderStatus().getCode().equals("PAYMENT_FAILED")) {
             paymentStatus = "PAYMENT_FAILED";
-        }else if(combo.getOrderStatus().getCode().equals("PAYMENT_CANCELLED")){
+        } else if (combo.getOrderStatus().getCode().equals("PAYMENT_CANCELLED")) {
             paymentStatus = "PAYMENT_CANCELLED";
-        }else {
-            paymentStatus = "PAYMENT_SUCCESS";
+        } else {
+            paymentStatus = "PAYMENT_CONFIRMATION";
         }
         var seller = combo.getSeller();
         var orderStatus = OrderStatusResponse.builder()
@@ -768,4 +768,57 @@ public class OrderServiceImpl implements OrderService {
         return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
     }
 
+    private Map<String, TopSellersResponse.TopSellersResponseBuilder> buildSellerMap(Page<OrderEntity> items) {
+        Map<String, TopSellersResponse.TopSellersResponseBuilder> sellerMap = new HashMap<>();
+
+        items.getContent().forEach(order -> {
+            if (order.getOrderItems() != null && !order.getOrderItems().isEmpty()) {
+                OrderComboEntity orderCombo = order.getOrderItems().iterator().next().getOrderCombo();
+                if (orderCombo != null && orderCombo.getSeller() != null) {
+                    String sellerId = orderCombo.getSeller().getId();
+                    String sellerName = orderCombo.getSeller().getShopName();
+
+                    sellerMap.computeIfAbsent(sellerId, k ->
+                            TopSellersResponse.builder()
+                                    .id(sellerId)
+                                    .name(sellerName)
+                                    .orderCount(0L)
+                    );
+
+                    TopSellersResponse.TopSellersResponseBuilder builder = sellerMap.get(sellerId);
+                    TopSellersResponse current = builder.build();
+                    builder.orderCount(current.getOrderCount() + 1);
+                }
+            }
+        });
+
+        return sellerMap;
+    }
+
+    private List<TopCustomerResponse> buildCustomerMap(Page<OrderEntity> items) {
+        Map<String, TopCustomerResponse.TopCustomerResponseBuilder> customerMap = new HashMap<>();
+
+        items.getContent().forEach(order -> {
+            if (order.getCustomer() != null && order.getOrderItems() != null && !order.getOrderItems().isEmpty()) {
+                String customerId = order.getCustomer().getId();
+                String customerName = order.getCustomer().getLastName();
+
+                customerMap.computeIfAbsent(customerId, k ->
+                        TopCustomerResponse.builder()
+                                .customerId(customerId)
+                                .customerName(customerName)
+                                .orderCount(0L)
+                );
+
+                TopCustomerResponse.TopCustomerResponseBuilder builder = customerMap.get(customerId);
+                TopCustomerResponse current = builder.build();
+                builder.orderCount(current.getOrderCount() + 1);
+            }
+        });
+
+        return customerMap.values().stream()
+                .map(TopCustomerResponse.TopCustomerResponseBuilder::build)
+                .sorted((a, b) -> Long.compare(b.getOrderCount(), a.getOrderCount()))
+                .collect(Collectors.toList());
+    }
 }

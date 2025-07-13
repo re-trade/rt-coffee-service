@@ -6,6 +6,7 @@ import lombok.*;
 import org.retrade.common.model.entity.BaseSQLEntity;
 
 import java.math.BigDecimal;
+import java.sql.Timestamp;
 import java.util.Set;
 
 @Getter
@@ -28,4 +29,9 @@ public class OrderComboEntity extends BaseSQLEntity {
     private OrderStatusEntity orderStatus;
     @OneToMany(fetch = FetchType.EAGER, mappedBy = "orderCombo")
     private Set<OrderItemEntity> orderItems;
+    @Column(name="cancelled_reason")
+    private String cancelledReason;
+    @Column(name = "date_create_reason")
+    private Timestamp reasonCreatedDate;
+
 }
