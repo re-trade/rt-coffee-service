@@ -17,8 +17,8 @@ public class CustomerBankInfoEntity extends BaseSQLEntity {
     private CustomerEntity customer;
     @Column(name = "bank_name", length = 128, nullable = false)
     private String bankName;
-    @Column(name = "bank_code", length = 20, nullable = false)
-    private String bankCode;
+    @Column(name = "bank_bin", length = 20, nullable = false)
+    private String bankBin;
     @Column(name = "account_number", length = 20, nullable = false)
     private String accountNumber;
     @Column(name = "user_bank_name", length = 128)

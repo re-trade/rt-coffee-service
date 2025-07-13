@@ -5,14 +5,13 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class CustomerBankInfoResponse {
-    private String id;
-    private String bankBin;
-    private String bankName;
-    private String accountNumber;
-    private String userBankName;
+public class AccountWalletResponse {
+    private String accountId;
+    private BigDecimal balance;
 }

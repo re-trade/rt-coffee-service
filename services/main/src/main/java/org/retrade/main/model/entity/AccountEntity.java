@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.retrade.common.model.entity.BaseSQLEntity;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Set;
 
@@ -34,6 +35,8 @@ public class AccountEntity extends BaseSQLEntity {
     private boolean changedUsername;
     @Column(name = "last_login")
     private LocalDateTime lastLogin;
+    @Column(name = "balance", nullable = false, columnDefinition = "DECIMAL(19,4) DEFAULT 0.00")
+    private BigDecimal balance;
     @OneToOne(cascade = {CascadeType.PERSIST, CascadeType.MERGE}, fetch = FetchType.EAGER, mappedBy = "account")
     private CustomerEntity customer;
     @OneToOne(cascade = {CascadeType.PERSIST, CascadeType.MERGE}, fetch = FetchType.EAGER, mappedBy = "account")

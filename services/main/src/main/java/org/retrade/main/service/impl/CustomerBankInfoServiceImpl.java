@@ -49,7 +49,7 @@ public class CustomerBankInfoServiceImpl implements CustomerBankInfoService {
         var entity = CustomerBankInfoEntity.builder()
                 .bankName(request.getBankName())
                 .accountNumber(request.getAccountNumber())
-                .bankCode(request.getBankCode())
+                .bankBin(request.getBankBin())
                 .customer(customer)
                 .userBankName(request.getUserBankName())
                 .build();
@@ -66,7 +66,7 @@ public class CustomerBankInfoServiceImpl implements CustomerBankInfoService {
         var entity = getCustomerBankInfoEntityById(id);
         entity.setBankName(request.getBankName());
         entity.setAccountNumber(request.getAccountNumber());
-        entity.setBankCode(request.getBankCode());
+        entity.setBankBin(request.getBankBin());
         entity.setUserBankName(request.getUserBankName());
         try {
             var result = customerBankInfoRepository.save(entity);
@@ -148,7 +148,7 @@ public class CustomerBankInfoServiceImpl implements CustomerBankInfoService {
                 .id(customerBankInfoEntity.getId())
                 .bankName(customerBankInfoEntity.getBankName())
                 .accountNumber(customerBankInfoEntity.getAccountNumber())
-                .bankCode(customerBankInfoEntity.getBankCode())
+                .bankBin(customerBankInfoEntity.getBankBin())
                 .userBankName(customerBankInfoEntity.getUserBankName())
                 .build();
     }

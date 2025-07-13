@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class CustomerBankInfoRequest {
     private String accountNumber;
-    private String bankCode;
+    private String bankBin;
     private String bankName;
     private String userBankName;
 }
