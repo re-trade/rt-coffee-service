@@ -9,6 +9,7 @@ import org.retrade.common.model.dto.request.QueryWrapper;
 import org.retrade.common.model.dto.response.ResponseObject;
 import org.retrade.main.model.dto.request.UpdateCustomerProfileRequest;
 import org.retrade.main.model.dto.request.UpdatePhoneRequest;
+import org.retrade.main.model.dto.response.CustomerBaseResponse;
 import org.retrade.main.model.dto.response.CustomerResponse;
 import org.retrade.main.service.CustomerService;
 import org.springframework.data.domain.Pageable;
@@ -91,6 +92,24 @@ public class CustomerController {
                 .build();
         var result = customerService.getAllCustomers(queryWrapper);
         return ResponseEntity.ok(new ResponseObject.Builder<List<CustomerResponse>>()
+                .success(true)
+                .code("SUCCESS")
+                .unwrapPaginationWrapper(result)
+                .messages("Customers retrieved successfully")
+                .build());
+    }
+
+    @GetMapping("customers-with-role")
+//    @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_SELLER')")
+    public ResponseEntity<ResponseObject<List<CustomerBaseResponse>>> getAllCustomersWithRole(
+            @RequestParam(required = false, name = "q") String search,
+            @PageableDefault(size = 10) Pageable pageable) {
+        var queryWrapper = new QueryWrapper.QueryWrapperBuilder()
+                .search(search)
+                .wrapSort(pageable)
+                .build();
+        var result = customerService.getAllCustomersWithStatus(queryWrapper);
+        return ResponseEntity.ok(new ResponseObject.Builder<List<CustomerBaseResponse>>()
                 .success(true)
                 .code("SUCCESS")
                 .unwrapPaginationWrapper(result)
