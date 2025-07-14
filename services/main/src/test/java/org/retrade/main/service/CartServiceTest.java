@@ -88,11 +88,15 @@ public class CartServiceTest {
         product.setId(PRODUCT_ID);
 
     }
-
+    private void mockAuth() {
+        AccountEntity account = new AccountEntity();
+        account.setId(USER_ID);
+        when(authUtils.getUserAccountFromAuthentication()).thenReturn(account);
+    }
 
     @Test
     void testAddToCart_Success() {
-        // Arrange
+
         CartRequest request = new CartRequest(PRODUCT_ID, 1);
         CartEntity emptyCart = CartEntity.builder()
                 .customerId(USER_ID)
@@ -111,10 +115,8 @@ public class CartServiceTest {
         when(sellerRepository.findAllById(any())).thenReturn(List.of(seller));
         when(productRepository.findAllById(any())).thenReturn(List.of(product));
 
-        // Act
         CartResponse response = cartService.addToCart(request);
 
-        // Assert
         assertEquals(USER_ID, response.getCustomerId());
         assertEquals(1, response.getCartGroupResponses().size());
         assertEquals(PRODUCT_ID,
@@ -163,7 +165,7 @@ public class CartServiceTest {
 
     @Test
     void testRemoveFromCart_Success() {
-        // Arrange
+
         CartItemEntity item = CartItemEntity.builder()
                 .productId(PRODUCT_ID)
                 .quantity(2)
@@ -191,12 +193,67 @@ public class CartServiceTest {
         //when(sellerRepository.findAllById(any())).thenReturn(List.of(seller));
         //when(productRepository.findAllById(any())).thenReturn(List.of(product));
 
-        // Act
+
         CartResponse response = cartService.removeFromCart(PRODUCT_ID);
 
-        // Assert
         assertEquals(USER_ID, response.getCustomerId());
         assertTrue(response.getCartGroupResponses().isEmpty());
     }
+
+    @Test
+    void testRemoveFromCart_ItemNotFound() {
+        mockAuth();
+        CartEntity cart = CartEntity.builder()
+                .customerId(USER_ID)
+                .shopItems(new HashMap<>())
+                .lastUpdated(LocalDateTime.now())
+                .build();
+
+        when(cartRepository.findByUserId(USER_ID)).thenReturn(Optional.of(cart));
+
+        assertThrows(ValidationException.class, () -> cartService.removeFromCart("invalid_id"));
+    }
+
+    @Test
+    void testGetCart_WhenCartExists() {
+        mockAuth();
+        CartEntity cart = CartEntity.builder()
+                .customerId(USER_ID)
+                .shopItems(new HashMap<>())
+                .lastUpdated(LocalDateTime.now())
+                .build();
+
+        when(cartRepository.findByUserId(USER_ID)).thenReturn(Optional.of(cart));
+
+        CartResponse response = cartService.getCart();
+        assertEquals(USER_ID, response.getCustomerId());
+    }
+
+    @Test
+    void testGetCart_WhenCartDoesNotExist() {
+        mockAuth();
+        when(cartRepository.findByUserId(USER_ID)).thenReturn(Optional.empty());
+
+        CartResponse response = cartService.getCart();
+        assertEquals(USER_ID, response.getCustomerId());
+    }
+
+    @Test
+    void testClearCart_Success() {
+        mockAuth();
+        doNothing().when(cartRepository).deleteByUserId(USER_ID);
+        assertDoesNotThrow(() -> cartService.clearCart());
+    }
+
+    @Test
+    void testClearCart_Failure() {
+        mockAuth();
+        doThrow(new RuntimeException("DB error")).when(cartRepository).deleteByUserId(USER_ID);
+        assertThrows(ActionFailedException.class, () -> cartService.clearCart());
+    }
+
+
+
+
 
 }
