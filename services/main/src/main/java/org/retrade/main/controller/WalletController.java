@@ -2,12 +2,18 @@ package org.retrade.main.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.retrade.common.model.dto.request.QueryWrapper;
 import org.retrade.common.model.dto.response.ResponseObject;
 import org.retrade.main.model.dto.request.WithdrawRequest;
 import org.retrade.main.model.dto.response.AccountWalletResponse;
+import org.retrade.main.model.dto.response.BankResponse;
 import org.retrade.main.service.WalletService;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("wallets")
@@ -43,6 +49,20 @@ public class WalletController {
                 .code("WALLET_RETRIEVED")
                 .content(result)
                 .messages("Wallet retrieved successfully")
+                .build());
+    }
+
+    @GetMapping("banks")
+    public ResponseEntity<ResponseObject<List<BankResponse>>> getBanks(@PageableDefault Pageable pageable, @RequestParam(required = false) String q) {
+        var result = walletService.getBankList(QueryWrapper.builder()
+                        .search(q)
+                        .pageable(pageable)
+                .build());
+        return ResponseEntity.ok(new ResponseObject.Builder<List<BankResponse>>()
+                .success(true)
+                .code("BANK_RETRIEVED")
+                .unwrapPaginationWrapper(result)
+                .messages("Bank retrieved successfully")
                 .build());
     }
 }

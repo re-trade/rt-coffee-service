@@ -161,6 +161,7 @@ payment:
     url: ${VQR_URL:https://api.vietqr.io/v2/generate}
     client-id: ${VQR_CLIENT_ID:}
     api-key: ${VQR_API_KEY:}
+    banks-url: https://api.vietqr.io/v2/banks
   callback: ${PAYMENT_CALLBACK:http://localhost:3000/checkout}
 
 

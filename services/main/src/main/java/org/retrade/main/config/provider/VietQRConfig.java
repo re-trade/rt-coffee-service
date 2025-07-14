@@ -13,4 +13,5 @@ public class VietQRConfig {
     private String url;
     private String clientId;
     private String apiKey;
+    private String banksUrl;
 }

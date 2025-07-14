@@ -1,6 +1,8 @@
 package org.retrade.main.service.impl;
 
 import lombok.RequiredArgsConstructor;
+import org.retrade.common.model.dto.request.QueryWrapper;
+import org.retrade.common.model.dto.response.PaginationWrapper;
 import org.retrade.common.model.exception.ActionFailedException;
 import org.retrade.common.model.exception.ValidationException;
 import org.retrade.main.model.constant.TransactionTypeEnum;
@@ -8,13 +10,12 @@ import org.retrade.main.model.constant.WithdrawStatusEnum;
 import org.retrade.main.model.dto.request.VietQrGenerateRequest;
 import org.retrade.main.model.dto.request.WithdrawRequest;
 import org.retrade.main.model.dto.response.AccountWalletResponse;
+import org.retrade.main.model.dto.response.BankResponse;
 import org.retrade.main.model.entity.AccountEntity;
 import org.retrade.main.model.entity.TransactionEntity;
+import org.retrade.main.model.entity.VietQrBankEntity;
 import org.retrade.main.model.entity.WithdrawRequestEntity;
-import org.retrade.main.repository.AccountRepository;
-import org.retrade.main.repository.CustomerBankInfoRepository;
-import org.retrade.main.repository.TransactionRepository;
-import org.retrade.main.repository.WithdrawRepository;
+import org.retrade.main.repository.*;
 import org.retrade.main.service.VietQRService;
 import org.retrade.main.service.WalletService;
 import org.retrade.main.util.AuthUtils;
@@ -23,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.sql.Timestamp;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -32,6 +34,7 @@ public class WalletServiceImpl implements WalletService {
     private final CustomerBankInfoRepository customerBankInfoRepository;
     private final TransactionRepository transactionRepository;
     private final WithdrawRepository withdrawRepository;
+    private final VietQrBankRepository vietQrBankRepository;
     private final VietQRService vietQRService;
 
 
@@ -94,6 +97,16 @@ public class WalletServiceImpl implements WalletService {
         withdrawRepository.save(withdraw);
     }
 
+    @Override
+    public PaginationWrapper<List<BankResponse>> getBankList(QueryWrapper queryWrapper) {
+        var result = vietQrBankRepository.search(queryWrapper);
+        var list = result.map(this::wrapBankResponse).stream().toList();
+        return new PaginationWrapper.Builder<List<BankResponse>>()
+                .setData(list)
+                .setPaginationInfo(result)
+                .build();
+    }
+
     private void updateBalance(BigDecimal balance, AccountEntity account) {
         account.setBalance(balance);
         try {
@@ -101,6 +114,16 @@ public class WalletServiceImpl implements WalletService {
         } catch (Exception ex) {
             throw new ActionFailedException("Have a problem when update balance", ex);
         }
+    }
+
+    private BankResponse wrapBankResponse(VietQrBankEntity bankEntity) {
+        return BankResponse.builder()
+                .id(bankEntity.getId())
+                .name(bankEntity.getName())
+                .code(bankEntity.getCode())
+                .bin(bankEntity.getBin())
+                .url(bankEntity.getLogo())
+                .build();
     }
 
     public AccountWalletResponse wrapAccountWalletResponse(AccountEntity accountEntity) {

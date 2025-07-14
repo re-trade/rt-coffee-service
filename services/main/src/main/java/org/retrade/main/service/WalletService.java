@@ -1,7 +1,12 @@
 package org.retrade.main.service;
 
+import org.retrade.common.model.dto.request.QueryWrapper;
+import org.retrade.common.model.dto.response.PaginationWrapper;
 import org.retrade.main.model.dto.request.WithdrawRequest;
 import org.retrade.main.model.dto.response.AccountWalletResponse;
+import org.retrade.main.model.dto.response.BankResponse;
+
+import java.util.List;
 
 public interface WalletService {
     AccountWalletResponse getUserAccountWallet();
@@ -9,4 +14,6 @@ public interface WalletService {
     void withdrawRequest(WithdrawRequest request);
 
     void approveWithdrawRequest(String withdrawRequestId);
+
+    PaginationWrapper<List<BankResponse>> getBankList(QueryWrapper queryWrapper);
 }
