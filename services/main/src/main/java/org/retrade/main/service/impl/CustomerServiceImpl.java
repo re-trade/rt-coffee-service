@@ -14,12 +14,16 @@ import org.retrade.common.model.exception.ValidationException;
 import org.retrade.main.model.dto.request.CustomerContactRequest;
 import org.retrade.main.model.dto.request.UpdateCustomerProfileRequest;
 import org.retrade.main.model.dto.request.UpdatePhoneRequest;
+import org.retrade.main.model.dto.response.CustomerBaseResponse;
 import org.retrade.main.model.dto.response.CustomerContactResponse;
 import org.retrade.main.model.dto.response.CustomerResponse;
+import org.retrade.main.model.entity.AccountRoleEntity;
 import org.retrade.main.model.entity.CustomerContactEntity;
 import org.retrade.main.model.entity.CustomerEntity;
+import org.retrade.main.model.entity.RoleEntity;
 import org.retrade.main.repository.CustomerContactRepository;
 import org.retrade.main.repository.CustomerRepository;
+import org.retrade.main.repository.RoleRepository;
 import org.retrade.main.service.CustomerService;
 import org.retrade.main.util.AuthUtils;
 import org.springframework.data.domain.Page;
@@ -28,10 +32,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -40,6 +41,7 @@ public class CustomerServiceImpl implements CustomerService {
     private final CustomerContactRepository customerContactRepository;
     private final AuthUtils authUtils;
     private final PasswordEncoder passwordEncoder;
+    private final RoleRepository roleRepository;
 
     @Override
     public CustomerResponse getCurrentCustomerProfile() {
@@ -225,6 +227,23 @@ public class CustomerServiceImpl implements CustomerService {
 
     }
 
+    @Override
+    public PaginationWrapper<List<CustomerBaseResponse>> getAllCustomersWithStatus(QueryWrapper queryWrapper) {
+        Specification<CustomerEntity> spec = buildSpecification(queryWrapper);
+        Page<CustomerEntity> customerPage = customerRepository.findAll(spec, queryWrapper.pagination());
+
+        List<CustomerBaseResponse> customerResponses = customerPage.getContent()
+                .stream()
+                .map(this::mapToCustomerBaseResponse)
+                .toList();
+
+        return new PaginationWrapper.Builder<List<CustomerBaseResponse>>()
+                .setData(customerResponses)
+                .setPaginationInfo(customerPage)
+                .build();
+    }
+
+
     private CustomerEntity getAuthCustomer() {
         var account = authUtils.getUserAccountFromAuthentication();
         var customer = account.getCustomer();
@@ -246,6 +265,36 @@ public class CustomerServiceImpl implements CustomerService {
                 .email(customer.getAccount().getEmail())
                 .gender(customer.getGender())
                 .lastUpdate(customer.getUpdatedDate().toLocalDateTime())
+                .build();
+    }
+
+
+
+    private CustomerBaseResponse mapToCustomerBaseResponse(CustomerEntity customer) {
+        Optional<RoleEntity> customerRoleEntity = roleRepository.findByCode("ROLE_CUSTOMER");
+        boolean enabled = false;
+
+        if (customerRoleEntity.isPresent()) {
+            Optional<AccountRoleEntity> customerRole = customer.getAccount()
+                    .getAccountRoles()
+                    .stream()
+                    .filter(accountRole -> accountRole.getRole().getId().equals(customerRoleEntity.get().getId()))
+                    .findFirst();
+            enabled = customerRole.map(AccountRoleEntity::getEnabled).orElse(false);
+        }
+
+        return CustomerBaseResponse.builder()
+                .id(customer.getId())
+                .firstName(customer.getFirstName())
+                .lastName(customer.getLastName())
+                .phone(customer.getPhone())
+                .address(customer.getAddress())
+                .avatarUrl(customer.getAvatarUrl())
+                .username(customer.getAccount().getUsername())
+                .email(customer.getAccount().getEmail())
+                .gender(customer.getGender())
+                .lastUpdate(customer.getUpdatedDate().toLocalDateTime())
+                .enabled(enabled)
                 .build();
     }
 
