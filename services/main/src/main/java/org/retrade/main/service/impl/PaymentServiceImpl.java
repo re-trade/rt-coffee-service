@@ -22,7 +22,7 @@ import org.retrade.main.model.entity.PaymentHistoryEntity;
 import org.retrade.main.model.entity.PaymentMethodEntity;
 import org.retrade.main.model.other.PaymentAPICallback;
 import org.retrade.main.model.other.PaymentProviderCallbackWrapper;
-import org.retrade.main.repository.*;
+import org.retrade.main.repository.jpa.*;
 import org.retrade.main.service.PaymentService;
 import org.retrade.main.util.AuthUtils;
 import org.retrade.main.util.RandomUtils;

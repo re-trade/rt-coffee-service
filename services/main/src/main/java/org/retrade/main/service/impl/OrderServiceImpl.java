@@ -12,7 +12,7 @@ import org.retrade.main.model.dto.request.CreateOrderRequest;
 import org.retrade.main.model.dto.request.OrderItemRequest;
 import org.retrade.main.model.dto.response.*;
 import org.retrade.main.model.entity.*;
-import org.retrade.main.repository.*;
+import org.retrade.main.repository.jpa.*;
 import org.retrade.main.service.CartService;
 import org.retrade.main.service.OrderService;
 import org.retrade.main.util.AuthUtils;

@@ -1,7 +1,7 @@
 package org.retrade.main.service.impl;
 
 import lombok.RequiredArgsConstructor;
-import org.retrade.main.repository.AccountRepository;
+import org.retrade.main.repository.jpa.AccountRepository;
 import org.retrade.main.util.AuthUtils;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
