@@ -11,6 +11,7 @@ import org.retrade.main.model.dto.request.UpdateCustomerProfileRequest;
 import org.retrade.main.model.dto.request.UpdatePhoneRequest;
 import org.retrade.main.model.dto.response.CustomerBaseResponse;
 import org.retrade.main.model.dto.response.CustomerResponse;
+import org.retrade.main.service.AccountService;
 import org.retrade.main.service.CustomerService;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
@@ -26,6 +27,7 @@ import java.util.List;
 @Tag(name = "Customer Management", description = "Customer profile and management endpoints")
 public class CustomerController {
     private final CustomerService customerService;
+    private final AccountService accountService;
 
     @Operation(
             summary = "Get current customer profile",
@@ -116,4 +118,26 @@ public class CustomerController {
                 .messages("Customers retrieved successfully")
                 .build());
     }
+
+    @PutMapping("{id}/disable-customer")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    public ResponseEntity<ResponseObject<Void>> disableCustomer(@PathVariable String id) {
+        accountService.disableCustomerAccount(id);
+        return ResponseEntity.ok(new ResponseObject.Builder<Void>()
+                .success(true)
+                .code("SUCCESS")
+                .messages("ban customer with" + id + "successfully")
+                .build());
+    }
+    @PutMapping("{id}/enable-customer")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    public ResponseEntity<ResponseObject<Void>> enableCustomer(@PathVariable String id) {
+        accountService.enableCustomerAccount(id);
+        return ResponseEntity.ok(new ResponseObject.Builder<Void>()
+                .success(true)
+                .code("SUCCESS")
+                .messages("unban customer with" + id + "successfully")
+                .build());
+    }
+
 }
