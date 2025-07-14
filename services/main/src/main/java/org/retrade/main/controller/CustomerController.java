@@ -87,7 +87,7 @@ public class CustomerController {
     }
 
     @GetMapping
-    @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_SELLER')")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     public ResponseEntity<ResponseObject<List<CustomerResponse>>> getAllCustomers(
             @RequestParam(required = false, name = "q") String search,
             @PageableDefault(size = 10) Pageable pageable) {
