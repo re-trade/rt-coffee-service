@@ -31,7 +31,6 @@ import org.retrade.main.util.AuthUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
 import java.util.*;
 
 @Service
@@ -67,7 +66,6 @@ public class SellerServiceImpl implements SellerService {
                 .background(request.getBackground())
                 .phoneNumber(request.getPhoneNumber())
                 .identityNumber(request.getIdentityNumber())
-                .balance(BigDecimal.ZERO)
                 .frontSideIdentityCard("example")
                 .backSideIdentityCard("example")
                 .identityVerified(IdentityVerifiedStatusEnum.INIT)

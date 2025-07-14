@@ -22,6 +22,7 @@ public class CustomerResponse {
     private String username;
     private String email;
     private Integer gender;
+    private Boolean enabled;
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime lastUpdate;
 }

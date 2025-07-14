@@ -157,6 +157,11 @@ payment:
     tmn-code: ${VNP_TMN_CODE:}
     hash-secret: ${VNP_HASH_SECRET:}
     api-url: ${VNP_API_URL:https://sandbox.vnpayment.vn/merchant_webapi/api/transaction}
+  vqr:
+    url: ${VQR_URL:https://api.vietqr.io/v2/generate}
+    client-id: ${VQR_CLIENT_ID:}
+    api-key: ${VQR_API_KEY:}
+    banks-url: https://api.vietqr.io/v2/banks
   callback: ${PAYMENT_CALLBACK:http://localhost:3000/checkout}
 
 
