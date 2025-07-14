@@ -19,7 +19,11 @@ import org.springframework.web.client.RestTemplate;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Repository
@@ -33,8 +37,13 @@ public class VietQrBankRepositoryImpl implements VietQrBankRepository {
     @Override
     public List<VietQrBankEntity> getAll() {
         var restTemplate = new RestTemplate();
-        Object raw = redisTemplate.opsForValue().get(BANK_CACHE_KEY);
-
+        Object raw = null;
+        log.info("Checking for cached banks...");
+        try {
+           raw = redisTemplate.opsForValue().get(BANK_CACHE_KEY);
+        } catch (Exception e) {
+            redisTemplate.delete(BANK_CACHE_KEY);
+        }
         if (raw != null) {
             try {
                 String json = objectMapper.writeValueAsString(raw);
@@ -92,7 +101,36 @@ public class VietQrBankRepositoryImpl implements VietQrBankRepository {
 
     @Override
     public Optional<VietQrBankEntity> getBankByBin(String bin) {
-        return Optional.empty();
+        return getAll().stream().filter(bank -> bank.getBin().equals(bin)).findFirst();
+    }
+
+    @Override
+    public Map<String, VietQrBankEntity> getBankMap() {
+        return getAll().stream()
+                .collect(Collectors.toMap(
+                        VietQrBankEntity::getBin,
+                        Function.identity()
+                ));
+    }
+
+    @Override
+    public Map<String, VietQrBankEntity> getBankMapInBin(Set<String> bins) {
+        if (bins == null || bins.isEmpty()) {
+            return Map.of();
+        }
+        var allBanks = getAll();
+        Map<String, VietQrBankEntity> binMap = allBanks.stream()
+                .collect(Collectors.toMap(
+                        VietQrBankEntity::getBin,
+                        Function.identity(),
+                        (a, b) -> a
+                ));
+        return bins.stream()
+                .filter(binMap::containsKey)
+                .collect(Collectors.toMap(
+                        Function.identity(),
+                        binMap::get
+                ));
     }
 
     @NotNull

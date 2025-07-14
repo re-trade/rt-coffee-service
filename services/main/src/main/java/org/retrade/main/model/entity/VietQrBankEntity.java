@@ -1,13 +1,15 @@
 package org.retrade.main.model.entity;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
-import org.springframework.data.annotation.Id;
+import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
 
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class VietQrBankEntity implements Serializable {
-    @Id
     private Long id;
     private String name;
     private String code;

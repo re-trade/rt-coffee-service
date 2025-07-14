@@ -1,6 +1,10 @@
 package org.retrade.main.service.impl;
 
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Root;
 import lombok.RequiredArgsConstructor;
+import org.retrade.common.model.dto.request.QueryFieldWrapper;
 import org.retrade.common.model.dto.request.QueryWrapper;
 import org.retrade.common.model.dto.response.PaginationWrapper;
 import org.retrade.common.model.exception.ActionFailedException;
@@ -11,6 +15,7 @@ import org.retrade.main.model.dto.request.VietQrGenerateRequest;
 import org.retrade.main.model.dto.request.WithdrawRequest;
 import org.retrade.main.model.dto.response.AccountWalletResponse;
 import org.retrade.main.model.dto.response.BankResponse;
+import org.retrade.main.model.dto.response.WithdrawRequestBaseResponse;
 import org.retrade.main.model.entity.AccountEntity;
 import org.retrade.main.model.entity.TransactionEntity;
 import org.retrade.main.model.entity.VietQrBankEntity;
@@ -24,7 +29,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -105,6 +113,41 @@ public class WalletServiceImpl implements WalletService {
                 .setData(list)
                 .setPaginationInfo(result)
                 .build();
+    }
+
+    @Override
+    public PaginationWrapper<List<WithdrawRequestBaseResponse>> getWithdrawRequestList(QueryWrapper queryWrapper) {
+        return withdrawRepository.query(queryWrapper, (param) -> (root, query, criteriaBuilder) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            return getPredicate(param, root, criteriaBuilder, predicates);
+        }, (items)  -> {
+            var map = vietQrBankRepository.getBankMap();
+            var list = items.map(item ->this.wrapWithdrawRequestBaseResponse(item, map)).stream().toList();
+            return new PaginationWrapper.Builder<List<WithdrawRequestBaseResponse>>()
+                    .setPaginationInfo(items)
+                    .setData(list)
+                    .build();
+        });
+    }
+
+    private WithdrawRequestBaseResponse wrapWithdrawRequestBaseResponse(WithdrawRequestEntity withdrawRequestEntity, Map<String, VietQrBankEntity> bankMap) {
+        var bank = bankMap.get(withdrawRequestEntity.getBankBin());
+        return WithdrawRequestBaseResponse.builder()
+                .id(withdrawRequestEntity.getId())
+                .amount(withdrawRequestEntity.getAmount())
+                .status(withdrawRequestEntity.getStatus())
+                .bankBin(withdrawRequestEntity.getBankBin())
+                .bankName(bank.getName())
+                .bankUrl(bank.getLogo())
+                .build();
+    }
+
+    private Predicate getPredicate(Map<String, QueryFieldWrapper> param, Root<WithdrawRequestEntity> root, CriteriaBuilder criteriaBuilder, List<Predicate> predicates) {
+        if (param != null && !param.isEmpty()) {
+            Predicate[] defaultPredicates = withdrawRepository.createDefaultPredicate(criteriaBuilder, root, param);
+            predicates.addAll(Arrays.asList(defaultPredicates));
+        }
+        return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
     }
 
     private void updateBalance(BigDecimal balance, AccountEntity account) {
