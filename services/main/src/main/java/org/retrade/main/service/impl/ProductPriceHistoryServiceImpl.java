@@ -5,7 +5,7 @@ import org.retrade.common.model.exception.ActionFailedException;
 import org.retrade.common.model.exception.ValidationException;
 import org.retrade.main.model.dto.response.ProductPriceHistoryResponse;
 import org.retrade.main.model.entity.ProductPriceHistoryEntity;
-import org.retrade.main.repository.ProductPriceHistoryRepository;
+import org.retrade.main.repository.jpa.ProductPriceHistoryRepository;
 import org.retrade.main.service.ProductPriceHistoryService;
 import org.springframework.stereotype.Service;
 

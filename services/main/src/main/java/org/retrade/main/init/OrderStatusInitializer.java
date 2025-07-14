@@ -3,7 +3,7 @@ package org.retrade.main.init;
 import lombok.RequiredArgsConstructor;
 import org.retrade.main.model.constant.OrderStatusCodes;
 import org.retrade.main.model.entity.OrderStatusEntity;
-import org.retrade.main.repository.OrderStatusRepository;
+import org.retrade.main.repository.jpa.OrderStatusRepository;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 

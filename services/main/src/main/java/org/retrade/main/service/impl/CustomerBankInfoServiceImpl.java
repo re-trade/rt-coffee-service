@@ -12,7 +12,7 @@ import org.retrade.common.model.exception.ValidationException;
 import org.retrade.main.model.dto.request.CustomerBankInfoRequest;
 import org.retrade.main.model.dto.response.CustomerBankInfoResponse;
 import org.retrade.main.model.entity.CustomerBankInfoEntity;
-import org.retrade.main.repository.CustomerBankInfoRepository;
+import org.retrade.main.repository.jpa.CustomerBankInfoRepository;
 import org.retrade.main.service.CustomerBankInfoService;
 import org.retrade.main.util.AuthUtils;
 import org.springframework.stereotype.Service;

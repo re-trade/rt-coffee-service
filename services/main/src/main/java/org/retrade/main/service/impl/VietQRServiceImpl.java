@@ -5,7 +5,7 @@ import org.retrade.common.model.exception.ActionFailedException;
 import org.retrade.main.config.provider.VietQRConfig;
 import org.retrade.main.model.dto.request.VietQrGenerateRequest;
 import org.retrade.main.model.dto.response.VietQrGenerateResponse;
-import org.retrade.main.repository.VietQrBankRepository;
+import org.retrade.main.repository.redis.VietQrBankRepository;
 import org.retrade.main.service.VietQRService;
 import org.springframework.http.*;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;

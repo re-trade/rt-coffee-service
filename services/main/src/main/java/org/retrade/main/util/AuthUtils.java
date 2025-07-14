@@ -2,7 +2,7 @@ package org.retrade.main.util;
 
 import lombok.RequiredArgsConstructor;
 import org.retrade.main.model.entity.AccountEntity;
-import org.retrade.main.repository.AccountRepository;
+import org.retrade.main.repository.jpa.AccountRepository;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;

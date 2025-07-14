@@ -4,7 +4,7 @@ import io.grpc.stub.StreamObserver;
 import lombok.RequiredArgsConstructor;
 import org.retrade.main.model.constant.JwtTokenType;
 import org.retrade.main.model.other.UserClaims;
-import org.retrade.main.repository.AccountRepository;
+import org.retrade.main.repository.jpa.AccountRepository;
 import org.retrade.main.service.JwtService;
 import org.retrade.proto.authentication.*;
 import org.springframework.grpc.server.service.GrpcService;
