@@ -32,5 +32,5 @@ public interface CustomerService {
     CustomerContactResponse removeCustomerContact(String id);
 
     @Transactional(rollbackFor = {ActionFailedException.class, Exception.class})
-    CustomerResponse updateCustomerPhonenumber(UpdatePhoneRequest request);
+    CustomerResponse updateCustomerPhoneNumber(UpdatePhoneRequest request);
 }

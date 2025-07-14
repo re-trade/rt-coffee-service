@@ -193,7 +193,7 @@ public class CustomerServiceImpl implements CustomerService {
 
     @Transactional(rollbackFor = {ActionFailedException.class, Exception.class})
     @Override
-    public CustomerResponse updateCustomerPhonenumber(UpdatePhoneRequest request) {
+    public CustomerResponse updateCustomerPhoneNumber(UpdatePhoneRequest request) {
         var phoneNumberUtil = PhoneNumberUtil.getInstance();
         try {
             var phone = request.getNewPhone();
@@ -235,6 +235,7 @@ public class CustomerServiceImpl implements CustomerService {
     }
 
     private CustomerResponse mapToCustomerResponse(CustomerEntity customer) {
+        var account = customer.getAccount();
         return CustomerResponse.builder()
                 .id(customer.getId())
                 .firstName(customer.getFirstName())
@@ -246,6 +247,7 @@ public class CustomerServiceImpl implements CustomerService {
                 .email(customer.getAccount().getEmail())
                 .gender(customer.getGender())
                 .lastUpdate(customer.getUpdatedDate().toLocalDateTime())
+                .enabled(account.isEnabled())
                 .build();
     }
 

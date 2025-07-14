@@ -12,6 +12,7 @@ import org.retrade.main.model.dto.request.UpdateCustomerProfileRequest;
 import org.retrade.main.model.dto.request.UpdatePhoneRequest;
 import org.retrade.main.model.dto.response.CustomerBankInfoResponse;
 import org.retrade.main.model.dto.response.CustomerResponse;
+import org.retrade.main.service.AccountService;
 import org.retrade.main.service.CustomerBankInfoService;
 import org.retrade.main.service.CustomerService;
 import org.springframework.data.domain.Pageable;
@@ -29,6 +30,7 @@ import java.util.List;
 public class CustomerController {
     private final CustomerService customerService;
     private final CustomerBankInfoService customerBankInfoService;
+    private final AccountService accountService;
 
     @Operation(
             summary = "Get current customer profile",
@@ -75,7 +77,7 @@ public class CustomerController {
     @PreAuthorize("hasRole('ROLE_CUSTOMER')")
     @PatchMapping("phone")
     public ResponseEntity<ResponseObject<CustomerResponse>> updatePhone(@Valid @RequestBody UpdatePhoneRequest request) {
-        var response = customerService.updateCustomerPhonenumber(request);
+        var response = customerService.updateCustomerPhoneNumber(request);
         return ResponseEntity.ok(new ResponseObject.Builder<CustomerResponse>()
                 .success(true)
                 .code("SUCCESS")
@@ -99,6 +101,27 @@ public class CustomerController {
                 .code("SUCCESS")
                 .unwrapPaginationWrapper(result)
                 .messages("Customers retrieved successfully")
+                .build());
+    }
+
+    @PutMapping("{id}/disable")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    public ResponseEntity<ResponseObject<Void>> disableCustomer(@PathVariable String id) {
+        accountService.disableCustomerAccount(id);
+        return ResponseEntity.ok(new ResponseObject.Builder<Void>()
+                .success(true)
+                .code("SUCCESS")
+                .messages("ban customer with" + id + "successfully")
+                .build());
+    }
+    @PutMapping("{id}/enable")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    public ResponseEntity<ResponseObject<Void>> enableCustomer(@PathVariable String id) {
+        accountService.enableCustomerAccount(id);
+        return ResponseEntity.ok(new ResponseObject.Builder<Void>()
+                .success(true)
+                .code("SUCCESS")
+                .messages("Unban customer with" + id + "successfully")
                 .build());
     }
 
@@ -155,7 +178,7 @@ public class CustomerController {
                 .messages("Customer bank info created successfully")
                 .build());
     }
-    
+
     @DeleteMapping("me/bank-info/{id}")
     public ResponseEntity<ResponseObject<CustomerBankInfoResponse>> deleteCustomerBankInfo(@PathVariable String id) {
         var result = customerBankInfoService.removeCustomerBankInfo(id);
