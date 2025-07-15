@@ -18,8 +18,8 @@ import org.retrade.main.model.dto.response.CustomerContactResponse;
 import org.retrade.main.model.dto.response.CustomerResponse;
 import org.retrade.main.model.entity.CustomerContactEntity;
 import org.retrade.main.model.entity.CustomerEntity;
-import org.retrade.main.repository.CustomerContactRepository;
-import org.retrade.main.repository.CustomerRepository;
+import org.retrade.main.repository.jpa.CustomerContactRepository;
+import org.retrade.main.repository.jpa.CustomerRepository;
 import org.retrade.main.service.CustomerService;
 import org.retrade.main.util.AuthUtils;
 import org.springframework.data.domain.Page;
@@ -193,7 +193,7 @@ public class CustomerServiceImpl implements CustomerService {
 
     @Transactional(rollbackFor = {ActionFailedException.class, Exception.class})
     @Override
-    public CustomerResponse updateCustomerPhonenumber(UpdatePhoneRequest request) {
+    public CustomerResponse updateCustomerPhoneNumber(UpdatePhoneRequest request) {
         var phoneNumberUtil = PhoneNumberUtil.getInstance();
         try {
             var phone = request.getNewPhone();
@@ -235,6 +235,7 @@ public class CustomerServiceImpl implements CustomerService {
     }
 
     private CustomerResponse mapToCustomerResponse(CustomerEntity customer) {
+        var account = customer.getAccount();
         return CustomerResponse.builder()
                 .id(customer.getId())
                 .firstName(customer.getFirstName())
@@ -246,6 +247,7 @@ public class CustomerServiceImpl implements CustomerService {
                 .email(customer.getAccount().getEmail())
                 .gender(customer.getGender())
                 .lastUpdate(customer.getUpdatedDate().toLocalDateTime())
+                .enabled(account.isEnabled())
                 .build();
     }
 

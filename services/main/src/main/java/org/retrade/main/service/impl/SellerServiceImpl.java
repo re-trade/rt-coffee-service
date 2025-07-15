@@ -22,16 +22,15 @@ import org.retrade.main.model.entity.SellerEntity;
 import org.retrade.main.model.message.CCCDVerificationMessage;
 import org.retrade.main.model.message.CCCDVerificationResultMessage;
 import org.retrade.main.model.other.SellerWrapperBase;
-import org.retrade.main.repository.AccountRoleRepository;
-import org.retrade.main.repository.RoleRepository;
-import org.retrade.main.repository.SellerRepository;
+import org.retrade.main.repository.jpa.AccountRoleRepository;
+import org.retrade.main.repository.jpa.RoleRepository;
+import org.retrade.main.repository.jpa.SellerRepository;
 import org.retrade.main.service.MessageProducerService;
 import org.retrade.main.service.SellerService;
 import org.retrade.main.util.AuthUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
 import java.util.*;
 
 @Service
@@ -67,7 +66,6 @@ public class SellerServiceImpl implements SellerService {
                 .background(request.getBackground())
                 .phoneNumber(request.getPhoneNumber())
                 .identityNumber(request.getIdentityNumber())
-                .balance(BigDecimal.ZERO)
                 .frontSideIdentityCard("example")
                 .backSideIdentityCard("example")
                 .identityVerified(IdentityVerifiedStatusEnum.INIT)
@@ -236,6 +234,7 @@ public class SellerServiceImpl implements SellerService {
         SellerEntity seller = sellerRepository.findById(sellerId)
                 .orElseThrow(() -> new ValidationException("Seller not found with ID: " + sellerId));
         seller.setVerified(false);
+        sellerRepository.save(seller);
         return wrapSellerBaseResponse(seller);
     }
 
@@ -248,6 +247,7 @@ public class SellerServiceImpl implements SellerService {
         SellerEntity seller = sellerRepository.findById(sellerId)
                 .orElseThrow(() -> new ValidationException("Seller not found with ID: " + sellerId));
         seller.setVerified(true);
+        sellerRepository.save(seller);
         return wrapSellerBaseResponse(seller);
     }
 

@@ -16,9 +16,9 @@ import org.retrade.main.model.entity.AccountEntity;
 import org.retrade.main.model.entity.AccountRoleEntity;
 import org.retrade.main.model.entity.CustomerEntity;
 import org.retrade.main.model.message.EmailNotificationMessage;
-import org.retrade.main.repository.AccountRepository;
-import org.retrade.main.repository.AccountRoleRepository;
-import org.retrade.main.repository.CustomerRepository;
+import org.retrade.main.repository.jpa.AccountRepository;
+import org.retrade.main.repository.jpa.AccountRoleRepository;
+import org.retrade.main.repository.jpa.CustomerRepository;
 import org.retrade.main.service.AccountService;
 import org.retrade.main.service.JwtService;
 import org.retrade.main.service.MessageProducerService;
@@ -191,32 +191,31 @@ public class AccountServiceImpl implements AccountService {
     }
 
     @Override
-    @Transactional(rollbackFor = {ActionFailedException.class, Exception.class})
     public AccountResponse disableCustomerAccount(String customerId) {
+
         var roles = authUtils.getRolesFromAuthUser();
-
         if (!roles.contains("ROLE_ADMIN")) {
-            CustomerEntity currentCustomer = getCurrentCustomerAccount();
-
-            if (!currentCustomer.getId().equals(customerId)) {
-                throw new ValidationException("You do not have permission to disable this account");
-            }
+            throw new ValidationException("User does not have permission to approve seller");
         }
 
         CustomerEntity customer = customerRepository.findById(customerId)
                 .orElseThrow(() -> new ValidationException("Customer not found with ID: " + customerId));
 
         AccountEntity account = customer.getAccount();
-        account.setLocked(true);
-        account.setEnabled(false);
-
         Set<AccountRoleEntity> accountRoles = account.getAccountRoles();
-        accountRoles.forEach(accountRole -> {
-            if (accountRole.getRole().getName().equals("ROLE_CUSTOMER")) {
-                accountRole.setEnabled(false);
-            }
-        });
-        accountRoleRepository.saveAll(accountRoles);
+
+        // Find and disable ROLE_CUSTOMER
+        Optional<AccountRoleEntity> customerRole = accountRoles.stream()
+                .filter(accountRole -> "ROLE_CUSTOMER".equals(accountRole.getRole().getCode()))
+                .findFirst();
+
+        if (customerRole.isEmpty()) {
+            throw new ValidationException("Customer role not found for account ID: " + account.getId());
+        }
+
+        AccountRoleEntity roleToUpdate = customerRole.get();
+        roleToUpdate.setEnabled(false);
+        accountRoleRepository.save(roleToUpdate);
         return mapToAccountResponse(account);
     }
 
@@ -225,14 +224,28 @@ public class AccountServiceImpl implements AccountService {
     public AccountResponse enableCustomerAccount(String customerId) {
         var roles = authUtils.getRolesFromAuthUser();
         if (!roles.contains("ROLE_ADMIN")) {
-            throw new ValidationException("Not have permission to approve seller");
+            throw new ValidationException("User does not have permission to approve seller");
         }
+
         CustomerEntity customer = customerRepository.findById(customerId)
                 .orElseThrow(() -> new ValidationException("Customer not found with ID: " + customerId));
+
         AccountEntity account = customer.getAccount();
-        account.setLocked(false);
-        account.setEnabled(true);
+        Set<AccountRoleEntity> accountRoles = account.getAccountRoles();
+
+        Optional<AccountRoleEntity> customerRole = accountRoles.stream()
+                .filter(accountRole -> "ROLE_CUSTOMER".equals(accountRole.getRole().getCode()))
+                .findFirst();
+
+        if (customerRole.isEmpty()) {
+            throw new ValidationException("Customer role not found for account ID: " + account.getId());
+        }
+
+        AccountRoleEntity roleToUpdate = customerRole.get();
+        roleToUpdate.setEnabled(true);
+        accountRoleRepository.save(roleToUpdate);
         return mapToAccountResponse(account);
+
     }
 
     private CustomerEntity getCurrentCustomerAccount() {

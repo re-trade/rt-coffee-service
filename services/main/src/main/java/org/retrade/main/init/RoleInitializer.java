@@ -2,7 +2,7 @@ package org.retrade.main.init;
 
 import lombok.RequiredArgsConstructor;
 import org.retrade.main.model.entity.RoleEntity;
-import org.retrade.main.repository.RoleRepository;
+import org.retrade.main.repository.jpa.RoleRepository;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 

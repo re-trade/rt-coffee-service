@@ -2,7 +2,7 @@ package org.retrade.main.init;
 
 import lombok.RequiredArgsConstructor;
 import org.retrade.main.model.entity.PaymentMethodEntity;
-import org.retrade.main.repository.PaymentMethodRepository;
+import org.retrade.main.repository.jpa.PaymentMethodRepository;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 

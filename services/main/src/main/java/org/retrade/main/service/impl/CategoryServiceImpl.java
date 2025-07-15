@@ -13,7 +13,7 @@ import org.retrade.common.model.exception.ValidationException;
 import org.retrade.main.model.dto.request.CategoryRequest;
 import org.retrade.main.model.dto.response.CategoryResponse;
 import org.retrade.main.model.entity.CategoryEntity;
-import org.retrade.main.repository.CategoryRepository;
+import org.retrade.main.repository.jpa.CategoryRepository;
 import org.retrade.main.service.CategoryService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

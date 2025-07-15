@@ -187,8 +187,8 @@ public class AccountController {
     }
 
     @PutMapping("{id}/disable-customer")
-    @PreAuthorize("hasRole('ROLE_CUSTOMER') or hasRole('ROLE_ADMIN')")
-    public ResponseEntity<ResponseObject<Void>> banSeller(@PathVariable String id) {
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    public ResponseEntity<ResponseObject<Void>> disableCustomer(@PathVariable String id) {
         accountService.disableCustomerAccount(id);
         return ResponseEntity.ok(new ResponseObject.Builder<Void>()
                 .success(true)
@@ -198,7 +198,7 @@ public class AccountController {
     }
     @PutMapping("{id}/enable-customer")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
-    public ResponseEntity<ResponseObject<Void>> unbanSeller(@PathVariable String id) {
+    public ResponseEntity<ResponseObject<Void>> enableCustomer(@PathVariable String id) {
         accountService.enableCustomerAccount(id);
         return ResponseEntity.ok(new ResponseObject.Builder<Void>()
                 .success(true)
