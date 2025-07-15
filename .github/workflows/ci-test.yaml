@@ -34,7 +34,7 @@ jobs:
             maven-
 
       - name: Build only (skip tests)
-        run: mvn clean install -pl :${{ matrix.service }} -DskipTests -B
+        run: mvn clean install -pl :${{ matrix.service }} -am -DskipTests -B
 
   test:
     name: Unit Tests (JDK 24)
@@ -68,4 +68,4 @@ jobs:
             maven-
 
       - name: Run unit tests only
-        run: mvn test -pl :${{ matrix.service }} -B
+        run: mvn test -pl :${{ matrix.service }} -am -B
