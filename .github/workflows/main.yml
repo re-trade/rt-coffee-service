@@ -2,7 +2,15 @@ on:
   push:
     branches:
       - main
+  pull_request:
+    branches:
+      - main
 jobs:
+
+  test:
+    name: Test / Unit
+    uses: ./.github/workflows/ci-test.yaml
+
   build-coffee-image:
     name: Build / API
     uses: ./.github/workflows/build-image.yaml
@@ -13,6 +21,7 @@ jobs:
       actor: ${{ github.actor }}
       repository: ${{ github.repository }}
     secrets: inherit
+    if: github.event_name == 'push'
 
   deploy-dev:
     name: Deploy / DEV
@@ -25,6 +34,7 @@ jobs:
       actor: ${{ github.actor }}
       repository: ${{ github.repository }}
     secrets: inherit
+    if: github.event_name == 'push'
 
   update-metadata:
     name: Deploy / Update Metadata
@@ -36,3 +46,4 @@ jobs:
     with:
       services: main,feedback-notification,voucher,storage,prover,migration
     secrets: inherit
+    if: github.event_name == 'push'
