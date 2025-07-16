@@ -21,7 +21,7 @@ public class OrderStatusValidator {
             STATUS_ORDER.put("CONFIRMED", 2);
             STATUS_ORDER.put("PAYMENT_FAILED", 3);
             STATUS_ORDER.put("PAYMENT_CANCELLED", 4);
-            STATUS_ORDER.put("PAYMENT_CONFIRMATION", 5);
+            STATUS_ORDER.put("PAID", 5);
             STATUS_ORDER.put("PREPARING", 6);
             STATUS_ORDER.put("DELIVERING", 7);
             STATUS_ORDER.put("DELIVERED", 8);
@@ -40,10 +40,10 @@ public class OrderStatusValidator {
 
         static {
             VALID_TRANSITIONS.put("PENDING", Set.of("CONFIRMED", "CANCELLED"));
-            VALID_TRANSITIONS.put("CONFIRMED", Set.of("PAYMENT_FAILED", "PAYMENT_CANCELLED", "PAYMENT_CONFIRMATION", "CANCELLED"));
-            VALID_TRANSITIONS.put("PAYMENT_FAILED", Set.of("PAYMENT_CONFIRMATION", "CANCELLED"));
+            VALID_TRANSITIONS.put("CONFIRMED", Set.of("PAYMENT_FAILED", "PAYMENT_CANCELLED", "PAID", "CANCELLED"));
+            VALID_TRANSITIONS.put("PAYMENT_FAILED", Set.of("PAID", "CANCELLED"));
             VALID_TRANSITIONS.put("PAYMENT_CANCELLED", Set.of("CANCELLED"));
-            VALID_TRANSITIONS.put("PAYMENT_CONFIRMATION", Set.of("PREPARING", "CANCELLED"));
+            VALID_TRANSITIONS.put("PAID", Set.of("PREPARING", "CANCELLED"));
             VALID_TRANSITIONS.put("PREPARING", Set.of("DELIVERING", "CANCELLED"));
             VALID_TRANSITIONS.put("DELIVERING", Set.of("DELIVERED", "CANCELLED"));
             VALID_TRANSITIONS.put("DELIVERED", Set.of("COMPLETED", "RETURN_REQUESTED", "CANCELLED"));
@@ -178,7 +178,7 @@ public class OrderStatusValidator {
             }
 
             // Các trạng thái cho thấy đã thanh toán thành công
-            return Set.of("PAYMENT_CONFIRMATION", "PREPARING", "DELIVERING", "DELIVERED",
+            return Set.of("PAID", "PREPARING", "DELIVERING", "DELIVERED",
                             "COMPLETED", "RETURN_REQUESTED", "RETURN_APPROVED", "RETURNING",
                             "RETURNED", "REFUNDED")
                     .contains(status);

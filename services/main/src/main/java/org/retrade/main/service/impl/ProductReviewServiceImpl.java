@@ -78,6 +78,7 @@ public class ProductReviewServiceImpl implements ProductReviewService {
         productReviewEntity.setContent(request.getContent());
         productReviewEntity.setImageReview(request.getImageReview());
         productReviewEntity.setStatus(true);
+        productReviewEntity.setHelpful(0);
         productReviewEntity.setOrderCombo(orderComboEntity);
         try {
             productReviewEntity = productReviewRepository.save(productReviewEntity);
