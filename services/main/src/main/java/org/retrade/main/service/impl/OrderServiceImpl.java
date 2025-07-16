@@ -16,6 +16,7 @@ import org.retrade.main.repository.jpa.*;
 import org.retrade.main.service.CartService;
 import org.retrade.main.service.OrderService;
 import org.retrade.main.util.AuthUtils;
+import org.retrade.main.util.OrderStatusValidator;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -43,7 +44,7 @@ public class OrderServiceImpl implements OrderService {
     private final CustomerContactRepository customerContactRepository;
     private final CartService cartService;
     private final AuthUtils authUtils;
-
+    private final OrderStatusValidator  orderStatusValidator;
     private static final BigDecimal TAX_RATE = new BigDecimal("0.10");
 
     @Override
@@ -686,13 +687,14 @@ public class OrderServiceImpl implements OrderService {
 
     private SellerOrderComboResponse wrapSellerOrderComboResponse(OrderComboEntity combo) {
         var orderItems = combo.getOrderItems();
+        var checkPaymentStatus = orderStatusValidator.isPaymentSuccessful(combo.getOrderStatus().getCode());
         var paymentStatus = "";
         if (combo.getOrderStatus().getCode().equals("PAYMENT_FAILED")) {
             paymentStatus = "PAYMENT_FAILED";
         } else if (combo.getOrderStatus().getCode().equals("PAYMENT_CANCELLED")) {
             paymentStatus = "PAYMENT_CANCELLED";
         } else {
-            paymentStatus = "PAID";
+            paymentStatus = "PAYMENT_CONFIRMED";
         }
         var seller = combo.getSeller();
         var orderStatus = OrderStatusResponse.builder()
