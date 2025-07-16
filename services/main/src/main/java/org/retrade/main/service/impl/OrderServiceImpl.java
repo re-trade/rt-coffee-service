@@ -395,7 +395,9 @@ public class OrderServiceImpl implements OrderService {
             if (orderStatus != null) {
                 predicates.add(criteriaBuilder.equal(root.get("orderStatus").get("code"), orderStatus));
             }
-
+            predicates.add(criteriaBuilder.notEqual(root.get("orderStatus").get("code"), "PENDING"));
+            predicates.add(criteriaBuilder.notEqual(root.get("orderStatus").get("code"), "PAYMENT_CANCELLED"));
+            predicates.add(criteriaBuilder.notEqual(root.get("orderStatus").get("code"), "PAYMENT_FAILED"));
             if (keyword != null && !keyword.getValue().toString().trim().isEmpty()) {
                 String searchPattern = "%" + keyword.getValue().toString().toLowerCase() + "%";
                 predicates.add(criteriaBuilder.or(
