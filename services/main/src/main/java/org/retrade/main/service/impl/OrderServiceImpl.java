@@ -687,15 +687,7 @@ public class OrderServiceImpl implements OrderService {
 
     private SellerOrderComboResponse wrapSellerOrderComboResponse(OrderComboEntity combo) {
         var orderItems = combo.getOrderItems();
-        var checkPaymentStatus = orderStatusValidator.isPaymentSuccessful(combo.getOrderStatus().getCode());
-        var paymentStatus = "";
-        if (combo.getOrderStatus().getCode().equals("PAYMENT_FAILED")) {
-            paymentStatus = "PAYMENT_FAILED";
-        } else if (combo.getOrderStatus().getCode().equals("PAYMENT_CANCELLED")) {
-            paymentStatus = "PAYMENT_CANCELLED";
-        } else {
-            paymentStatus = "PAYMENT_CONFIRMED";
-        }
+        var paymentStatus = orderStatusValidator.isPaymentCode(combo.getOrderStatus().getCode());
         var seller = combo.getSeller();
         var orderStatus = OrderStatusResponse.builder()
                 .id(combo.getOrderStatus().getId())
