@@ -242,6 +242,44 @@ public class OrderStatusValidator {
                 OrderStatusCodes.REFUNDED
         ).contains(status);
     }
+    /**
+     * Trả về trạng thái thanh toán của đơn hàng
+     * @param status - Trạng thái hiện tại của đơn hàng
+     * @return Trạng thái thanh toán ("PAID", "PAYMENT_FAILED", "PAYMENT_CANCELLED", "UNPAID") hoặc null nếu không xác định
+     * @throws IllegalArgumentException nếu trạng thái không hợp lệ
+     */
+    public String isPaymentCode(String status) {
+        if (status == null || status.trim().isEmpty()) {
+            throw new IllegalArgumentException("Order status cannot be null or empty");
+        }
+
+        if (!STATUS_ORDER.containsKey(status)) {
+            throw new IllegalArgumentException("Invalid order status: " + status);
+        }
+
+        // Nếu đang ở trạng thái PENDING → chưa thanh toán
+        if (OrderStatusCodes.PENDING.equals(status)) {
+            return OrderStatusCodes.UNPAID;
+        }
+
+        // Các trạng thái thanh toán trực tiếp
+        if (Set.of(
+                OrderStatusCodes.PAYMENT_FAILED,
+                OrderStatusCodes.PAYMENT_CANCELLED,
+                OrderStatusCodes.PAYMENT_CONFIRMATION
+        ).contains(status)) {
+            return status;
+        }
+
+        // Các trạng thái sau PAID ngụ ý đã thanh toán thành công
+        if (isPaymentSuccessful(status)) {
+            return OrderStatusCodes.PAYMENT_CONFIRMATION;
+        }
+
+        // Các trạng thái khác không liên quan thanh toán
+        return null;
+    }
+
 
     /**
      * Kiểm tra xem có thể hoàn tiền không

@@ -5,6 +5,7 @@ public class OrderStatusCodes {
     public static final String PAYMENT_CONFIRMATION = "PAYMENT_CONFIRMATION";
     public static final String PAYMENT_FAILED = "PAYMENT_FAILED";
     public static final String PAYMENT_CANCELLED = "PAYMENT_CANCELLED";
+    public static final String UNPAID = "UNPAID";
     public static final String PREPARING = "PREPARING";
     public static final String DELIVERING = "DELIVERING";
     public static final String DELIVERED = "DELIVERED";
