@@ -514,6 +514,7 @@ public class ProductServiceImpl implements ProductService {
                 .verified(product.getVerified())
                 .createdAt(product.getCreatedDate() != null ? product.getCreatedDate().toLocalDateTime() : null)
                 .updatedAt(product.getUpdatedDate() != null ? product.getUpdatedDate().toLocalDateTime() : null)
+                .avgVote(Optional.ofNullable(product.getAvgVote()).orElse(0.0))
                 .build();
     }
 
