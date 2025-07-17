@@ -226,7 +226,7 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Override
     public boolean categoryExists(String name) {
-        return !categoryRepository.existsByName(name);
+        return categoryRepository.existsByName(name);
     }
 
     @Override
