@@ -16,6 +16,7 @@ import org.retrade.main.repository.jpa.*;
 import org.retrade.main.service.CartService;
 import org.retrade.main.service.OrderService;
 import org.retrade.main.util.AuthUtils;
+import org.retrade.main.util.OrderStatusValidator;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -43,7 +44,7 @@ public class OrderServiceImpl implements OrderService {
     private final CustomerContactRepository customerContactRepository;
     private final CartService cartService;
     private final AuthUtils authUtils;
-
+    private final OrderStatusValidator  orderStatusValidator;
     private static final BigDecimal TAX_RATE = new BigDecimal("0.10");
 
     @Override
@@ -395,7 +396,9 @@ public class OrderServiceImpl implements OrderService {
             if (orderStatus != null) {
                 predicates.add(criteriaBuilder.equal(root.get("orderStatus").get("code"), orderStatus));
             }
-
+            predicates.add(criteriaBuilder.notEqual(root.get("orderStatus").get("code"), "PENDING"));
+            predicates.add(criteriaBuilder.notEqual(root.get("orderStatus").get("code"), "PAYMENT_CANCELLED"));
+            predicates.add(criteriaBuilder.notEqual(root.get("orderStatus").get("code"), "PAYMENT_FAILED"));
             if (keyword != null && !keyword.getValue().toString().trim().isEmpty()) {
                 String searchPattern = "%" + keyword.getValue().toString().toLowerCase() + "%";
                 predicates.add(criteriaBuilder.or(
@@ -684,14 +687,7 @@ public class OrderServiceImpl implements OrderService {
 
     private SellerOrderComboResponse wrapSellerOrderComboResponse(OrderComboEntity combo) {
         var orderItems = combo.getOrderItems();
-        var paymentStatus = "";
-        if (combo.getOrderStatus().getCode().equals("PAYMENT_FAILED")) {
-            paymentStatus = "PAYMENT_FAILED";
-        } else if (combo.getOrderStatus().getCode().equals("PAYMENT_CANCELLED")) {
-            paymentStatus = "PAYMENT_CANCELLED";
-        } else {
-            paymentStatus = "PAYMENT_CONFIRMATION";
-        }
+        var paymentStatus = orderStatusValidator.isPaymentCode(combo.getOrderStatus().getCode());
         var seller = combo.getSeller();
         var orderStatus = OrderStatusResponse.builder()
                 .id(combo.getOrderStatus().getId())
