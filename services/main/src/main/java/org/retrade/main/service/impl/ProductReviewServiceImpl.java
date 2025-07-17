@@ -306,7 +306,7 @@ public class ProductReviewServiceImpl implements ProductReviewService {
     }
 
     @Override
-    public PaginationWrapper<List<ProductReviewResponse>> getAllProductReviewsBySellerAndSearch(Double vote, QueryWrapper queryWrapper) {
+    public PaginationWrapper<List<ProductReviewResponse>> getAllProductReviewsBySellerAndSearch(Double vote,String isReply, QueryWrapper queryWrapper) {
         if (queryWrapper == null || queryWrapper.pagination() == null) {
             throw new ValidationException("QueryWrapper or pagination cannot be null");
         }
@@ -321,14 +321,21 @@ public class ProductReviewServiceImpl implements ProductReviewService {
         return productReviewRepository.query(queryWrapper, (param) -> (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
             predicates.add(cb.equal(root.get("seller"), seller));
-            // Join để search
-            Join<ProductReviewEntity, ProductEntity> joinProduct = root.join("product", JoinType.LEFT);
-            Join<ProductReviewEntity, CustomerEntity> joinCustomer = root.join("customer", JoinType.LEFT);
-
-            // 🔍 Tìm theo từ khóa (tên khách hàng hoặc tên sản phẩm)
+            if ("NO_REPLY".equals(isReply)) {
+                predicates.add(cb.isNull(root.get("replyContent")));
+            } else if ("REPLY".equals(isReply)) {
+                predicates.add(cb.and(
+                        cb.isNotNull(root.get("replyContent")),
+                        cb.notEqual(cb.trim(cb.literal(' '), root.get("replyContent")), "")
+                ));
+            }
             if (keyword != null && !keyword.getValue().toString().trim().isEmpty()) {
                 String searchPattern = "%" + keyword.getValue().toString().toLowerCase() + "%";
+                Join<ProductReviewEntity, ProductEntity> joinProduct = root.join("product", JoinType.LEFT);
+                Join<ProductReviewEntity, CustomerEntity> joinCustomer = root.join("customer", JoinType.LEFT);
 
+                predicates.add(cb.like(cb.lower(root.get("content")), searchPattern));
+                predicates.add(cb.like(cb.lower(root.get("replyContent")), searchPattern));
                 Expression<String> fullNameExpression = cb.concat(
                         cb.lower(joinCustomer.get("firstName")),
                         cb.concat(" ", cb.lower(joinCustomer.get("lastName")))
@@ -338,6 +345,8 @@ public class ProductReviewServiceImpl implements ProductReviewService {
                         cb.like(fullNameExpression, searchPattern),
                         cb.like(cb.lower(joinProduct.get("name")), searchPattern)
                 ));
+
+
             }
 
             // 🔍 Lọc theo vote nếu có
