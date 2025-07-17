@@ -334,19 +334,17 @@ public class ProductReviewServiceImpl implements ProductReviewService {
                 Join<ProductReviewEntity, ProductEntity> joinProduct = root.join("product", JoinType.LEFT);
                 Join<ProductReviewEntity, CustomerEntity> joinCustomer = root.join("customer", JoinType.LEFT);
 
-                predicates.add(cb.like(cb.lower(root.get("content")), searchPattern));
-                predicates.add(cb.like(cb.lower(root.get("replyContent")), searchPattern));
                 Expression<String> fullNameExpression = cb.concat(
                         cb.lower(joinCustomer.get("firstName")),
                         cb.concat(" ", cb.lower(joinCustomer.get("lastName")))
                 );
 
                 predicates.add(cb.or(
+                        cb.like(cb.lower(root.get("content")), searchPattern),
+                        cb.like(cb.lower(root.get("replyContent")), searchPattern),
                         cb.like(fullNameExpression, searchPattern),
                         cb.like(cb.lower(joinProduct.get("name")), searchPattern)
                 ));
-
-
             }
 
             // 🔍 Lọc theo vote nếu có
