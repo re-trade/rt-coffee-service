@@ -138,24 +138,6 @@ public class ProductReviewController {
                 .messages("Update reply product review success")
                 .build());
     }
-    @GetMapping("search")
-    public ResponseEntity<ResponseObject<List<ProductReviewResponse>>> getAllProductReviewsBySellerAndSearch(
-            @RequestParam(required = false, name = "q") String search,
-            @RequestParam(required = false) Double vote,
-            @PageableDefault(size = 10) Pageable pageable) {
-        var queryWrapper = new QueryWrapper.QueryWrapperBuilder()
-                .search(search)
-                .wrapSort(pageable)
-                .build();
-
-        var result = productReviewService.getAllProductReviewsBySellerAndSearch(vote,search,queryWrapper);
-        return ResponseEntity.ok(new ResponseObject.Builder<List<ProductReviewResponse>>()
-                .success(true)
-                .code("SUCCESS")
-                .unwrapPaginationWrapper(result)
-                .messages("Get product review success")
-                .build());
-    }
     @GetMapping("stats")
     public ResponseEntity<ResponseObject<ReviewStatsResponse>> getStatsSeller(){
         var result = productReviewService.getStatsSeller();
@@ -166,6 +148,25 @@ public class ProductReviewController {
                 .messages("Get stats seller review success")
                 .build());
 
+    }
+
+    @GetMapping("search")
+    public ResponseEntity<ResponseObject<List<ProductReviewResponse>>> getAllProductReviewsBySellerAndSearch(
+            @RequestParam(required = false, name = "q") String search,
+            @RequestParam(required = false) Double vote,
+            @PageableDefault(size = 10) Pageable pageable) {
+        var queryWrapper = new QueryWrapper.QueryWrapperBuilder()
+                .search(search)
+                .wrapSort(pageable)
+                .build();
+
+        var result = productReviewService.getAllProductReviewsBySellerAndSearch(vote,queryWrapper);
+        return ResponseEntity.ok(new ResponseObject.Builder<List<ProductReviewResponse>>()
+                .success(true)
+                .code("SUCCESS")
+                .unwrapPaginationWrapper(result)
+                .messages("Get product review success")
+                .build());
     }
 
 }
