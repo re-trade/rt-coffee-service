@@ -320,11 +320,12 @@ public class ProductReviewServiceImpl implements ProductReviewService {
 
         return productReviewRepository.query(queryWrapper, (param) -> (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
-
+            predicates.add(cb.equal(root.get("seller"), seller));
+            // Join để search
             Join<ProductReviewEntity, ProductEntity> joinProduct = root.join("product", JoinType.LEFT);
-            Join<ProductEntity, CustomerEntity> joinCustomer = joinProduct.join("customer", JoinType.LEFT);
+            Join<ProductReviewEntity, CustomerEntity> joinCustomer = root.join("customer", JoinType.LEFT);
 
-            // 🔍 Search by fullName (firstName + lastName) or product.name
+            // 🔍 Tìm theo từ khóa (tên khách hàng hoặc tên sản phẩm)
             if (keyword != null && !keyword.getValue().toString().trim().isEmpty()) {
                 String searchPattern = "%" + keyword.getValue().toString().toLowerCase() + "%";
 
@@ -338,11 +339,13 @@ public class ProductReviewServiceImpl implements ProductReviewService {
                         cb.like(cb.lower(joinProduct.get("name")), searchPattern)
                 ));
             }
+
+            // 🔍 Lọc theo vote nếu có
             if (vote != null) {
                 predicates.add(cb.equal(root.get("vote"), vote));
             }
-            return getProductReviewPredicate(param, root, cb, predicates);
 
+            return getProductReviewPredicate(param, root, cb, predicates);
         }, (items) -> {
             var list = items.map(this::maptoProductReviewResponse).stream().toList();
             return new PaginationWrapper.Builder<List<ProductReviewResponse>>()
@@ -351,6 +354,7 @@ public class ProductReviewServiceImpl implements ProductReviewService {
                     .build();
         });
     }
+
 
     private Predicate getProductReviewPredicate(Map<String, QueryFieldWrapper> param, Root<ProductReviewEntity> root, CriteriaBuilder cb, List<Predicate> predicates) {
         if (param != null || !param.isEmpty()) {
