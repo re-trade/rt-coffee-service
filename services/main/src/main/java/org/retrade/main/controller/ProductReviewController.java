@@ -154,13 +154,14 @@ public class ProductReviewController {
     public ResponseEntity<ResponseObject<List<ProductReviewResponse>>> getAllProductReviewsBySellerAndSearch(
             @RequestParam(required = false, name = "q") String search,
             @RequestParam(required = false) Double vote,
+            @RequestParam(required = false) String isReply,
             @PageableDefault(size = 10) Pageable pageable) {
         var queryWrapper = new QueryWrapper.QueryWrapperBuilder()
                 .search(search)
                 .wrapSort(pageable)
                 .build();
 
-        var result = productReviewService.getAllProductReviewsBySellerAndSearch(vote,queryWrapper);
+        var result = productReviewService.getAllProductReviewsBySellerAndSearch(vote,isReply,queryWrapper);
         return ResponseEntity.ok(new ResponseObject.Builder<List<ProductReviewResponse>>()
                 .success(true)
                 .code("SUCCESS")

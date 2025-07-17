@@ -31,5 +31,5 @@ public interface ProductReviewService {
 
     ReviewStatsResponse getStatsSeller();
 
-    PaginationWrapper <List<ProductReviewResponse>> getAllProductReviewsBySellerAndSearch(Double vote, QueryWrapper queryWrapper);
+    PaginationWrapper <List<ProductReviewResponse>> getAllProductReviewsBySellerAndSearch(Double vote,String isReply, QueryWrapper queryWrapper);
 }
