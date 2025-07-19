@@ -42,6 +42,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.awt.image.BufferedImage;
 import java.io.IOException;
@@ -264,6 +265,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
+    @Transactional
     public void logoutAll(HttpServletRequest request, HttpServletResponse response) {
         var account = authUtils.getUserAccountFromAuthentication();
         String pattern = "refresh:user:" + account.getId() + ":*";
