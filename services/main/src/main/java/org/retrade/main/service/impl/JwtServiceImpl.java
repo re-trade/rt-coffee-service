@@ -29,43 +29,53 @@ import java.util.Optional;
 @Service
 @RequiredArgsConstructor
 public class JwtServiceImpl implements JwtService {
+
     private final JwtConfig jwtTokenConfig;
     private final HostConfig hostConfig;
+
     @Override
     public String generateToken(Authentication authentication, JwtTokenType tokenType) {
         UserDetails user = (UserDetails) authentication.getPrincipal();
-        var roles = user.getAuthorities().toArray(new GrantedAuthority[0]);
-        return generateToken(user.getUsername(), Arrays.stream(roles).map(GrantedAuthority::getAuthority).toList(),tokenType);
+        var roles = user.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .toList();
+        return generateToken(UserClaims.builder()
+                .username(user.getUsername())
+                .roles(roles)
+                .tokenType(tokenType)
+                .build());
     }
+
     @Override
     public Claims generateClaims(UserClaims claimInfo) {
         Claims claims = Jwts.claims();
         claims.put("user", claimInfo);
         return claims;
     }
+
     @Override
-    public String generateToken(String username, List<String> role, JwtTokenType tokenType) {
-        Date currentDate = new Date(System.currentTimeMillis());
-        Date expiryDate = getExpiryDate(tokenType, currentDate);
-        return Jwts.builder()
-                .setSubject(username)
-                .setIssuedAt(currentDate)
-                .setClaims(generateClaims(UserClaims.builder()
-                        .username(username)
-                        .roles(role)
-                        .tokenType(tokenType)
-                        .build()))
-                .setExpiration(expiryDate)
-                .signWith(getSigningKey(tokenType))
-                .compact();
+    public String generateToken(String username, List<String> roles, JwtTokenType tokenType) {
+        return generateToken(UserClaims.builder()
+                .username(username)
+                .roles(roles)
+                .tokenType(tokenType)
+                .build());
     }
-
-
 
     @Override
     public String generateToken(UserClaims userClaims) {
-        return generateToken(userClaims.getUsername(),userClaims.getRoles(),userClaims.getTokenType());
+        Date currentDate = new Date(System.currentTimeMillis());
+        Date expiryDate = getExpiryDate(userClaims.getTokenType(), currentDate);
+
+        return Jwts.builder()
+                .setSubject(userClaims.getUsername())
+                .setIssuedAt(currentDate)
+                .setClaims(generateClaims(userClaims))
+                .setExpiration(expiryDate)
+                .signWith(getSigningKey(userClaims.getTokenType()))
+                .compact();
     }
+
     private SecretKey getSigningKey(JwtTokenType tokenType) {
         String secretKey = switch (tokenType) {
             case ACCESS_TOKEN -> jwtTokenConfig.getAccessToken().getKey();
@@ -74,13 +84,16 @@ public class JwtServiceImpl implements JwtService {
         };
         return Keys.hmacShaKeyFor(Decoders.BASE64.decode(secretKey));
     }
+
     @Override
     public Optional<UserClaims> getUserClaimsFromJwt(String token, JwtTokenType tokenType) {
         try {
             var claims = Jwts.parserBuilder()
                     .setSigningKey(getSigningKey(tokenType))
                     .build()
-                    .parseClaimsJws(token).getBody();
+                    .parseClaimsJws(token)
+                    .getBody();
+
             ObjectMapper objectMapper = new ObjectMapper();
             String userJson = objectMapper.writeValueAsString(claims.get("user"));
             return Optional.of(objectMapper.readValue(userJson, UserClaims.class));
@@ -88,6 +101,7 @@ public class JwtServiceImpl implements JwtService {
             return Optional.empty();
         }
     }
+
     @Override
     public Optional<UserClaims> getUserClaimsFromJwt(EnumMap<JwtTokenType, Cookie> cookieEnumMap) {
         return cookieEnumMap.entrySet().stream()
@@ -96,6 +110,7 @@ public class JwtServiceImpl implements JwtService {
                 .findFirst()
                 .orElse(Optional.empty());
     }
+
     @Override
     public Cookie tokenCookieWarp(String token, JwtTokenType tokenType) {
         long jwtEx = switch (tokenType) {
@@ -108,23 +123,28 @@ public class JwtServiceImpl implements JwtService {
         cookie.setPath("/");
         cookie.setHttpOnly(true);
         cookie.setSecure(true);
-        cookie.setMaxAge((int) (jwtEx));
+        cookie.setMaxAge((int) jwtEx);
         cookie.setAttribute("SameSite", "None");
+
         if (!hostConfig.getBaseHost().isEmpty() && !hostConfig.getDevelopMode()) {
             cookie.setDomain(hostConfig.getBaseHost());
         }
+
         return cookie;
     }
+
     @Override
     public void removeAuthToken(HttpServletRequest request, HttpServletResponse response) {
         var cookieRequest = request.getCookies();
         if (cookieRequest == null) {
             return;
         }
-        var authCookie = Arrays.stream(cookieRequest).filter(cookie -> cookie.getName().equals(JwtTokenType.ACCESS_TOKEN.toString()) || cookie.getName().equals(JwtTokenType.REFRESH_TOKEN.name()) ).toList();
-        authCookie.forEach(cookie -> {
-            removeAuthToken(cookie, response);
-        });
+        var authCookies = Arrays.stream(cookieRequest)
+                .filter(cookie -> cookie.getName().equals(JwtTokenType.ACCESS_TOKEN.toString()) ||
+                        cookie.getName().equals(JwtTokenType.REFRESH_TOKEN.name()))
+                .toList();
+
+        authCookies.forEach(cookie -> removeAuthToken(cookie, response));
     }
 
     @Override
@@ -135,9 +155,11 @@ public class JwtServiceImpl implements JwtService {
         cookie.setHttpOnly(true);
         cookie.setSecure(true);
         cookie.setAttribute("SameSite", "None");
+
         if (!hostConfig.getBaseHost().isEmpty() && !hostConfig.getDevelopMode()) {
             cookie.setDomain(hostConfig.getBaseHost());
         }
+
         response.addCookie(cookie);
     }
 
@@ -153,16 +175,13 @@ public class JwtServiceImpl implements JwtService {
         }
         return true;
     }
-    
+
     private Date getExpiryDate(JwtTokenType tokenType, Date currentDate) {
-        Date expiryDate = null;
-        if(tokenType == JwtTokenType.ACCESS_TOKEN) {
-            expiryDate = new Date(currentDate.getTime() + jwtTokenConfig.getAccessToken().getMaxAge());
-        }else if (tokenType == JwtTokenType.REFRESH_TOKEN) {
-            expiryDate = new Date(currentDate.getTime() + jwtTokenConfig.getRefreshToken().getMaxAge());
-        }else if (tokenType == JwtTokenType.TWO_FA_TOKEN) {
-            expiryDate = new Date(currentDate.getTime() + jwtTokenConfig.getTwofaToken().getMaxAge());
-        }
-        return expiryDate;
+        long duration = switch (tokenType) {
+            case ACCESS_TOKEN -> jwtTokenConfig.getAccessToken().getMaxAge();
+            case REFRESH_TOKEN -> jwtTokenConfig.getRefreshToken().getMaxAge();
+            case TWO_FA_TOKEN -> jwtTokenConfig.getTwofaToken().getMaxAge();
+        };
+        return new Date(currentDate.getTime() + duration);
     }
 }
