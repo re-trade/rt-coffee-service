@@ -14,5 +14,7 @@ public interface BrandService {
 
     PaginationWrapper<List<BrandResponse>> getAllBrands(QueryWrapper queryWrapper);
 
+    PaginationWrapper<List<BrandResponse>> getAllBrandByCategoriesList(QueryWrapper queryWrapper);
+
     List<BrandResponse> getAllBrandNoPaging();
 }

@@ -56,6 +56,21 @@ public class BrandController {
                 .build());
     }
 
+    @GetMapping("categories")
+    public ResponseEntity<ResponseObject<List<BrandResponse>>> getBrandsWithCategories(
+            @RequestParam(required = false, name = "q") String query,
+            @PageableDefault Pageable pageable) {
+        var wrapper = QueryWrapper.builder().wrapSort(pageable).search(query).build();
+        var response = brandService.getAllBrandByCategoriesList(wrapper);
+        return ResponseEntity.ok(new ResponseObject.Builder<List<BrandResponse>>()
+                .success(true)
+                .code("BRANDS_RETRIEVED")
+                .messages("Brands retrieved successfully")
+                .unwrapPaginationWrapper(response)
+                .build());
+    }
+
+
     @GetMapping("all")
     public ResponseEntity<ResponseObject<List<BrandResponse>>> getAllBrandNoPaging() {
         var response = brandService.getAllBrandNoPaging();
