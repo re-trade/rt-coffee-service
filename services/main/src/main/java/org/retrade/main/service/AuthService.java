@@ -32,4 +32,8 @@ public interface AuthService {
     void resetPassword(ResetPasswordRequest request);
 
     void logout(HttpServletRequest request, HttpServletResponse response);
+
+    void logoutAll(HttpServletRequest request, HttpServletResponse response);
+
+    AuthResponse refreshAuthentication(HttpServletRequest request);
 }

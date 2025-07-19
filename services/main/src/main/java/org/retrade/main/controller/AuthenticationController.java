@@ -160,7 +160,41 @@ public class AuthenticationController {
         );
     }
 
+    @PostMapping("refresh-token")
+    public ResponseEntity<ResponseObject<AuthResponse>> refreshToken(HttpServletRequest request) {
+        var result = authService.refreshAuthentication(request);
+        return ResponseEntity.ok(new ResponseObject.Builder<AuthResponse>()
+                .code("AUTH_SUCCESS")
+                .success(true)
+                .messages("Authentication refresh token successful")
+                .content(result)
+                .build()
+        );
+    }
 
+    @PostMapping("logout")
+    public ResponseEntity<ResponseObject<Void>> logout(HttpServletRequest request, HttpServletResponse response) {
+        authService.logout(request, response);
+        return ResponseEntity.ok(
+                new ResponseObject.Builder<Void>()
+                        .code("SUCCESS")
+                        .messages("Logout Success")
+                        .success(true)
+                        .build()
+        );
+    }
+
+    @PostMapping("logout/all")
+    public ResponseEntity<ResponseObject<Void>> logoutAll(HttpServletRequest request, HttpServletResponse response) {
+        authService.logoutAll(request, response);
+        return ResponseEntity.ok(
+                new ResponseObject.Builder<Void>()
+                        .code("SUCCESS")
+                        .messages("Logout Success")
+                        .success(true)
+                        .build()
+        );
+    }
 
 
     @PostMapping("forgot-password/confirm")

@@ -13,8 +13,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.retrade.common.model.exception.ActionFailedException;
 import org.retrade.common.model.exception.ValidationException;
-import org.retrade.main.config.security.ForgotPasswordConfig;
 import org.retrade.main.config.provider.GoogleApisConfig;
+import org.retrade.main.config.security.ForgotPasswordConfig;
 import org.retrade.main.model.constant.JwtTokenType;
 import org.retrade.main.model.dto.request.AuthenticationRequest;
 import org.retrade.main.model.dto.request.ForgotPasswordRequest;
@@ -31,6 +31,7 @@ import org.retrade.main.service.AuthService;
 import org.retrade.main.service.JwtService;
 import org.retrade.main.service.MessageProducerService;
 import org.retrade.main.util.AuthUtils;
+import org.retrade.main.util.CookieUtils;
 import org.retrade.main.util.QRUtils;
 import org.retrade.main.util.TokenUtils;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -82,7 +83,7 @@ public class AuthServiceImpl implements AuthService {
             var twoFAToken = jwtService.generateToken(authentication, JwtTokenType.TWO_FA_TOKEN);
             tokenMap.put(JwtTokenType.TWO_FA_TOKEN, twoFAToken);
         }
-        saveSession(request, account);
+        saveSession(request, account, tokenMap.get(JwtTokenType.REFRESH_TOKEN));
         return AuthResponse.builder()
                 .tokens(tokenMap)
                 .roles(authentication.getAuthorities().stream().map(GrantedAuthority::getAuthority).toList())
@@ -262,7 +263,42 @@ public class AuthServiceImpl implements AuthService {
         }
     }
 
-    private void saveSession (HttpServletRequest request, AccountEntity account) {
+    @Override
+    public void logoutAll(HttpServletRequest request, HttpServletResponse response) {
+        var account = authUtils.getUserAccountFromAuthentication();
+        String pattern = "refresh:user:" + account.getId() + ":*";
+        Set<String> keys = redisTemplate.keys(pattern);
+        if (!keys.isEmpty()) {
+            redisTemplate.delete(keys);
+        }
+        loginSessionRepository.deleteAllByAccount(account);
+        jwtService.removeAuthToken(request, response);
+    }
+
+
+    @Override
+    public AuthResponse refreshAuthentication(HttpServletRequest request) {
+        EnumMap<JwtTokenType,Cookie> tokenMap = CookieUtils.getCookieMap(request);
+        if (!tokenMap.containsKey(JwtTokenType.REFRESH_TOKEN)) {
+            throw new ValidationException("Refresh token is required");
+        }
+        var claims = jwtService.getUserClaimsFromJwt(tokenMap);
+        if (claims.isEmpty()) {
+            throw new ValidationException("Refresh token is invalid");
+        }
+        var newAccessToken = jwtService.generateToken(claims.get().getUsername(), claims.get().getRoles(), JwtTokenType.ACCESS_TOKEN);
+        var refreshToken = tokenMap.get(JwtTokenType.REFRESH_TOKEN).getValue();
+        var newTokenMap = new EnumMap<JwtTokenType,String>(JwtTokenType.class);
+        newTokenMap.put(JwtTokenType.ACCESS_TOKEN, newAccessToken);
+        newTokenMap.put(JwtTokenType.REFRESH_TOKEN, refreshToken);
+        return AuthResponse.builder()
+                .tokens(newTokenMap)
+                .roles(claims.get().getRoles())
+                .twoFA(false)
+                .build();
+    }
+
+    private void saveSession (HttpServletRequest request, AccountEntity account, String refreshToken) {
         String deviceFingerprint = request.getHeader("x-device-fingerprint");
         String deviceName = request.getHeader("x-device-name");
         String ipAddress = request.getHeader("x-ip-address");
@@ -278,10 +314,15 @@ public class AuthServiceImpl implements AuthService {
                 .loginTime(Timestamp.valueOf(Instant.now().atZone(ZoneId.systemDefault()).toLocalDateTime()))
                 .build();
         try {
-            loginSessionRepository.save(loginSession);
+            var result = loginSessionRepository.save(loginSession);
+            generateSessionId(refreshToken, account, result);
         } catch (Exception ex) {
             throw new ActionFailedException("Failed to save login session");
         }
+    }
+
+    private void generateSessionId (String refreshToken, AccountEntity account, LoginSessionEntity loginSession) {
+        redisTemplate.opsForValue().set("refresh:user:" + account.getId() + ":" + loginSession.getId(), refreshToken, 30, TimeUnit.DAYS);
     }
 
     private AuthResponse wrapAccountToAuthResponse(AccountEntity account) {
