@@ -256,7 +256,7 @@ public class AuthServiceImpl implements AuthService {
     @Transactional
     public void logoutAll(HttpServletRequest request, HttpServletResponse response) {
         var account = authUtils.getUserAccountFromAuthentication();
-        String pattern = "refresh:user:" + account.getId() + ":*";
+        String pattern = "refresh:user:" + account.getUsername() + ":*";
         Set<String> keys = redisTemplate.keys(pattern);
         if (!keys.isEmpty()) redisTemplate.delete(keys);
         loginSessionRepository.deleteAllByAccount(account);
@@ -273,7 +273,7 @@ public class AuthServiceImpl implements AuthService {
         if (claims.isEmpty()) throw new ValidationException("Refresh token is invalid");
 
         var userClaims = claims.get();
-        var redisKey = "refresh:user:" + authUtils.getUserAccountFromAuthentication().getId() + ":" + userClaims.getSessionId();
+        var redisKey = "refresh:user:" + authUtils.getUserAccountFromAuthentication().getUsername() + ":" + userClaims.getSessionId();
         if (!redisTemplate.hasKey(redisKey)) {
             throw new ValidationException("Session is expired or logged out");
         }
@@ -308,7 +308,7 @@ public class AuthServiceImpl implements AuthService {
                 .build();
 
         var savedSession = loginSessionRepository.save(loginSession);
-        String redisKey = "refresh:user:" + account.getId() + ":" + savedSession.getId();
+        String redisKey = "refresh:user:" + account.getUsername() + ":" + savedSession.getId();
         redisTemplate.opsForValue().set(redisKey, "active", 30, TimeUnit.DAYS);
 
         return savedSession.getId();
