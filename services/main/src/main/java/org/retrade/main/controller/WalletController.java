@@ -10,7 +10,11 @@ import org.retrade.main.model.dto.response.BankResponse;
 import org.retrade.main.service.WalletService;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -79,4 +83,25 @@ public class WalletController {
                 .messages("Bank retrieved successfully")
                 .build());
     }
+
+    @GetMapping("banks/{bin}")
+    public ResponseEntity<ResponseObject<BankResponse>> getBanks(@PathVariable String bin) {
+        var result = walletService.getBankByBin(bin);
+        return ResponseEntity.ok(new ResponseObject.Builder<BankResponse>()
+                .success(true)
+                .code("BANK_RETRIEVED")
+                .content(result)
+                .messages("Bank retrieved successfully")
+                .build());
+    }
+
+    @GetMapping("me/withdraw/{id}/qr")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    public ResponseEntity<byte[]> getWithdrawQrByWithdrawId(@PathVariable String id) {
+        var result = walletService.getQrCodeByWithdrawRequestId(id);
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.parseMediaType(result.mimeType()));
+        return new ResponseEntity<>(result.bytes(), headers, HttpStatus.OK);
+    }
+
 }

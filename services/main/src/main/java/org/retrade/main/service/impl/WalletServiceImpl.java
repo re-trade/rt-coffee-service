@@ -15,6 +15,7 @@ import org.retrade.main.model.dto.request.VietQrGenerateRequest;
 import org.retrade.main.model.dto.request.WithdrawRequest;
 import org.retrade.main.model.dto.response.AccountWalletResponse;
 import org.retrade.main.model.dto.response.BankResponse;
+import org.retrade.main.model.dto.response.DecodedFile;
 import org.retrade.main.model.dto.response.WithdrawRequestBaseResponse;
 import org.retrade.main.model.entity.AccountEntity;
 import org.retrade.main.model.entity.TransactionEntity;
@@ -28,6 +29,7 @@ import org.retrade.main.repository.redis.VietQrBankRepository;
 import org.retrade.main.service.VietQRService;
 import org.retrade.main.service.WalletService;
 import org.retrade.main.util.AuthUtils;
+import org.retrade.main.util.HashUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -132,6 +134,27 @@ public class WalletServiceImpl implements WalletService {
                     .setData(list)
                     .build();
         });
+    }
+
+    @Override
+    public BankResponse getBankByBin(String id) {
+        var result = vietQrBankRepository.getBankByBin(id);
+        if (result.isPresent()) {
+            return wrapBankResponse(result.get());
+        }
+        throw new ValidationException("Bank not found for ID: " + id);
+    }
+
+    @Override
+    public DecodedFile getQrCodeByWithdrawRequestId(String withdrawRequestId) {
+        var withdraw = withdrawRepository.findById(withdrawRequestId).orElseThrow(() -> new ValidationException("Withdraw request not found"));
+        if (withdraw.getQrCodeUrl() == null) {
+            throw new ValidationException("QR code not found for withdraw request ID: " + withdrawRequestId);
+        }
+        if (withdraw.getStatus() != WithdrawStatusEnum.PENDING) {
+            throw new ValidationException("QR code not found for withdraw request ID: " + withdrawRequestId + " because status is " + withdraw.getStatus());
+        }
+        return HashUtils.decodeDataUrl(withdraw.getQrCodeUrl());
     }
 
     private WithdrawRequestBaseResponse wrapWithdrawRequestBaseResponse(WithdrawRequestEntity withdrawRequestEntity, Map<String, VietQrBankEntity> bankMap) {
