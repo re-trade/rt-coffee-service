@@ -82,7 +82,7 @@ public class RevenueServiceImpl implements RevenueService {
                 .items(orderItemResponses)
                 .status(orderStatus)
                 .totalPrice(combo.getGrandPrice())
-                .totalPrice(combo.getGrandPrice())
+                .feeAmount(getFeeAmount(combo.getGrandPrice()))
                 .netAmount(getTotalAmount(combo.getGrandPrice()))
                 .feePercent(getFeePercent(combo.getGrandPrice()))
                 .build();
@@ -124,6 +124,12 @@ public class RevenueServiceImpl implements RevenueService {
         BigDecimal feeMultiplier = BigDecimal.ONE.subtract(BigDecimal.valueOf(feePercent));
         return grandPrice.multiply(feeMultiplier);
     }
+    private BigDecimal getFeeAmount(BigDecimal grandPrice) {
+        double feePercent = getFeePercent(grandPrice);
+        return grandPrice.multiply(BigDecimal.valueOf(feePercent))
+                .setScale(2, RoundingMode.HALF_UP);
+    }
+
 
 
     private Predicate getOrderComboPredicate(Map<String, QueryFieldWrapper> param, Root<OrderComboEntity> root, CriteriaBuilder criteriaBuilder, List<Predicate> predicates) {
