@@ -1,8 +1,6 @@
 package org.retrade.main.service.impl;
 
-import jakarta.persistence.criteria.CriteriaBuilder;
-import jakarta.persistence.criteria.Predicate;
-import jakarta.persistence.criteria.Root;
+import jakarta.persistence.criteria.*;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.retrade.common.model.dto.request.QueryFieldWrapper;
@@ -34,7 +32,6 @@ import java.util.stream.IntStream;
 @Transactional
 @RequiredArgsConstructor
 public class ProductReviewServiceImpl implements ProductReviewService {
-
 
     private final ProductReviewRepository productReviewRepository;
     private final AuthUtils authUtils;
@@ -77,6 +74,7 @@ public class ProductReviewServiceImpl implements ProductReviewService {
         productReviewEntity.setContent(request.getContent());
         productReviewEntity.setImageReview(request.getImageReview());
         productReviewEntity.setStatus(true);
+        productReviewEntity.setHelpful(0);
         productReviewEntity.setOrderCombo(orderComboEntity);
         try {
             productReviewEntity = productReviewRepository.save(productReviewEntity);
@@ -308,35 +306,69 @@ public class ProductReviewServiceImpl implements ProductReviewService {
     }
 
     @Override
-    public PaginationWrapper<List<ProductReviewResponse>> getAllProductReviewsBySellerAndSearch(Double vote, String search, QueryWrapper queryWrapper) {
+    public PaginationWrapper<List<ProductReviewResponse>> getAllProductReviewsBySellerAndSearch(Double vote,String isReply, QueryWrapper queryWrapper) {
         if (queryWrapper == null || queryWrapper.pagination() == null) {
             throw new ValidationException("QueryWrapper or pagination cannot be null");
         }
-//        String search = queryWrapper.search() != null && !queryWrapper.search().toString().isBlank()
-//                ? queryWrapper.search().toString() : null;
-//        var search =queryWrapper.search().toString();
 
         SellerEntity seller = getSeller();
+        QueryFieldWrapper keyword = queryWrapper.search().remove("keyword");
 
         if (vote != null && (vote <= 0 || vote > 5)) {
             throw new ValidationException("Vote must be between 0 and 5, exclusive of 0");
         }
 
-        try {
-            Page<ProductReviewEntity> productReviewPage = productReviewRepository
-                    .findProductReviewsBySellerAndKeyword(vote, seller, search, queryWrapper.pagination());
-            List<ProductReviewResponse> reviewResponses = productReviewPage.getContent()
-                    .stream()
-                    .map(this::maptoProductReviewResponse)
-                    .toList();
+        return productReviewRepository.query(queryWrapper, (param) -> (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            predicates.add(cb.equal(root.get("seller"), seller));
+            if ("NO_REPLY".equals(isReply)) {
+                predicates.add(cb.isNull(root.get("replyContent")));
+            } else if ("REPLY".equals(isReply)) {
+                predicates.add(cb.and(
+                        cb.isNotNull(root.get("replyContent")),
+                        cb.notEqual(cb.trim(cb.literal(' '), root.get("replyContent")), "")
+                ));
+            }
+            if (keyword != null && !keyword.getValue().toString().trim().isEmpty()) {
+                String searchPattern = "%" + keyword.getValue().toString().toLowerCase() + "%";
+                Join<ProductReviewEntity, ProductEntity> joinProduct = root.join("product", JoinType.LEFT);
+                Join<ProductReviewEntity, CustomerEntity> joinCustomer = root.join("customer", JoinType.LEFT);
 
+                Expression<String> fullNameExpression = cb.concat(
+                        cb.lower(joinCustomer.get("firstName")),
+                        cb.concat(" ", cb.lower(joinCustomer.get("lastName")))
+                );
+
+                predicates.add(cb.or(
+                        cb.like(cb.lower(root.get("content")), searchPattern),
+                        cb.like(cb.lower(root.get("replyContent")), searchPattern),
+                        cb.like(fullNameExpression, searchPattern),
+                        cb.like(cb.lower(joinProduct.get("name")), searchPattern)
+                ));
+            }
+
+            // 🔍 Lọc theo vote nếu có
+            if (vote != null) {
+                predicates.add(cb.equal(root.get("vote"), vote));
+            }
+
+            return getProductReviewPredicate(param, root, cb, predicates);
+        }, (items) -> {
+            var list = items.map(this::maptoProductReviewResponse).stream().toList();
             return new PaginationWrapper.Builder<List<ProductReviewResponse>>()
-                    .setData(reviewResponses)
-                    .setPaginationInfo(productReviewPage)
+                    .setData(list)
+                    .setPaginationInfo(items)
                     .build();
-        } catch (Exception e) {
-            throw new ActionFailedException("Failed to fetch product reviews: " + e.getMessage());
+        });
+    }
+
+
+    private Predicate getProductReviewPredicate(Map<String, QueryFieldWrapper> param, Root<ProductReviewEntity> root, CriteriaBuilder cb, List<Predicate> predicates) {
+        if (param != null || !param.isEmpty()) {
+            Predicate[] predicateArray = productRepository.createDefaultPredicate(cb, root, param);
+            predicates.addAll(Arrays.asList(predicateArray));
         }
+        return cb.and(predicates.toArray(new Predicate[0]));
     }
 
     @Override

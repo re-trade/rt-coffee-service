@@ -29,7 +29,7 @@ public interface ProductReviewService {
 
     ProductReviewResponse updateReplyProductReview(String id, String content);
 
-    PaginationWrapper <List<ProductReviewResponse>> getAllProductReviewsBySellerAndSearch(Double vote,String search, QueryWrapper queryWrapper);
-
     ReviewStatsResponse getStatsSeller();
+
+    PaginationWrapper <List<ProductReviewResponse>> getAllProductReviewsBySellerAndSearch(Double vote,String isReply, QueryWrapper queryWrapper);
 }

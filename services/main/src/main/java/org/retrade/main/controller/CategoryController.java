@@ -66,6 +66,24 @@ public class CategoryController {
                 .pageable(pageable)
                 .search(query)
                 .build();
+        var categories = categoryService.getAllCategories(wrapper);
+        return ResponseEntity.ok(new ResponseObject.Builder<List<CategoryResponse>>()
+                .success(true)
+                .code("CATEGORIES_RETRIEVED")
+                .messages("Categories retrieved successfully")
+                .unwrapPaginationWrapper(categories)
+                .build());
+    }
+
+    @GetMapping("visible")
+    public ResponseEntity<ResponseObject<List<CategoryResponse>>> getAllVisibleCategories(
+            @Parameter(description = "Pagination parameters (page, size, sort)") @PageableDefault Pageable pageable,
+            @Parameter(description = "Search query to filter categories by name") @RequestParam(required = false, name = "q") String query
+    ) {
+        var wrapper = QueryWrapper.builder()
+                .pageable(pageable)
+                .search(query)
+                .build();
         var categories = categoryService.getAllVisibleCategories(wrapper);
         return ResponseEntity.ok(new ResponseObject.Builder<List<CategoryResponse>>()
                 .success(true)
@@ -74,6 +92,7 @@ public class CategoryController {
                 .unwrapPaginationWrapper(categories)
                 .build());
     }
+
     @GetMapping("/all")
     public ResponseEntity<ResponseObject<List<CategoryResponse>>> getAllCategoriesNoPagination(){
         var response = categoryService.getAllCategoriesNoPagination();
