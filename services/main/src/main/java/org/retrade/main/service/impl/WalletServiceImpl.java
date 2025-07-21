@@ -111,6 +111,19 @@ public class WalletServiceImpl implements WalletService {
         withdrawRepository.save(withdraw);
     }
 
+
+    @Transactional
+    @Override
+    public void cancelWithdrawRequest(String withdrawRequestId) {
+        var withdraw = withdrawRepository.findById(withdrawRequestId).orElseThrow(() -> new ValidationException("Withdraw request not found"));
+        if (withdraw.getStatus() != WithdrawStatusEnum.PENDING) {
+            throw new ValidationException("Withdraw status is not PENDING, cannot cancel");
+        }
+        withdraw.setStatus(WithdrawStatusEnum.REJECTED);
+        withdraw.setProcessedDate(new Timestamp(System.currentTimeMillis()));
+        withdrawRepository.save(withdraw);
+    }
+
     @Override
     public PaginationWrapper<List<BankResponse>> getBankList(QueryWrapper queryWrapper) {
         var result = vietQrBankRepository.search(queryWrapper);

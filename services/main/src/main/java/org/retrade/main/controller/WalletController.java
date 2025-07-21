@@ -7,6 +7,7 @@ import org.retrade.common.model.dto.response.ResponseObject;
 import org.retrade.main.model.dto.request.WithdrawRequest;
 import org.retrade.main.model.dto.response.AccountWalletResponse;
 import org.retrade.main.model.dto.response.BankResponse;
+import org.retrade.main.model.dto.response.WithdrawRequestBaseResponse;
 import org.retrade.main.service.WalletService;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
@@ -45,6 +46,16 @@ public class WalletController {
                 .build());
     }
 
+    @PostMapping("withdraw/{id}/cancel")
+    public ResponseEntity<ResponseObject<Void>> withdrawCancel(@PathVariable String id) {
+        walletService.cancelWithdrawRequest(id);
+        return ResponseEntity.ok(new ResponseObject.Builder<Void>()
+                .success(true)
+                .code("WITHDRAW_CANCELED")
+                .messages("Withdraw canceled successfully")
+                .build());
+    }
+
     @GetMapping("me/balance")
     public ResponseEntity<ResponseObject<AccountWalletResponse>> getAccountBalance() {
         var result = walletService.getUserAccountWallet();
@@ -57,12 +68,12 @@ public class WalletController {
     }
 
     @GetMapping("me/withdraw")
-    public ResponseEntity<ResponseObject<List<AccountWalletResponse>>> getAccountWithdrawalHistory(@PageableDefault Pageable pageable, @RequestParam(required = false) String q) {
+    public ResponseEntity<ResponseObject<List<WithdrawRequestBaseResponse>>> getAccountWithdrawalHistory(@PageableDefault Pageable pageable, @RequestParam(required = false) String q) {
         var result = walletService.getWithdrawRequestList(QueryWrapper.builder()
                         .wrapSort(pageable)
                         .search(q)
                 .build());
-        return ResponseEntity.ok(new ResponseObject.Builder<List<AccountWalletResponse>>()
+        return ResponseEntity.ok(new ResponseObject.Builder<List<WithdrawRequestBaseResponse>>()
                 .code("WITHDRAW_HISTORY_RETRIEVED")
                 .success(true)
                 .messages("Withdraw history retrieved successfully")
