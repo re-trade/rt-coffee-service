@@ -150,6 +150,7 @@ public class CustomerBankInfoServiceImpl implements CustomerBankInfoService {
                 .accountNumber(customerBankInfoEntity.getAccountNumber())
                 .bankBin(customerBankInfoEntity.getBankBin())
                 .userBankName(customerBankInfoEntity.getUserBankName())
+                .addedDate(customerBankInfoEntity.getCreatedDate())
                 .build();
     }
 }

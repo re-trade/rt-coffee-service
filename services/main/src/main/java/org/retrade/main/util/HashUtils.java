@@ -1,5 +1,6 @@
 package org.retrade.main.util;
 
+import org.retrade.main.model.dto.response.DecodedFile;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.Mac;
@@ -62,6 +63,21 @@ public class HashUtils {
         } catch (Exception ex) {
             return "";
         }
+    }
+
+    public static DecodedFile decodeDataUrl(String dataUrl) {
+        if (dataUrl == null || !dataUrl.contains(",")) {
+            throw new IllegalArgumentException("Invalid Data URL");
+        }
+
+        String[] parts = dataUrl.split(",", 2);
+        String metadata = parts[0];
+        String base64Content = parts[1];
+
+        String mimeType = metadata.substring(metadata.indexOf(":") + 1, metadata.indexOf(";"));
+        byte[] bytes = Base64.getDecoder().decode(base64Content);
+
+        return new DecodedFile(bytes, mimeType);
     }
 
     public String getRandomNumber(int length) {

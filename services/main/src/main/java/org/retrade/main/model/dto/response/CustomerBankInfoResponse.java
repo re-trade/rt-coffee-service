@@ -5,6 +5,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.sql.Timestamp;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -15,4 +17,5 @@ public class CustomerBankInfoResponse {
     private String bankName;
     private String accountNumber;
     private String userBankName;
+    private Timestamp addedDate;
 }
