@@ -13,7 +13,7 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 public class RevenueStatResponse {
     private BigDecimal totalRevenue;
-    private double totalOrder;
-    private BigDecimal availableBalance;
-    private BigDecimal aov;
+    private Long totalOrder;
+    private BigDecimal averageOrderValue;
+    private Long totalItemsSold;
 }

@@ -9,11 +9,11 @@ import org.retrade.common.model.dto.response.PaginationWrapper;
 import org.retrade.common.model.exception.ValidationException;
 import org.retrade.main.model.constant.OrderStatusCodes;
 import org.retrade.main.model.dto.response.*;
-import org.retrade.main.model.entity.OrderComboEntity;
-import org.retrade.main.model.entity.OrderDestinationEntity;
-import org.retrade.main.model.entity.OrderItemEntity;
-import org.retrade.main.model.entity.SellerEntity;
+import org.retrade.main.model.entity.*;
 import org.retrade.main.repository.jpa.OrderComboRepository;
+import org.retrade.main.repository.jpa.OrderItemRepository;
+import org.retrade.main.repository.jpa.OrderStatusRepository;
+import org.retrade.main.repository.jpa.SellerRepository;
 import org.retrade.main.service.RevenueService;
 import org.retrade.main.util.AuthUtils;
 import org.retrade.main.util.OrderStatusValidator;
@@ -31,6 +31,8 @@ public class RevenueServiceImpl implements RevenueService {
     private final OrderComboRepository orderComboRepository;
     private final AuthUtils authUtils;
     private final OrderStatusValidator orderStatusValidator;
+    private final OrderItemRepository orderItemRepository;
+    private final OrderStatusRepository orderStatusRepository;
     @Override
     public PaginationWrapper<List<RevenueResponse>> getMyRevenue(QueryWrapper queryWrapper) {
         var seller = getSeller();
@@ -142,8 +144,22 @@ public class RevenueServiceImpl implements RevenueService {
 
     @Override
     public RevenueStatResponse getStatsRevenue() {
-        return null;
+        var seller = getSeller();
+        OrderStatusEntity orderStatus = orderStatusRepository.findByCode(OrderStatusCodes.COMPLETED).orElseThrow(
+                () -> new ValidationException("order status not found")
+        );
+        var totalPrice = orderComboRepository.getTotalPriceAfterFeeBySellerAndStatus(seller, orderStatus);
+        var totalOrder = orderComboRepository.countOrdersBySellerAndStatus(seller, orderStatus);
+        var aov = orderComboRepository.getAverageGrandPriceBySellerAndStatus(seller, orderStatus);
+        var totalItemsSold =orderComboRepository.getTotalItemsSoldBySellerAndStatus(seller, orderStatus);
+        return RevenueStatResponse.builder()
+                .totalRevenue(totalPrice)
+                .totalOrder(totalOrder)
+                .averageOrderValue(aov)
+                .totalItemsSold(totalItemsSold)
+                .build();
     }
+
 
     private SellerEntity getSeller() {
         return authUtils.getUserAccountFromAuthentication().getSeller();
