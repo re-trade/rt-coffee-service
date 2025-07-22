@@ -72,4 +72,15 @@ public class CustomerAddressController {
                 .messages("Customer profile updated successfully")
                 .build());
     }
+
+    @DeleteMapping("{id}")
+    public ResponseEntity<ResponseObject<CustomerContactResponse>> removeCustomerContact(@PathVariable String id) {
+        var result = customerService.removeCustomerContact(id);
+        return ResponseEntity.ok(new ResponseObject.Builder<CustomerContactResponse>()
+                .success(true)
+                .code("SUCCESS")
+                .content(result)
+                .messages("Customer profile updated successfully")
+                .build());
+    }
 }

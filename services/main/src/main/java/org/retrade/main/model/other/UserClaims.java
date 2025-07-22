@@ -16,4 +16,5 @@ public class UserClaims {
     private String username;
     private List<String> roles;
     private JwtTokenType tokenType;
+    private String sessionId;
 }

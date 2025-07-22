@@ -3,6 +3,7 @@ package org.retrade.main.repository.jpa;
 import org.retrade.common.repository.BaseJpaRepository;
 import org.retrade.main.model.entity.AccountEntity;
 import org.retrade.main.model.entity.LoginSessionEntity;
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Repository;
 
 import java.sql.Timestamp;
@@ -14,4 +15,5 @@ public interface LoginSessionRepository extends BaseJpaRepository<LoginSessionEn
     List<LoginSessionEntity> findByAccountAndLoginTimeAfter(AccountEntity account, Timestamp loginTime);
     List<LoginSessionEntity> findByDeviceFingerprint(String deviceFingerprint);
     List<LoginSessionEntity> findByIpAddress(String ipAddress);
+    void deleteAllByAccount(@NonNull AccountEntity account);
 }
