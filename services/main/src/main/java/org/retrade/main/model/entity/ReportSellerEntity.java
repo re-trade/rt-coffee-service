@@ -23,10 +23,10 @@ public class ReportSellerEntity extends BaseSQLEntity {
     @Column(name = "content", nullable = false, columnDefinition = "TEXT")
     private String content;
 
-    @Column(name = "resolution_status", nullable = false, columnDefinition = "TEXT")
+    @Column(name = "resolution_status",  columnDefinition = "TEXT")
     private String resolutionStatus;
 
-    @Column(name = "resolution_detail", nullable = false, columnDefinition = "TEXT")
+    @Column(name = "resolution_detail",  columnDefinition = "TEXT")
     private String resolutionDetail;
 
     @Column(name = "resolution_date", nullable = false)
