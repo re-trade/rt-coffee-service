@@ -50,7 +50,7 @@ public class ReportSellerController {
         return ResponseEntity.ok(new ResponseObject.Builder<List<ReportSellerResponse>>()
                 .success(true)
                 .code("SUCCESS")
-                .content(result)
+                        .unwrapPaginationWrapper(result)
                 .messages("Get all report seller successfully")
                 .build());
     }
@@ -75,7 +75,7 @@ public class ReportSellerController {
                 new ResponseObject.Builder<List<ReportSellerResponse>>()
                         .success(true)
                         .code("SUCCESS")
-                        .content(result)
+                        .unwrapPaginationWrapper(result)
                         .messages("Get all report by seller id successfully")
                         .build()
         );

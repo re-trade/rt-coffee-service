@@ -13,10 +13,9 @@ import org.retrade.main.model.entity.*;
 import org.retrade.main.repository.jpa.OrderComboRepository;
 import org.retrade.main.repository.jpa.OrderItemRepository;
 import org.retrade.main.repository.jpa.OrderStatusRepository;
-import org.retrade.main.repository.jpa.SellerRepository;
 import org.retrade.main.service.RevenueService;
 import org.retrade.main.util.AuthUtils;
-import org.retrade.main.util.OrderStatusValidator;
+import org.retrade.main.validator.OrderStatusValidator;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
