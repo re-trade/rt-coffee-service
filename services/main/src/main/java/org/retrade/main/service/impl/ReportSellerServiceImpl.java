@@ -49,6 +49,7 @@ public class ReportSellerServiceImpl implements ReportSellerService {
                 .typeReport(request.getTypeReport())
                 .content(request.getContent())
                 .orderCombo(orderComboEntity)
+                .resolutionStatus("PENDING")
                 .seller(productEntity.getSeller())
                 .customer(customer)
                 .image(request.getImage())
@@ -168,7 +169,7 @@ public class ReportSellerServiceImpl implements ReportSellerService {
         ReportSellerEntity reportSellerEntity = reportSellerRepository.findById(reportId).orElseThrow(
                 () -> new ValidationException("Report not found with id: " + reportId)
         );
-        reportSellerEntity.setResolutionStatus("ACCEPT");
+        reportSellerEntity.setResolutionStatus("ACCEPTED");
         reportSellerRepository.save(reportSellerEntity);
         return mapToReportSellerResponse(reportSellerEntity);
     }
@@ -178,7 +179,7 @@ public class ReportSellerServiceImpl implements ReportSellerService {
         ReportSellerEntity reportSellerEntity = reportSellerRepository.findById(reportId).orElseThrow(
                 () -> new ValidationException("Report not found with id: " + reportId)
         );
-        reportSellerEntity.setResolutionStatus("REJECT");
+        reportSellerEntity.setResolutionStatus("REJECTED");
         reportSellerRepository.save(reportSellerEntity);
         return mapToReportSellerResponse(reportSellerEntity);    }
 
