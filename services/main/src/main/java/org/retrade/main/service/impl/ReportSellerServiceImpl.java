@@ -16,9 +16,7 @@ import org.retrade.main.model.entity.OrderComboEntity;
 import org.retrade.main.model.entity.OrderStatusEntity;
 import org.retrade.main.model.entity.ProductEntity;
 import org.retrade.main.model.entity.ReportSellerEntity;
-import org.retrade.main.repository.jpa.OrderComboRepository;
-import org.retrade.main.repository.jpa.ProductRepository;
-import org.retrade.main.repository.jpa.ReportSellerRepository;
+import org.retrade.main.repository.jpa.*;
 import org.retrade.main.service.ReportSellerService;
 import org.retrade.main.util.AuthUtils;
 import org.springframework.stereotype.Service;
@@ -31,6 +29,8 @@ public class ReportSellerServiceImpl implements ReportSellerService {
     private final ReportSellerRepository reportSellerRepository;
     private final ProductRepository productRepository;
     private final OrderComboRepository orderComboRepository;
+    private final SellerRepository sellerRepository;
+    private final OrderItemRepository orderItemRepository;
     private final AuthUtils authUtils;
 
     @Override
@@ -38,11 +38,13 @@ public class ReportSellerServiceImpl implements ReportSellerService {
         var account = authUtils.getUserAccountFromAuthentication();
         var customer = account.getCustomer();
 
+        validateReportSummitRequest(request);
         OrderComboEntity orderComboEntity = orderComboRepository.findById(request.getOrderId())
                 .orElseThrow(() -> new ValidationException("Order not found with id: " + request.getOrderId()));
 
         ProductEntity productEntity = productRepository.findById(request.getProductId())
                 .orElseThrow(() -> new ValidationException("Product not found with id: " + request.getProductId()));
+
 
         validateReportOnOrderComboStatus(orderComboEntity.getOrderStatus());
 
@@ -161,6 +163,31 @@ public class ReportSellerServiceImpl implements ReportSellerService {
     @Override
     public ReportSellerResponse processReportSeller(String id, String resolutionDetail) {
         return null;
+    }
+
+    private void validateReportSummitRequest(CreateReportSellerRequest request) {
+        var comboExisted = orderComboRepository.existsById(request.getOrderId());
+        var productExisted = productRepository.existsById(request.getProductId());
+        var sellerExisted = sellerRepository.existsById(request.getProductId());
+        var productComboExisted = orderItemRepository.existsById(request.getProductId());
+        if (!comboExisted) {
+            throw new ValidationException("Order combo not found with id: " + request.getOrderId());
+        }
+        if (!productExisted) {
+            throw new ValidationException("Product not found with id: " + request.getProductId());
+        }
+        if (!sellerExisted) {
+            throw new ValidationException("Seller not found with id: " + request.getSellerId());
+        }
+        if (!productComboExisted) {
+            throw new ValidationException("Product combo not found with id: " + request.getProductId());
+        }
+        if (request.getTypeReport() == null) {
+            throw new ValidationException("Type report is not valid");
+        }
+        if (request.getContent() == null) {
+            throw new ValidationException("Content is not valid");
+        }
     }
 
     private void validateReportOnOrderComboStatus(OrderStatusEntity orderStatus) {
