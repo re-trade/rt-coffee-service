@@ -162,7 +162,6 @@ public class CartServiceTest {
         assertEquals(5, response.getCartGroupResponses().get(0).getItems().iterator().next().getQuantity());
     }
 
-
     @Test
     void testRemoveFromCart_Success() {
 
@@ -283,7 +282,7 @@ public class CartServiceTest {
         CartResponse response = cartService.addToCart(request);
 
         int quantity = response.getCartGroupResponses().get(0).getItems().iterator().next().getQuantity();
-        assertEquals(5, quantity); // 3 old + 2 new = 5
+        assertEquals(5, quantity);
     }
 
     @Test
@@ -333,7 +332,5 @@ public class CartServiceTest {
 
         assertThrows(ActionFailedException.class, () -> cartService.addToCart(request));
     }
-
-
 
 }
