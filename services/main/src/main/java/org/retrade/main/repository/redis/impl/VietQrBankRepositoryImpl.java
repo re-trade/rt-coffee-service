@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
+import org.retrade.common.model.constant.QueryOperatorEnum;
 import org.retrade.common.model.dto.request.QueryWrapper;
 import org.retrade.main.config.provider.VietQRConfig;
 import org.retrade.main.model.dto.response.VietQrBankListResponse;
@@ -84,7 +85,12 @@ public class VietQrBankRepositoryImpl implements VietQrBankRepository {
                 .filter(bank -> {
                     boolean matches = true;
                     if (id != null) {
-                        matches = id.getValue().toString().equals(String.valueOf(bank.getId()));
+                        var value = id.getValue();
+                        if (value instanceof List<?> ids && id.getOperator() == QueryOperatorEnum.IN) {
+                            matches = ids.stream().map(Object::toString).toList().contains(String.valueOf(bank.getId()));
+                        } else {
+                            matches = id.getValue().toString().equals(String.valueOf(bank.getId()));
+                        }
                     }
                     if (name != null) {
                         matches = matches && bank.getName() != null && bank.getName().toLowerCase().contains(name.getValue().toString().toLowerCase());

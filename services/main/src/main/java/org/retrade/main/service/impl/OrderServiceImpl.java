@@ -8,6 +8,7 @@ import org.retrade.common.model.dto.request.QueryWrapper;
 import org.retrade.common.model.dto.response.PaginationWrapper;
 import org.retrade.common.model.exception.ActionFailedException;
 import org.retrade.common.model.exception.ValidationException;
+import org.retrade.main.model.constant.OrderStatusCodes;
 import org.retrade.main.model.dto.request.CreateOrderRequest;
 import org.retrade.main.model.dto.request.OrderItemRequest;
 import org.retrade.main.model.dto.response.*;
@@ -389,8 +390,7 @@ public class OrderServiceImpl implements OrderService {
 
         return orderComboRepository.query(queryWrapper, (param) -> (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
-            Join<OrderComboEntity, OrderDestinationEntity> destinationJoin = root.join("orderDestination", JoinType.LEFT);
-            Join<OrderComboEntity, OrderItemEntity> itemJoin = root.joinSet("orderItems", JoinType.LEFT);
+
 
             predicates.add(criteriaBuilder.equal(root.get("seller"), seller));
             if (orderStatus != null) {
@@ -401,6 +401,8 @@ public class OrderServiceImpl implements OrderService {
             predicates.add(criteriaBuilder.notEqual(root.get("orderStatus").get("code"), "PAYMENT_FAILED"));
             if (keyword != null && !keyword.getValue().toString().trim().isEmpty()) {
                 String searchPattern = "%" + keyword.getValue().toString().toLowerCase() + "%";
+                Join<OrderComboEntity, OrderDestinationEntity> destinationJoin = root.join("orderDestination", JoinType.LEFT);
+                Join<OrderComboEntity, OrderItemEntity> itemJoin = root.joinSet("orderItems", JoinType.LEFT);
                 predicates.add(criteriaBuilder.or(
                         criteriaBuilder.like(criteriaBuilder.lower(destinationJoin.get("customerName")), searchPattern),
                         criteriaBuilder.like(criteriaBuilder.lower(itemJoin.get("productName")), searchPattern)

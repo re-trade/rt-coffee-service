@@ -13,7 +13,7 @@ import java.sql.Timestamp;
 @NoArgsConstructor
 @Builder
 public class LoginSessionEntity extends BaseSQLEntity {
-    @ManyToOne(optional = false, cascade = {CascadeType.ALL}, fetch = FetchType.LAZY, targetEntity = AccountEntity.class)
+    @ManyToOne(optional = false, fetch = FetchType.LAZY, targetEntity = AccountEntity.class)
     @JoinColumn(name = "account_id", nullable = false)
     private AccountEntity account;
     @Column(name = "device_fingerprint")

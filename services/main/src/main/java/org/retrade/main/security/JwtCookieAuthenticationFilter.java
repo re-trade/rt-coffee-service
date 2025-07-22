@@ -8,9 +8,11 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.retrade.main.model.constant.JwtTokenType;
+import org.retrade.main.model.other.UserClaims;
 import org.retrade.main.service.JwtService;
 import org.retrade.main.service.impl.UserDetailServiceImpl;
 import org.retrade.main.util.CookieUtils;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
@@ -24,6 +26,7 @@ import java.util.EnumMap;
 @RequiredArgsConstructor
 public class JwtCookieAuthenticationFilter extends OncePerRequestFilter {
     private final UserDetailServiceImpl userDetailService;
+    private final RedisTemplate<String, Object> redisTemplate;
     private final JwtService jwtService;
     @Override
     protected void doFilterInternal(@Nonnull HttpServletRequest request, @Nonnull HttpServletResponse response,@Nonnull FilterChain filterChain) throws ServletException, IOException {
@@ -37,6 +40,10 @@ public class JwtCookieAuthenticationFilter extends OncePerRequestFilter {
             var claims = userClaims.get();
             var userDetails = userDetailService.loadUserByUsername(claims.getUsername());
             if (claims.getTokenType() == JwtTokenType.REFRESH_TOKEN) {
+                if (!checkSessionValid(claims)) {
+                    filterChain.doFilter(request, response);
+                    return;
+                }
                 var newAccessToken = jwtService.generateToken(claims.getUsername(), claims.getRoles(), JwtTokenType.ACCESS_TOKEN);
                 var newAccessCookie = jwtService.tokenCookieWarp(newAccessToken, JwtTokenType.ACCESS_TOKEN);
                 response.addCookie(newAccessCookie);
@@ -46,5 +53,17 @@ public class JwtCookieAuthenticationFilter extends OncePerRequestFilter {
             SecurityContextHolder.getContext().setAuthentication(authenticationToken);
         }
         filterChain.doFilter(request, response);
+    }
+
+    private boolean checkSessionValid(UserClaims userClaims) {
+        if (userClaims.getTokenType() != JwtTokenType.ACCESS_TOKEN) {
+            return true;
+        }
+        var sessionId = userClaims.getSessionId();
+        if (sessionId == null) {
+            return false;
+        }
+        String redisKey = "refresh:user:" + userClaims.getUsername() + ":" + sessionId;
+        return redisTemplate.hasKey(redisKey);
     }
 }
