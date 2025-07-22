@@ -43,12 +43,9 @@ public class RevenueServiceImpl implements RevenueService {
         return orderComboRepository.query(queryWrapper, (param) -> (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
             predicates.add(criteriaBuilder.equal(root.get("seller"), seller));
-
             Join<OrderComboEntity, OrderDestinationEntity> destinationJoin = root.join("orderDestination", JoinType.LEFT);
             Join<OrderComboEntity, OrderItemEntity> itemJoin = root.joinSet("orderItems", JoinType.LEFT);
-            Join<OrderComboEntity, OrderStatusEntity> statusJoin = root.join("orderStatus", JoinType.LEFT);
-
-            predicates.add(criteriaBuilder.equal(statusJoin.get("orderStatus").get("code"), OrderStatusCodes.COMPLETED));
+            predicates.add(criteriaBuilder.equal(root.get("orderStatus").get("code"), OrderStatusCodes.COMPLETED));
 
             if (keyword != null && !keyword.getValue().toString().trim().isEmpty()) {
                 String searchPattern = "%" + keyword.getValue().toString().toLowerCase() + "%";
