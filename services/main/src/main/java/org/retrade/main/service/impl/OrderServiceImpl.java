@@ -402,7 +402,7 @@ public class OrderServiceImpl implements OrderService {
             predicates.add(criteriaBuilder.notEqual(statusJoin.get("code"),  OrderStatusCodes.PAYMENT_CANCELLED));
             predicates.add(criteriaBuilder.notEqual(statusJoin.get("code"), OrderStatusCodes.PAYMENT_FAILED));
 
-            if (!keyword.getValue().toString().trim().isEmpty()) {
+            if (keyword != null &&  !keyword.getValue().toString().trim().isEmpty()) {
                 String searchPattern = "%" + keyword.getValue().toString().toLowerCase() + "%";
                 predicates.add(criteriaBuilder.or(
                         criteriaBuilder.like(criteriaBuilder.lower(destinationJoin.get("customerName")), searchPattern),
