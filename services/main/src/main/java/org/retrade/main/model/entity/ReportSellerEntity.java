@@ -29,7 +29,7 @@ public class ReportSellerEntity extends BaseSQLEntity {
     @Column(name = "resolution_detail",  columnDefinition = "TEXT")
     private String resolutionDetail;
 
-    @Column(name = "resolution_date", nullable = false)
+    @Column(name = "resolution_date")
     private Timestamp resolutionDate;
 
     @ManyToOne(targetEntity =  OrderComboEntity.class, fetch = FetchType.EAGER, optional = false)
@@ -41,7 +41,7 @@ public class ReportSellerEntity extends BaseSQLEntity {
     private ProductEntity product;
 
     @ManyToOne(targetEntity = AccountEntity.class, fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "admin_id", nullable = false)
+    @JoinColumn(name = "admin_id")
     private AccountEntity account;
 
     @ManyToOne(targetEntity = CustomerEntity.class, fetch = FetchType.LAZY, optional = false)
