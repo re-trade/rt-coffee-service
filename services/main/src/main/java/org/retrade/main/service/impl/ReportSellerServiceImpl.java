@@ -79,15 +79,7 @@ public class ReportSellerServiceImpl implements ReportSellerService {
         List<ReportSellerEntity> reportSellerEntities = reportSellerRepository.findAll();
 
         return reportSellerEntities.stream()
-                .map(entity -> ReportSellerResponse.builder()
-                        .sellerId(entity.getSeller().getId())
-                        .typeReport(entity.getTypeReport())
-                        .content(entity.getContent())
-                        .image(entity.getImage())
-                        .createdAt(entity.getCreatedDate().toLocalDateTime())
-                        .productId(entity.getProduct().getId())
-                        .build()
-                )
+                .map(this::mapToReportSellerResponse)
                 .collect(Collectors.toList());
     }
 
