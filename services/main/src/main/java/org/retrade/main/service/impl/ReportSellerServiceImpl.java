@@ -10,12 +10,10 @@ import org.retrade.common.model.dto.response.PaginationWrapper;
 import org.retrade.common.model.exception.ActionFailedException;
 import org.retrade.common.model.exception.ValidationException;
 import org.retrade.main.model.constant.OrderStatusCodes;
+import org.retrade.main.model.constant.SenderRoleEnum;
 import org.retrade.main.model.dto.request.CreateReportSellerRequest;
 import org.retrade.main.model.dto.response.ReportSellerResponse;
-import org.retrade.main.model.entity.OrderComboEntity;
-import org.retrade.main.model.entity.OrderStatusEntity;
-import org.retrade.main.model.entity.ProductEntity;
-import org.retrade.main.model.entity.ReportSellerEntity;
+import org.retrade.main.model.entity.*;
 import org.retrade.main.repository.jpa.*;
 import org.retrade.main.service.ReportSellerService;
 import org.retrade.main.util.AuthUtils;
@@ -31,6 +29,8 @@ public class ReportSellerServiceImpl implements ReportSellerService {
     private final OrderComboRepository orderComboRepository;
     private final SellerRepository sellerRepository;
     private final OrderItemRepository orderItemRepository;
+    private final ReportSellerHistoryRepository reportSellerHistoryRepository;
+    private final ReportSellerEvidenceRepository reportSellerEvidenceRepository;
     private final AuthUtils authUtils;
 
     @Override
@@ -45,15 +45,7 @@ public class ReportSellerServiceImpl implements ReportSellerService {
         ProductEntity productEntity = productRepository.findById(request.getProductId())
                 .orElseThrow(() -> new ValidationException("Product not found with id: " + request.getProductId()));
 
-
         validateReportOnOrderComboStatus(orderComboEntity.getOrderStatus());
-
-        boolean containsProduct = orderComboEntity.getOrderItems().stream()
-                .anyMatch(orderItem -> orderItem.getProduct().getId().equals(request.getProductId()));
-
-        if (!containsProduct) {
-            throw new ValidationException("Order does not contain product id: " + request.getProductId());
-        }
 
         ReportSellerEntity reportSellerEntity = ReportSellerEntity.builder()
                 .typeReport(request.getTypeReport())
@@ -62,21 +54,23 @@ public class ReportSellerServiceImpl implements ReportSellerService {
                 .resolutionStatus("PENDING")
                 .seller(productEntity.getSeller())
                 .customer(customer)
-                .image(request.getImage())
+                .resolutionDetail("")
                 .product(productEntity)
                 .build();
 
-        try {
-            reportSellerRepository.save(reportSellerEntity);
+        ReportSellerEvidenceEntity reportSellerEvidenceEntity = ReportSellerEvidenceEntity.builder()
+                .reportSeller(reportSellerEntity)
+                .senderRole(SenderRoleEnum.CUSTOMER)
+                .note(request.getContent())
+                .evidenceUrls(request.getEvidenceUrls())
+                .sender(account)
+                .build();
 
-            return ReportSellerResponse.builder()
-                    .sellerId(reportSellerEntity.getSeller().getId())
-                    .typeReport(reportSellerEntity.getTypeReport())
-                    .content(reportSellerEntity.getContent())
-                    .image(reportSellerEntity.getImage())
-                    .createdAt(reportSellerEntity.getCreatedDate().toLocalDateTime())
-                    .productId(reportSellerEntity.getProduct().getId())
-                    .build();
+        reportSellerEntity.setReportSellerEvidence(Set.of(reportSellerEvidenceEntity));
+
+        try {
+            var result = reportSellerRepository.save(reportSellerEntity);
+            return mapToReportSellerResponse(result);
         } catch (Exception e) {
             throw new ActionFailedException("Failed to create report: " + e.getMessage());
         }
@@ -135,7 +129,6 @@ public class ReportSellerServiceImpl implements ReportSellerService {
         }catch (Exception e) {
             throw new ValidationException("Failed to create report: " + e.getMessage());
         }
-
     }
 
     @Override
@@ -155,10 +148,8 @@ public class ReportSellerServiceImpl implements ReportSellerService {
         );
         reportSellerEntity.setResolutionStatus("REJECTED");
         reportSellerRepository.save(reportSellerEntity);
-        return mapToReportSellerResponse(reportSellerEntity);    }
-
-
-
+        return mapToReportSellerResponse(reportSellerEntity);
+    }
 
     @Override
     public ReportSellerResponse processReportSeller(String id, String resolutionDetail) {
@@ -168,8 +159,8 @@ public class ReportSellerServiceImpl implements ReportSellerService {
     private void validateReportSummitRequest(CreateReportSellerRequest request) {
         var comboExisted = orderComboRepository.existsById(request.getOrderId());
         var productExisted = productRepository.existsById(request.getProductId());
-        var sellerExisted = sellerRepository.existsById(request.getProductId());
-        var productComboExisted = orderItemRepository.existsById(request.getProductId());
+        var sellerExisted = sellerRepository.existsById(request.getSellerId());
+        var productComboExisted = orderItemRepository.existsByProduct_IdAndOrderCombo_Id(request.getProductId(), request.getOrderId());
         if (!comboExisted) {
             throw new ValidationException("Order combo not found with id: " + request.getOrderId());
         }
@@ -202,7 +193,7 @@ public class ReportSellerServiceImpl implements ReportSellerService {
                 OrderStatusCodes.RETURN_REJECTED,
                 OrderStatusCodes.RETURNED
         );
-        if(allowedStatus.contains(orderStatus.getCode())) {
+        if(!allowedStatus.contains(orderStatus.getCode())) {
             throw new ValidationException("This order is not in right status");
         }
     }
@@ -218,16 +209,14 @@ public class ReportSellerServiceImpl implements ReportSellerService {
     private ReportSellerResponse mapToReportSellerResponse(ReportSellerEntity reportSellerEntity) {
         var seller = reportSellerEntity.getSeller();
         var order = reportSellerEntity.getOrderCombo();
-        var admin = reportSellerEntity.getAccount();
         var customer = reportSellerEntity.getCustomer();
         return ReportSellerResponse.builder()
+                .id(reportSellerEntity.getId())
                 .sellerId(seller.getId())
                 .typeReport(reportSellerEntity.getTypeReport())
                 .content(reportSellerEntity.getContent())
-                .image(reportSellerEntity.getImage())
                 .createdAt(reportSellerEntity.getCreatedDate().toLocalDateTime())
                 .productId(reportSellerEntity.getProduct().getId())
-                .adminId(admin != null ? reportSellerEntity.getAccount().getId() : null)
                 .customerId(customer != null ? reportSellerEntity.getCustomer().getId() : null)
                 .resolutionDetail(reportSellerEntity.getResolutionDetail())
                 .resolutionStatus(reportSellerEntity.getResolutionStatus())
@@ -235,7 +224,6 @@ public class ReportSellerServiceImpl implements ReportSellerService {
                         ? reportSellerEntity.getResolutionDate().toLocalDateTime()
                         : null)
                 .orderId(order != null ? order.getId() : null)
-                .reportSellerId(reportSellerEntity.getId())
                 .build();
     }
 

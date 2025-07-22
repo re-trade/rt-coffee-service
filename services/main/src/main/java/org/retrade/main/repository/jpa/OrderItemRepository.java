@@ -17,4 +17,6 @@ public interface OrderItemRepository extends BaseJpaRepository<OrderItemEntity, 
     List<OrderItemEntity> findByProduct(ProductEntity product);
 
     boolean existsByProduct_IdAndOrder_Id(@NonNull String id, @NonNull String id1);
+
+    boolean existsByProduct_IdAndOrderCombo_Id(@NonNull String id, @NonNull String id1);
 }

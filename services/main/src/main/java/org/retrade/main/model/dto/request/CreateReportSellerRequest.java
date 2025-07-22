@@ -5,6 +5,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.Set;
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
@@ -22,5 +24,5 @@ public class CreateReportSellerRequest {
 
     private String productId;
 
-    private String image;
+    private Set<String> evidenceUrls;
 }
