@@ -94,10 +94,22 @@ public class ReportSellerController {
                 .build());
     }
 
-    @PatchMapping("{id}")
+//    @PatchMapping("{id}")
+//    @PreAuthorize("hasRole('ROLE_ADMIN')")
+//    public ResponseEntity<ResponseObject<ReportSellerResponse>> acceptReportSeller(@PathVariable String id,@RequestParam boolean accept) {
+//        var result = reportSellerService.acceptReportSeller(id,accept);
+//        return ResponseEntity.ok(new ResponseObject.Builder<ReportSellerResponse>()
+//                .success(true)
+//                .code("SUCCESS")
+//                .content(result)
+//                .messages("Accept report seller successfully")
+//                .build());
+//    }
+
+    @PatchMapping("/accept/{id}")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
-    public ResponseEntity<ResponseObject<ReportSellerResponse>> acceptReportSeller(@PathVariable String id,@RequestParam boolean accept) {
-        var result = reportSellerService.acceptReportSeller(id,accept);
+    public ResponseEntity<ResponseObject<ReportSellerResponse>> acceptReportSeller(@PathVariable("id") String reportId) {
+        var result = reportSellerService.acceptReport(reportId);
         return ResponseEntity.ok(new ResponseObject.Builder<ReportSellerResponse>()
                 .success(true)
                 .code("SUCCESS")
@@ -105,6 +117,19 @@ public class ReportSellerController {
                 .messages("Accept report seller successfully")
                 .build());
     }
+
+    @PatchMapping("/reject/{id}")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    public ResponseEntity<ResponseObject<ReportSellerResponse>> rejectReportSeller(@PathVariable("id") String reportId) {
+        var result = reportSellerService.rejectReport(reportId);
+        return ResponseEntity.ok(new ResponseObject.Builder<ReportSellerResponse>()
+                .success(true)
+                .code("SUCCESS")
+                .content(result)
+                .messages("Reject report seller successfully")
+                .build());
+    }
+
 
     @PutMapping("{id}")
     @PreAuthorize("hasRole('ROLE_ADMIN')")

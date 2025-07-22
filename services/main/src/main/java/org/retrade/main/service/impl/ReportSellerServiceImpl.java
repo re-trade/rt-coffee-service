@@ -164,6 +164,46 @@ public class ReportSellerServiceImpl implements ReportSellerService {
     }
 
     @Override
+    public ReportSellerResponse acceptReport(String reportId) {
+        ReportSellerEntity reportSellerEntity = reportSellerRepository.findById(reportId).orElseThrow(
+                () -> new ValidationException("Report not found with id: " + reportId)
+        );
+        reportSellerEntity.setResolutionStatus("ACCEPT");
+        reportSellerRepository.save(reportSellerEntity);
+        return mapToReportSellerResponse(reportSellerEntity);
+    }
+
+    @Override
+    public ReportSellerResponse rejectReport(String reportId) {
+        ReportSellerEntity reportSellerEntity = reportSellerRepository.findById(reportId).orElseThrow(
+                () -> new ValidationException("Report not found with id: " + reportId)
+        );
+        reportSellerEntity.setResolutionStatus("REJECT");
+        reportSellerRepository.save(reportSellerEntity);
+        return mapToReportSellerResponse(reportSellerEntity);    }
+
+    private ReportSellerResponse mapToReportSellerResponse(ReportSellerEntity reportSellerEntity) {
+        return ReportSellerResponse.builder()
+                .sellerId(reportSellerEntity.getSeller().getId())
+                .typeReport(reportSellerEntity.getTypeReport())
+                .content(reportSellerEntity.getContent())
+                .image(reportSellerEntity.getImage())
+                .createdAt(reportSellerEntity.getCreatedDate().toLocalDateTime())
+                .productId(reportSellerEntity.getProduct().getId())
+                .adminId(reportSellerEntity.getAccount() != null ? reportSellerEntity.getAccount().getId() : null)
+                .customerId(reportSellerEntity.getCustomer().getId())
+                .resolutionDetail(reportSellerEntity.getResolutionDetail())
+                .resolutionStatus(reportSellerEntity.getResolutionStatus())
+                .resolutionDate(reportSellerEntity.getResolutionDate() != null
+                        ? reportSellerEntity.getResolutionDate().toLocalDateTime()
+                        : null)
+                .orderId(reportSellerEntity.getOrderCombo().getId())
+                .reportSellerId(reportSellerEntity.getId())
+                .build();
+    }
+
+
+    @Override
     public ReportSellerResponse processReportSeller(String id, String resolutionDetail) {
         return null;
     }
