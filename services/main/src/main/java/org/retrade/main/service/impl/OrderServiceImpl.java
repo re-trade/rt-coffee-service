@@ -59,7 +59,7 @@ public class OrderServiceImpl implements OrderService {
 
         Map<SellerEntity, List<ProductEntity>> productsBySeller = groupProductsBySeller(products);
 
-        BigDecimal subtotal = calculateSubtotal(products);
+        BigDecimal subtotal = calculateSubtotal(products, request.getItems());
         BigDecimal taxTotal = calculateTax(subtotal);
         BigDecimal discountTotal = BigDecimal.ZERO;
 
@@ -498,10 +498,11 @@ public class OrderServiceImpl implements OrderService {
                 .collect(Collectors.groupingBy(ProductEntity::getSeller));
     }
 
-    private BigDecimal calculateSubtotal(List<ProductEntity> products) {
+    private BigDecimal calculateSubtotal(List<ProductEntity> products, List<OrderItemRequest> items) {
         return products.stream()
                 .map(product -> {
-                    return product.getCurrentPrice().multiply(BigDecimal.valueOf(product.getQuantity()));
+                    var quantity = items.stream().filter(item -> item.getProductId().equals(product.getId())).findFirst().orElseThrow(() -> new ValidationException("Product " + product.getId() + " not found in order items")).getQuantity();
+                    return product.getCurrentPrice().multiply(BigDecimal.valueOf(quantity));
                 })
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }

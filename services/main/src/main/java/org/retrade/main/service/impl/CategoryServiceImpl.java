@@ -52,6 +52,10 @@ public class CategoryServiceImpl implements CategoryService {
     @Override
     public CategoryResponse updateCategory(String id, CategoryRequest request) {
         CategoryEntity category = getCategoryEntityById(id);
+        CategoryEntity categoryParent = null;
+        if (request.getCategoryParentId() != null) {
+            categoryParent = getCategoryEntityById(request.getCategoryParentId());
+        }
         if (request.getName() != null && !request.getName().equals(category.getName())) {
             if (categoryExists(request.getName())) {
                 throw new ValidationException("Category already exists with name: " + request.getName());
@@ -60,6 +64,12 @@ public class CategoryServiceImpl implements CategoryService {
         }
         if (request.getDescription() != null) {
             category.setDescription(request.getDescription());
+        }
+        if (request.getVisible() != null) {
+            category.setVisible(request.getVisible());
+        }
+        if (categoryParent != null) {
+            category.setCategoryParent(categoryParent);
         }
         try {
             category = categoryRepository.save(category);
