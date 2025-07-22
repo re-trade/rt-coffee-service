@@ -41,7 +41,7 @@ public class ReportSellerEntity extends BaseSQLEntity {
     private ProductEntity product;
 
     @ManyToOne(targetEntity = AccountEntity.class, fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "admin_id", nullable = false)
+    @JoinColumn(name = "admin_id")
     private AccountEntity account;
 
     @ManyToOne(targetEntity = CustomerEntity.class, fetch = FetchType.LAZY, optional = false)
