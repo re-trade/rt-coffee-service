@@ -6,7 +6,9 @@ import org.retrade.common.model.exception.ActionFailedException;
 import org.retrade.common.model.exception.ValidationException;
 import org.retrade.main.model.dto.request.CreateReportSellerRequest;
 import org.retrade.main.model.dto.response.ReportSellerResponse;
-import org.retrade.main.model.entity.*;
+import org.retrade.main.model.entity.OrderComboEntity;
+import org.retrade.main.model.entity.ProductEntity;
+import org.retrade.main.model.entity.ReportSellerEntity;
 import org.retrade.main.repository.jpa.OrderComboRepository;
 import org.retrade.main.repository.jpa.ProductRepository;
 import org.retrade.main.repository.jpa.ReportSellerRepository;
@@ -93,14 +95,23 @@ public class ReportSellerServiceImpl implements ReportSellerService {
     public List<ReportSellerResponse> getAllReportBySellerId(String sellerId, QueryWrapper   queryWrapper) {
         List<ReportSellerEntity> reportSellerEntities = reportSellerRepository.findBySellerId(sellerId);
         return reportSellerEntities.stream()
-                .map(entity -> ReportSellerResponse.builder()
-                        .sellerId(entity.getSeller().getId())
-                        .typeReport(entity.getTypeReport())
-                        .content(entity.getContent())
-                        .image(entity.getImage())
-                        .createdAt(entity.getCreatedDate().toLocalDateTime())
-                        .productId(entity.getProduct().getId())
-                        .build()
+                .map(entity -> {
+                    var customer = entity.getCustomer();
+                    var order = entity.getOrderCombo();
+                    return ReportSellerResponse.builder()
+                                    .reportSellerId(entity.getId())
+                                    .sellerId(entity.getSeller().getId())
+                                    .customerId(customer != null ? customer.getId() : null)
+                                    .orderId(order.getId())
+                                    .typeReport(entity.getTypeReport())
+                                    .content(entity.getContent())
+                                    .image(entity.getImage())
+                                    .resolutionDetail(entity.getResolutionDetail())
+                                    .resolutionStatus(entity.getResolutionStatus())
+                                    .createdAt(entity.getCreatedDate().toLocalDateTime())
+                                    .productId(entity.getProduct().getId())
+                                    .build();
+                        }
                 )
                 .collect(Collectors.toList());
     }
