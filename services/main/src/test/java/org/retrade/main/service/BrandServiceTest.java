@@ -1,36 +1,26 @@
 package org.retrade.main.service;
 
-import jakarta.persistence.criteria.CriteriaBuilder;
-import jakarta.persistence.criteria.Predicate;
-import jakarta.persistence.criteria.Root;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.retrade.common.model.dto.request.QueryFieldWrapper;
-import org.retrade.common.model.dto.request.QueryWrapper;
-import org.retrade.common.model.dto.response.PaginationWrapper;
 import org.retrade.common.model.entity.BaseSQLEntity;
 import org.retrade.common.model.exception.ActionFailedException;
 import org.retrade.main.model.dto.request.BrandRequest;
 import org.retrade.main.model.dto.response.BrandResponse;
 import org.retrade.main.model.entity.BrandEntity;
 import org.retrade.main.model.entity.CategoryEntity;
-import org.retrade.main.service.BrandRepository;
-import org.retrade.main.repository.CategoryRepository;
+import org.retrade.main.repository.jpa.BrandRepository;
+import org.retrade.main.repository.jpa.CategoryRepository;
 import org.retrade.main.service.impl.BrandServiceImpl;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
 
 import java.lang.reflect.Field;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)

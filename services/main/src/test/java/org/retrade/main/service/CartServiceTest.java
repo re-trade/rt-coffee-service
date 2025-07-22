@@ -14,9 +14,10 @@ import org.retrade.main.model.dto.request.CartRequest;
 import org.retrade.main.model.dto.response.CartResponse;
 import org.retrade.main.model.entity.*;
 
-import org.retrade.main.repository.CartRepository;
-import org.retrade.main.repository.ProductRepository;
-import org.retrade.main.repository.SellerRepository;
+
+import org.retrade.main.repository.jpa.ProductRepository;
+import org.retrade.main.repository.jpa.SellerRepository;
+import org.retrade.main.repository.redis.CartRepository;
 import org.retrade.main.service.impl.CartServiceImpl;
 import org.retrade.main.util.AuthUtils;
 
@@ -59,7 +60,6 @@ public class CartServiceTest {
                 .phoneNumber("0123456789")
                 .identityNumber("123456789")
                 .verified(true)
-                .balance(BigDecimal.ZERO)
                 .account(new AccountEntity())
                 .build();
         seller.setId("shop789");
@@ -252,7 +252,87 @@ public class CartServiceTest {
         assertThrows(ActionFailedException.class, () -> cartService.clearCart());
     }
 
+    @Test
+    void testAddToCart_ProductAlreadyExistsInCart_ShouldUpdateQuantity() {
+        mockAuth();
+        CartRequest request = new CartRequest(PRODUCT_ID, 2);
 
+        CartItemEntity existingItem = CartItemEntity.builder()
+                .productId(PRODUCT_ID)
+                .quantity(3)
+                .addedAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
+                .build();
+
+        Map<String, Set<CartItemEntity>> shopItems = new HashMap<>();
+        shopItems.put(SHOP_ID, new HashSet<>(Set.of(existingItem)));
+
+        CartEntity existingCart = CartEntity.builder()
+                .customerId(USER_ID)
+                .shopItems(shopItems)
+                .lastUpdated(LocalDateTime.now())
+                .build();
+
+        when(productRepository.findById(PRODUCT_ID)).thenReturn(Optional.of(product));
+        when(cartRepository.findByUserId(USER_ID)).thenReturn(Optional.of(existingCart));
+        when(cartConfig.getMaxItemsPerCart()).thenReturn(10);
+        when(cartRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(sellerRepository.findAllById(any())).thenReturn(List.of(seller));
+        when(productRepository.findAllById(any())).thenReturn(List.of(product));
+
+        CartResponse response = cartService.addToCart(request);
+
+        int quantity = response.getCartGroupResponses().get(0).getItems().iterator().next().getQuantity();
+        assertEquals(5, quantity); // 3 old + 2 new = 5
+    }
+
+    @Test
+    void testGetCart_ProductNotFoundInDB_ShouldMarkUnavailable() {
+        mockAuth();
+
+        CartItemEntity item = CartItemEntity.builder()
+                .productId("missing_product")
+                .quantity(1)
+                .addedAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
+                .build();
+
+        Map<String, Set<CartItemEntity>> shopItems = new HashMap<>();
+        shopItems.put(SHOP_ID, new HashSet<>(Set.of(item)));
+
+        CartEntity cart = CartEntity.builder()
+                .customerId(USER_ID)
+                .shopItems(shopItems)
+                .lastUpdated(LocalDateTime.now())
+                .build();
+
+        when(cartRepository.findByUserId(USER_ID)).thenReturn(Optional.of(cart));
+        when(sellerRepository.findAllById(any())).thenReturn(List.of(seller));
+        when(productRepository.findAllById(any())).thenReturn(Collections.emptyList());
+
+        CartResponse response = cartService.getCart();
+        assertFalse(response.getCartGroupResponses().get(0).getItems().iterator().next().getProductAvailable());
+    }
+
+    @Test
+    void testClearCart_WhenCartNotExists_ShouldStillSucceed() {
+        mockAuth();
+        doNothing().when(cartRepository).deleteByUserId(USER_ID);
+        assertDoesNotThrow(() -> cartService.clearCart());
+    }
+
+    @Test
+    void testAddToCart_SaveFails_ShouldThrowActionFailedException() {
+        mockAuth();
+        CartRequest request = new CartRequest(PRODUCT_ID, 1);
+
+        when(productRepository.findById(PRODUCT_ID)).thenReturn(Optional.of(product));
+        when(cartRepository.findByUserId(USER_ID)).thenReturn(Optional.empty());
+        when(cartConfig.getMaxItemsPerCart()).thenReturn(10);
+        when(cartRepository.save(any())).thenThrow(new RuntimeException("DB Error"));
+
+        assertThrows(ActionFailedException.class, () -> cartService.addToCart(request));
+    }
 
 
 
