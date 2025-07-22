@@ -18,6 +18,10 @@ public interface ReportSellerService {
     ReportSellerResponse getReportDetail(String id);
 
     ReportSellerResponse acceptReportSeller(String id, boolean accepted);
+    ReportSellerResponse acceptReport(String reportId);
+    ReportSellerResponse rejectReport(String reportId);
+
+
 
     ReportSellerResponse processReportSeller(String id, String resolutionDetail);
 }
