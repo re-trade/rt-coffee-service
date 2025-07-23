@@ -117,7 +117,7 @@ public class ReportSellerController {
                 .build());
     }
 
-    @PatchMapping("/accept/{id}")
+    @PatchMapping("{id}/accept")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     public ResponseEntity<ResponseObject<ReportSellerResponse>> acceptReportSeller(@PathVariable("id") String reportId) {
         var result = reportSellerService.acceptReport(reportId);
@@ -129,7 +129,7 @@ public class ReportSellerController {
                 .build());
     }
 
-    @PatchMapping("/reject/{id}")
+    @PatchMapping("{id}/reject")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     public ResponseEntity<ResponseObject<ReportSellerResponse>> rejectReportSeller(@PathVariable("id") String reportId) {
         var result = reportSellerService.rejectReport(reportId);
@@ -155,6 +155,7 @@ public class ReportSellerController {
     }
 
     @PostMapping("{id}/evidences/seller")
+    @PreAuthorize("hasRole('ROLE_SELLER')")
     public ResponseEntity<ResponseObject<ReportSellerEvidenceResponse>> sellerUploadEvidence(@PathVariable String id, @RequestBody CreateEvidenceRequest createEvidenceRequest) {
         var result = reportSellerService.addSellerEvidence(id, createEvidenceRequest);
         return ResponseEntity.ok(new ResponseObject.Builder<ReportSellerEvidenceResponse>()
@@ -162,6 +163,30 @@ public class ReportSellerController {
                 .code("SUCCESS")
                 .content(result)
                 .messages("Seller send evidence successfully")
+                .build());
+    }
+
+    @PostMapping("{id}/evidences/customer")
+    @PreAuthorize("hasRole('ROLE_CUSTOMER')")
+    public ResponseEntity<ResponseObject<ReportSellerEvidenceResponse>> customerUploadEvidence(@PathVariable String id, @RequestBody CreateEvidenceRequest createEvidenceRequest) {
+        var result = reportSellerService.addCustomerEvidence(id, createEvidenceRequest);
+        return ResponseEntity.ok(new ResponseObject.Builder<ReportSellerEvidenceResponse>()
+                .success(true)
+                .code("SUCCESS")
+                .content(result)
+                .messages("Customer send evidence successfully")
+                .build());
+    }
+
+    @PostMapping("{id}/evidences/system")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    public ResponseEntity<ResponseObject<ReportSellerEvidenceResponse>> adminUploadEvidence(@PathVariable String id, @RequestBody CreateEvidenceRequest createEvidenceRequest) {
+        var result = reportSellerService.addCustomerEvidence(id, createEvidenceRequest);
+        return ResponseEntity.ok(new ResponseObject.Builder<ReportSellerEvidenceResponse>()
+                .success(true)
+                .code("SUCCESS")
+                .content(result)
+                .messages("Admin send evidence successfully")
                 .build());
     }
 }

@@ -193,11 +193,53 @@ public class ReportSellerServiceImpl implements ReportSellerService {
     public ReportSellerEvidenceResponse addSellerEvidence(String reportId, CreateEvidenceRequest request) {
         var report = reportSellerRepository.findById(reportId).orElseThrow(() -> new ValidationException("Not found report with id: " + reportId));
         var account = authUtils.getUserAccountFromAuthentication();
+        if (account.getSeller() == null) {
+            throw new ValidationException("User is not a seller, please register seller or contact with Admin");
+        }
         if (Set.of("ACCEPTED", "REJECTED").contains(report.getResolutionStatus())) {
             throw new ValidationException("Report is already accepted or rejected");
         }
         if (!Objects.equals(report.getSeller().getId(), account.getSeller().getId())) {
             throw new ValidationException("User is not a seller, please register seller or contact with Admin");
+        }
+        return addEvidence(report, account, request);
+    }
+
+    @Override
+    public ReportSellerEvidenceResponse addCustomerEvidence(String reportId, CreateEvidenceRequest request) {
+        var report = reportSellerRepository.findById(reportId).orElseThrow(() -> new ValidationException("Not found report with id: " + reportId));
+        var account = authUtils.getUserAccountFromAuthentication();
+        if (!Objects.equals(report.getCustomer().getId(), account.getCustomer().getId())) {
+            throw new ValidationException("User is not a seller, please register seller or contact with Admin");
+        }
+        return addEvidence(report, account, request);
+    }
+
+    @Override
+    public ReportSellerEvidenceResponse addSystemEvidence(String reportId, CreateEvidenceRequest request) {
+        var report = reportSellerRepository.findById(reportId).orElseThrow(() -> new ValidationException("Not found report with id: " + reportId));
+        var account = authUtils.getUserAccountFromAuthentication();
+        if (!AuthUtils.convertAccountToRole(account).contains("ROLE_ADMIN")) {
+            throw new ValidationException("User is not a admin");
+        }
+        var history  = ReportSellerHistoryEntity.builder()
+                .reportSeller(report)
+                .admin(account)
+                .actionType("SYSTEM_ADDED_EVIDENCE")
+                .notes("System adding evidence to report " + reportId + " by admin " + account.getId() + " with notes: " + request.getNote() + " and evidence urls: " + request.getEvidenceUrls())
+                .build();
+        reportSellerHistoryRepository.save(history);
+        return addEvidence(report, account, request);
+    }
+
+    @Override
+    public ReportSellerResponse processReportSeller(String id, String resolutionDetail) {
+        return null;
+    }
+
+    private ReportSellerEvidenceResponse addEvidence(ReportSellerEntity report, AccountEntity account , CreateEvidenceRequest request) {
+        if (Set.of("ACCEPTED", "REJECTED").contains(report.getResolutionStatus())) {
+            throw new ValidationException("Report is already accepted or rejected");
         }
         var evidenceEntity = ReportSellerEvidenceEntity.builder()
                 .reportSeller(report)
@@ -207,13 +249,8 @@ public class ReportSellerServiceImpl implements ReportSellerService {
                 .sender(account)
                 .build();
         report.getReportSellerEvidence().add(evidenceEntity);
-        reportSellerRepository.save(report);
-        return mapToReportSellerEvidenceResponse(evidenceEntity, SenderRoleEnum.SELLER);
-    }
-
-    @Override
-    public ReportSellerResponse processReportSeller(String id, String resolutionDetail) {
-        return null;
+        var result = reportSellerEvidenceRepository.save(evidenceEntity);
+        return mapToReportSellerEvidenceResponse(result, SenderRoleEnum.SELLER);
     }
 
     private void validateReportSummitRequest(CreateReportSellerRequest request) {

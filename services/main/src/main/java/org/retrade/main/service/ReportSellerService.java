@@ -28,5 +28,9 @@ public interface ReportSellerService {
 
     ReportSellerEvidenceResponse addSellerEvidence(String reportId, CreateEvidenceRequest request);
 
+    ReportSellerEvidenceResponse addCustomerEvidence(String reportId, CreateEvidenceRequest request);
+
+    ReportSellerEvidenceResponse addSystemEvidence(String reportId, CreateEvidenceRequest request);
+
     ReportSellerResponse processReportSeller(String id, String resolutionDetail);
 }
