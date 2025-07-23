@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.retrade.common.model.dto.request.QueryWrapper;
 import org.retrade.common.model.dto.response.ResponseObject;
 import org.retrade.main.model.constant.SenderRoleEnum;
+import org.retrade.main.model.dto.request.CreateEvidenceRequest;
 import org.retrade.main.model.dto.request.CreateReportSellerRequest;
 import org.retrade.main.model.dto.response.ReportSellerEvidenceResponse;
 import org.retrade.main.model.dto.response.ReportSellerResponse;
@@ -150,6 +151,17 @@ public class ReportSellerController {
                 .code("SUCCESS")
                 .content(result)
                 .messages("Accept report seller successfully")
+                .build());
+    }
+
+    @PostMapping("{id}/evidences/seller")
+    public ResponseEntity<ResponseObject<ReportSellerEvidenceResponse>> sellerUploadEvidence(@PathVariable String id, @RequestBody CreateEvidenceRequest createEvidenceRequest) {
+        var result = reportSellerService.addSellerEvidence(id, createEvidenceRequest);
+        return ResponseEntity.ok(new ResponseObject.Builder<ReportSellerEvidenceResponse>()
+                .success(true)
+                .code("SUCCESS")
+                .content(result)
+                .messages("Seller send evidence successfully")
                 .build());
     }
 }

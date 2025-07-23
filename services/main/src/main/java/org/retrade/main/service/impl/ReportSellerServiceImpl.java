@@ -12,6 +12,7 @@ import org.retrade.common.model.exception.ActionFailedException;
 import org.retrade.common.model.exception.ValidationException;
 import org.retrade.main.model.constant.OrderStatusCodes;
 import org.retrade.main.model.constant.SenderRoleEnum;
+import org.retrade.main.model.dto.request.CreateEvidenceRequest;
 import org.retrade.main.model.dto.request.CreateReportSellerRequest;
 import org.retrade.main.model.dto.response.ReportSellerEvidenceResponse;
 import org.retrade.main.model.dto.response.ReportSellerResponse;
@@ -186,6 +187,28 @@ public class ReportSellerServiceImpl implements ReportSellerService {
                     .setData(list)
                     .build();
         });
+    }
+
+    @Override
+    public ReportSellerEvidenceResponse addSellerEvidence(String reportId, CreateEvidenceRequest request) {
+        var report = reportSellerRepository.findById(reportId).orElseThrow(() -> new ValidationException("Not found report with id: " + reportId));
+        var account = authUtils.getUserAccountFromAuthentication();
+        if (Set.of("ACCEPTED", "REJECTED").contains(report.getResolutionStatus())) {
+            throw new ValidationException("Report is already accepted or rejected");
+        }
+        if (!Objects.equals(report.getSeller().getId(), account.getSeller().getId())) {
+            throw new ValidationException("User is not a seller, please register seller or contact with Admin");
+        }
+        var evidenceEntity = ReportSellerEvidenceEntity.builder()
+                .reportSeller(report)
+                .senderRole(SenderRoleEnum.SELLER)
+                .note(request.getNote())
+                .evidenceUrls(request.getEvidenceUrls())
+                .sender(account)
+                .build();
+        report.getReportSellerEvidence().add(evidenceEntity);
+        reportSellerRepository.save(report);
+        return mapToReportSellerEvidenceResponse(evidenceEntity, SenderRoleEnum.SELLER);
     }
 
     @Override
