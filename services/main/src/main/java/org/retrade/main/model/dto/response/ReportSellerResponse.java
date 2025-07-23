@@ -7,30 +7,28 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
-import java.util.Set;
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
 public class ReportSellerResponse {
-
-    private String reportSellerId;
+    private String id;
+    private String sellerId;
+    private String sellerName;
+    private String sellerAvatarUrl;
 
     private String customerId;
-
     private String productId;
     private String orderId;
-    private String sellerId;
+
 
     private String typeReport;
     private String content;
-    private String image;
     private LocalDateTime createdAt;
 
     private String resolutionStatus;
     private String resolutionDetail;
     private LocalDateTime resolutionDate;
-    private String adminId;
 
 }

@@ -5,6 +5,7 @@ import lombok.*;
 import org.retrade.common.model.entity.BaseSQLEntity;
 
 import java.sql.Timestamp;
+import java.util.Set;
 
 @Getter
 @Setter
@@ -17,21 +18,6 @@ public class ReportSellerEntity extends BaseSQLEntity {
     @JoinColumn(name = "seller_id", nullable = false)
     private SellerEntity seller;
 
-    @Column(name = "type_report", nullable = false, columnDefinition = "TEXT")
-    private String typeReport;
-
-    @Column(name = "content", nullable = false, columnDefinition = "TEXT")
-    private String content;
-
-    @Column(name = "resolution_status",  columnDefinition = "TEXT")
-    private String resolutionStatus;
-
-    @Column(name = "resolution_detail",  columnDefinition = "TEXT")
-    private String resolutionDetail;
-
-    @Column(name = "resolution_date")
-    private Timestamp resolutionDate;
-
     @ManyToOne(targetEntity =  OrderComboEntity.class, fetch = FetchType.EAGER, optional = false)
     @JoinColumn(name = "order_id",nullable = false)
     private OrderComboEntity orderCombo;
@@ -40,14 +26,28 @@ public class ReportSellerEntity extends BaseSQLEntity {
     @JoinColumn(name = "product_id",nullable = false)
     private ProductEntity product;
 
-    @ManyToOne(targetEntity = AccountEntity.class, fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "admin_id")
-    private AccountEntity account;
-
     @ManyToOne(targetEntity = CustomerEntity.class, fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "customer_id", nullable = false)
     private CustomerEntity customer;
 
-    @Column(name="image")
-    private String image;
+    @Column(name = "type_report", nullable = false, columnDefinition = "TEXT")
+    private String typeReport;
+
+    @Column(name = "content", nullable = false, columnDefinition = "TEXT")
+    private String content;
+
+    @Column(name = "resolution_status", length = 50)
+    private String resolutionStatus;
+
+    @Column(name = "resolution_detail",  columnDefinition = "TEXT")
+    private String resolutionDetail;
+
+    @Column(name = "resolution_date")
+    private Timestamp resolutionDate;
+
+    @OneToMany(mappedBy = "reportSeller", cascade = {CascadeType.PERSIST, CascadeType.MERGE}, fetch = FetchType.LAZY)
+    private Set<ReportSellerHistoryEntity> reportSellerHistory;
+
+    @OneToMany(mappedBy = "reportSeller", cascade = {CascadeType.PERSIST}, fetch = FetchType.LAZY)
+    private Set<ReportSellerEvidenceEntity> reportSellerEvidence;
 }
