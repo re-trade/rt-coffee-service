@@ -26,6 +26,7 @@ public class SellerOrderComboResponse {
     private OrderDestinationResponse destination;
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createDate;
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime updateDate;
     private String paymentStatus;
 }

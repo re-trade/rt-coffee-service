@@ -709,6 +709,7 @@ public class OrderServiceImpl implements OrderService {
                 .id(combo.getOrderStatus().getId())
                 .code(combo.getOrderStatus().getCode())
                 .name(combo.getOrderStatus().getName())
+                .enabled(combo.getOrderStatus().getEnabled())
                 .build();
 
         var orderDestination = combo.getOrderDestination();
