@@ -2,7 +2,9 @@ package org.retrade.main.service;
 
 import org.retrade.common.model.dto.request.QueryWrapper;
 import org.retrade.common.model.dto.response.PaginationWrapper;
+import org.retrade.main.model.constant.SenderRoleEnum;
 import org.retrade.main.model.dto.request.CreateReportSellerRequest;
+import org.retrade.main.model.dto.response.ReportSellerEvidenceResponse;
 import org.retrade.main.model.dto.response.ReportSellerResponse;
 
 import java.util.List;
@@ -21,6 +23,7 @@ public interface ReportSellerService {
     ReportSellerResponse rejectReport(String reportId);
 
 
+    PaginationWrapper<List<ReportSellerEvidenceResponse>> getReportSellerEvidenceByReportId(String id, SenderRoleEnum type, QueryWrapper queryWrapper);
 
     ReportSellerResponse processReportSeller(String id, String resolutionDetail);
 }

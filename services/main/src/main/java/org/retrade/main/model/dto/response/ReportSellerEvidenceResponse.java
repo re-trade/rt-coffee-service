@@ -16,6 +16,8 @@ public class ReportSellerEvidenceResponse {
     private String id;
     private SenderRoleEnum senderRole;
     private String senderId;
+    private String senderName;
+    private String senderAvatarUrl;
     private String notes;
     private Set<String> evidenceUrls;
 }

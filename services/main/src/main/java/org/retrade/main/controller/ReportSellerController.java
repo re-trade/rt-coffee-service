@@ -6,7 +6,9 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.retrade.common.model.dto.request.QueryWrapper;
 import org.retrade.common.model.dto.response.ResponseObject;
+import org.retrade.main.model.constant.SenderRoleEnum;
 import org.retrade.main.model.dto.request.CreateReportSellerRequest;
+import org.retrade.main.model.dto.response.ReportSellerEvidenceResponse;
 import org.retrade.main.model.dto.response.ReportSellerResponse;
 import org.retrade.main.service.ReportSellerService;
 import org.springframework.data.domain.Pageable;
@@ -37,7 +39,7 @@ public class ReportSellerController {
                 .build());
     }
 
-    @GetMapping()
+    @GetMapping
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     public ResponseEntity<ResponseObject<List<ReportSellerResponse>>> getAllReportSeller(
             @Parameter(description = "Search query to filter reports") @RequestParam(required = false, name = "q") String search,
@@ -51,6 +53,26 @@ public class ReportSellerController {
                 .success(true)
                 .code("SUCCESS")
                         .unwrapPaginationWrapper(result)
+                .messages("Get all report seller successfully")
+                .build());
+    }
+
+    @GetMapping("{id}/evidences/{type}" )
+    public ResponseEntity<ResponseObject<List<ReportSellerEvidenceResponse>>> getAllReportSellerEvidence(
+            @Parameter(description = "Search query to filter reports") @RequestParam(required = false, name = "q") String search,
+            @Parameter(description = "Pagination parameters") @PageableDefault(size = 10) Pageable pageable,
+            @Parameter(description = "Report Id") @PathVariable String id,
+            @Parameter(description = "Request Type") @PathVariable SenderRoleEnum type
+            ) {
+        var queryWrapper = new QueryWrapper.QueryWrapperBuilder()
+                .search(search)
+                .wrapSort(pageable)
+                .build();
+        var result = reportSellerService.getReportSellerEvidenceByReportId(id, type ,queryWrapper);
+        return ResponseEntity.ok(new ResponseObject.Builder<List<ReportSellerEvidenceResponse>>()
+                .success(true)
+                .code("SUCCESS")
+                .unwrapPaginationWrapper(result)
                 .messages("Get all report seller successfully")
                 .build());
     }
@@ -93,18 +115,6 @@ public class ReportSellerController {
                 .messages("Get all report seller successfully")
                 .build());
     }
-
-//    @PatchMapping("{id}")
-//    @PreAuthorize("hasRole('ROLE_ADMIN')")
-//    public ResponseEntity<ResponseObject<ReportSellerResponse>> acceptReportSeller(@PathVariable String id,@RequestParam boolean accept) {
-//        var result = reportSellerService.acceptReportSeller(id,accept);
-//        return ResponseEntity.ok(new ResponseObject.Builder<ReportSellerResponse>()
-//                .success(true)
-//                .code("SUCCESS")
-//                .content(result)
-//                .messages("Accept report seller successfully")
-//                .build());
-//    }
 
     @PatchMapping("/accept/{id}")
     @PreAuthorize("hasRole('ROLE_ADMIN')")

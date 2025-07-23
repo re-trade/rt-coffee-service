@@ -1,6 +1,7 @@
 package org.retrade.main.service.impl;
 
 import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
 import lombok.RequiredArgsConstructor;
@@ -12,6 +13,7 @@ import org.retrade.common.model.exception.ValidationException;
 import org.retrade.main.model.constant.OrderStatusCodes;
 import org.retrade.main.model.constant.SenderRoleEnum;
 import org.retrade.main.model.dto.request.CreateReportSellerRequest;
+import org.retrade.main.model.dto.response.ReportSellerEvidenceResponse;
 import org.retrade.main.model.dto.response.ReportSellerResponse;
 import org.retrade.main.model.entity.*;
 import org.retrade.main.repository.jpa.*;
@@ -152,6 +154,41 @@ public class ReportSellerServiceImpl implements ReportSellerService {
     }
 
     @Override
+    public PaginationWrapper<List<ReportSellerEvidenceResponse>> getReportSellerEvidenceByReportId(String id, SenderRoleEnum type, QueryWrapper queryWrapper) {
+        var account = authUtils.getUserAccountFromAuthentication();
+
+        return reportSellerEvidenceRepository.query(queryWrapper, (param) -> (root, query, criteriaBuilder) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            predicates.add(criteriaBuilder.equal(root.get("reportSeller").get("id"), id));
+            if (!AuthUtils.convertAccountToRole(account).contains("ROLE_ADMIN")) {
+                var reportSellerJoin = root.join("reportSeller", JoinType.INNER);
+                switch (type) {
+                    case CUSTOMER:
+                        if (account.getCustomer() == null) {
+                            throw new ValidationException("User is not a customer, please register customer or contact with Admin");
+                        }
+                        predicates.add(criteriaBuilder.equal(root.get("sender").get("id"), account.getId()));
+                        predicates.add(criteriaBuilder.equal(reportSellerJoin.get("customer").get("id"), account.getCustomer().getId()));
+                        break;
+                    case SELLER:
+                        if (account.getSeller() == null) {
+                            throw new ValidationException("User is not a seller, please register seller or contact with Admin");
+                        }
+                        predicates.add(criteriaBuilder.equal(reportSellerJoin.get("seller").get("id"), account.getSeller().getId()));
+                        break;
+                }
+            }
+            return getReportSellerEvidencePredicate(param, root, criteriaBuilder, predicates);
+        }, (items) -> {
+            var list = items.map(item -> this.mapToReportSellerEvidenceResponse(item, type)).stream().toList();
+            return new PaginationWrapper.Builder<List<ReportSellerEvidenceResponse>>()
+                    .setPaginationInfo(items)
+                    .setData(list)
+                    .build();
+        });
+    }
+
+    @Override
     public ReportSellerResponse processReportSeller(String id, String resolutionDetail) {
         return null;
     }
@@ -198,12 +235,60 @@ public class ReportSellerServiceImpl implements ReportSellerService {
         }
     }
 
+    private Predicate getReportSellerEvidencePredicate(Map<String, QueryFieldWrapper> param, Root<ReportSellerEvidenceEntity> root, CriteriaBuilder criteriaBuilder, List<Predicate> predicates) {
+        if (param != null && !param.isEmpty()) {
+            Predicate[] defaultPredicates = reportSellerEvidenceRepository.createDefaultPredicate(criteriaBuilder, root, param);
+            predicates.addAll(Arrays.asList(defaultPredicates));
+        }
+        return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
+    }
+
     private Predicate getPredicate(Map<String, QueryFieldWrapper> param, Root<ReportSellerEntity> root, CriteriaBuilder criteriaBuilder, List<Predicate> predicates) {
         if (param != null && !param.isEmpty()) {
             Predicate[] defaultPredicates = reportSellerRepository.createDefaultPredicate(criteriaBuilder, root, param);
             predicates.addAll(Arrays.asList(defaultPredicates));
         }
         return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
+    }
+
+    private ReportSellerEvidenceResponse mapToReportSellerEvidenceResponse(ReportSellerEvidenceEntity reportSellerEvidenceEntity, SenderRoleEnum typeMapping) {
+        var response =  ReportSellerEvidenceResponse.builder()
+                .id(reportSellerEvidenceEntity.getId())
+                .senderRole(reportSellerEvidenceEntity.getSenderRole())
+                .senderId(reportSellerEvidenceEntity.getSender() != null ? reportSellerEvidenceEntity.getSender().getId() : null)
+                .notes(reportSellerEvidenceEntity.getNote())
+                .evidenceUrls(reportSellerEvidenceEntity.getEvidenceUrls());
+        if (Objects.requireNonNull(typeMapping) == SenderRoleEnum.SELLER
+                && reportSellerEvidenceEntity.getSenderRole() == SenderRoleEnum.CUSTOMER) {
+            return response
+                    .senderId("N/A")
+                    .senderName("N/A")
+                    .senderAvatarUrl("N/A")
+                    .build();
+        }
+        String senderName = "N/A";
+        String senderAvatarUrl = "N/A";
+
+        var sender = reportSellerEvidenceEntity.getSender();
+
+        if (reportSellerEvidenceEntity.getSenderRole() == SenderRoleEnum.CUSTOMER) {
+            var customer = sender.getCustomer();
+            if (customer != null) {
+                senderName = String.format("%s %s", customer.getFirstName(), customer.getLastName());
+                senderAvatarUrl = customer.getAvatarUrl();
+            }
+        } else if (reportSellerEvidenceEntity.getSenderRole() == SenderRoleEnum.SELLER) {
+            var seller = sender.getSeller();
+            if (seller != null) {
+                senderName = seller.getShopName();
+                senderAvatarUrl = seller.getAvatarUrl();
+            }
+        }
+        return response
+                .senderId(sender.getId())
+                .senderName(senderName)
+                .senderAvatarUrl(senderAvatarUrl)
+                .build();
     }
 
     private ReportSellerResponse mapToReportSellerResponse(ReportSellerEntity reportSellerEntity) {
