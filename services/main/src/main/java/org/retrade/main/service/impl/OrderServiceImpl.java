@@ -8,6 +8,7 @@ import org.retrade.common.model.dto.request.QueryWrapper;
 import org.retrade.common.model.dto.response.PaginationWrapper;
 import org.retrade.common.model.exception.ActionFailedException;
 import org.retrade.common.model.exception.ValidationException;
+import org.retrade.main.model.constant.OrderStatusCodes;
 import org.retrade.main.model.dto.request.CreateOrderRequest;
 import org.retrade.main.model.dto.request.OrderItemRequest;
 import org.retrade.main.model.dto.response.*;
@@ -394,20 +395,33 @@ public class OrderServiceImpl implements OrderService {
             predicates.add(criteriaBuilder.equal(root.get("seller"), seller));
             if (orderStatus != null) {
                 predicates.add(criteriaBuilder.equal(root.get("orderStatus").get("code"), orderStatus));
+            } else {
+                predicates.add(criteriaBuilder.not(root.get("orderStatus").get("code")).in(
+                        OrderStatusCodes.PENDING, OrderStatusCodes.PAYMENT_CANCELLED, OrderStatusCodes.PAYMENT_FAILED
+                ));
             }
-            predicates.add(criteriaBuilder.notEqual(root.get("orderStatus").get("code"), "PENDING"));
-            predicates.add(criteriaBuilder.notEqual(root.get("orderStatus").get("code"), "PAYMENT_CANCELLED"));
-            predicates.add(criteriaBuilder.notEqual(root.get("orderStatus").get("code"), "PAYMENT_FAILED"));
+
             if (keyword != null && !keyword.getValue().toString().trim().isEmpty()) {
                 String searchPattern = "%" + keyword.getValue().toString().toLowerCase() + "%";
                 Join<OrderComboEntity, OrderDestinationEntity> destinationJoin = root.join("orderDestination", JoinType.LEFT);
                 Join<OrderComboEntity, OrderItemEntity> itemJoin = root.joinSet("orderItems", JoinType.LEFT);
+                Predicate customerNamePredicate = criteriaBuilder.like(
+                        criteriaBuilder.lower(destinationJoin.get("customerName")), searchPattern
+                );
+                Predicate productNamePredicate = criteriaBuilder.like(
+                        criteriaBuilder.lower(itemJoin.get("productName")), searchPattern
+                );
+                Predicate noItemsPredicate = criteriaBuilder.isEmpty(root.get("orderItems"));
+
                 predicates.add(criteriaBuilder.or(
-                        criteriaBuilder.like(criteriaBuilder.lower(destinationJoin.get("customerName")), searchPattern),
-                        criteriaBuilder.like(criteriaBuilder.lower(itemJoin.get("productName")), searchPattern)
+                        customerNamePredicate,
+                        productNamePredicate,
+                        noItemsPredicate
                 ));
             }
-
+            if (query != null) {
+                query.distinct(true);
+            }
             return getOrderComboPredicate(param, root, criteriaBuilder, predicates);
         }, (items) -> {
             var list = items.map(this::wrapSellerOrderComboResponse).stream().toList();
@@ -437,7 +451,7 @@ public class OrderServiceImpl implements OrderService {
                 .id(orderStatus.getId())
                 .code(orderStatus.getCode())
                 .name(orderStatus.getName())
-                //.enabled(orderStatus.getEnabled())
+                .enabled(orderStatus.getEnabled())
                 .build();
     }
 
