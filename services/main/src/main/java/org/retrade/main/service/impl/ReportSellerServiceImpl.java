@@ -11,9 +11,11 @@ import org.retrade.common.model.dto.response.PaginationWrapper;
 import org.retrade.common.model.exception.ActionFailedException;
 import org.retrade.common.model.exception.ValidationException;
 import org.retrade.main.model.constant.OrderStatusCodes;
+import org.retrade.main.model.constant.ReportSellerStatusCodes;
 import org.retrade.main.model.constant.SenderRoleEnum;
 import org.retrade.main.model.dto.request.CreateEvidenceRequest;
 import org.retrade.main.model.dto.request.CreateReportSellerRequest;
+import org.retrade.main.model.dto.request.ReportSellerProcessRequest;
 import org.retrade.main.model.dto.response.ReportSellerEvidenceResponse;
 import org.retrade.main.model.dto.response.ReportSellerResponse;
 import org.retrade.main.model.entity.*;
@@ -22,6 +24,8 @@ import org.retrade.main.service.ReportSellerService;
 import org.retrade.main.util.AuthUtils;
 import org.springframework.stereotype.Service;
 
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.*;
 
 @Service
@@ -54,7 +58,7 @@ public class ReportSellerServiceImpl implements ReportSellerService {
                 .typeReport(request.getTypeReport())
                 .content(request.getContent())
                 .orderCombo(orderComboEntity)
-                .resolutionStatus("PENDING")
+                .resolutionStatus(ReportSellerStatusCodes.PENDING)
                 .seller(productEntity.getSeller())
                 .customer(customer)
                 .resolutionDetail("")
@@ -117,29 +121,11 @@ public class ReportSellerServiceImpl implements ReportSellerService {
     }
 
     @Override
-    public ReportSellerResponse acceptReportSeller(String id, boolean accepted) {
-        ReportSellerEntity reportSellerEntity = reportSellerRepository.findById(id).orElseThrow(
-                () -> new ValidationException("Report not found with id: " + id)
-        );
-        if (accepted) {
-            reportSellerEntity.setResolutionStatus("ACCEPT");
-        }else {
-            reportSellerEntity.setResolutionStatus("REJECT");
-        }
-        try {
-            var result = reportSellerRepository.save(reportSellerEntity);
-            return mapToReportSellerResponse(result);
-        }catch (Exception e) {
-            throw new ValidationException("Failed to create report: " + e.getMessage());
-        }
-    }
-
-    @Override
     public ReportSellerResponse acceptReport(String reportId) {
         ReportSellerEntity reportSellerEntity = reportSellerRepository.findById(reportId).orElseThrow(
                 () -> new ValidationException("Report not found with id: " + reportId)
         );
-        reportSellerEntity.setResolutionStatus("ACCEPTED");
+        reportSellerEntity.setResolutionStatus(ReportSellerStatusCodes.ACCEPTED);
         reportSellerRepository.save(reportSellerEntity);
         return mapToReportSellerResponse(reportSellerEntity);
     }
@@ -149,9 +135,40 @@ public class ReportSellerServiceImpl implements ReportSellerService {
         ReportSellerEntity reportSellerEntity = reportSellerRepository.findById(reportId).orElseThrow(
                 () -> new ValidationException("Report not found with id: " + reportId)
         );
-        reportSellerEntity.setResolutionStatus("REJECTED");
+        reportSellerEntity.setResolutionStatus(ReportSellerStatusCodes.REJECTED);
         reportSellerRepository.save(reportSellerEntity);
         return mapToReportSellerResponse(reportSellerEntity);
+    }
+
+    @Override
+    public ReportSellerResponse processReportSeller(String id, ReportSellerProcessRequest request) {
+        var account = authUtils.getUserAccountFromAuthentication();
+        if (!AuthUtils.convertAccountToRole(account).contains("ROLE_ADMIN")) {
+            throw new ValidationException("User is not a admin");
+        }
+        var reportSellerEntity = reportSellerRepository.findById(id).orElseThrow(
+                () -> new ValidationException("Report not found with id: " + id)
+        );
+        var history  = ReportSellerHistoryEntity.builder()
+                .admin(account)
+                .actionType("SYSTEM_ADDED_EVIDENCE")
+                .notes("System process evidence to report " + id + " by admin " + account.getId() + " with notes: " + request.getNotes());
+        if (request.getAccepted() == null) {
+            reportSellerEntity.setResolutionDetail(request.getResolutionDetail());
+            history.actionType("SYSTEM_UPDATED_REPORT_RESOLUTION_DETAIL");
+        } else {
+            reportSellerEntity.setResolutionStatus(request.getAccepted() ? ReportSellerStatusCodes.ACCEPTED : ReportSellerStatusCodes.REJECTED);
+            reportSellerEntity.setResolutionDetail(request.getResolutionDetail());
+            history.actionType("SYSTEM_UPDATED_REPORT_RESOLUTION_STATUS");
+        }
+        reportSellerEntity.setResolutionDate(Timestamp.valueOf(LocalDateTime.now()));
+        try {
+            var result = reportSellerRepository.save(reportSellerEntity);
+            history.reportSeller(result);
+            return mapToReportSellerResponse(result);
+        } catch (Exception e) {
+            throw new ActionFailedException("Failed to process report: " + e.getMessage());
+        }
     }
 
     @Override
@@ -232,10 +249,6 @@ public class ReportSellerServiceImpl implements ReportSellerService {
         return addEvidence(report, account, request);
     }
 
-    @Override
-    public ReportSellerResponse processReportSeller(String id, String resolutionDetail) {
-        return null;
-    }
 
     private ReportSellerEvidenceResponse addEvidence(ReportSellerEntity report, AccountEntity account , CreateEvidenceRequest request) {
         if (Set.of("ACCEPTED", "REJECTED").contains(report.getResolutionStatus())) {

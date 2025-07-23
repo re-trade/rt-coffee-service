@@ -9,6 +9,7 @@ import org.retrade.common.model.dto.response.ResponseObject;
 import org.retrade.main.model.constant.SenderRoleEnum;
 import org.retrade.main.model.dto.request.CreateEvidenceRequest;
 import org.retrade.main.model.dto.request.CreateReportSellerRequest;
+import org.retrade.main.model.dto.request.ReportSellerProcessRequest;
 import org.retrade.main.model.dto.response.ReportSellerEvidenceResponse;
 import org.retrade.main.model.dto.response.ReportSellerResponse;
 import org.retrade.main.service.ReportSellerService;
@@ -142,10 +143,10 @@ public class ReportSellerController {
     }
 
 
-    @PutMapping("{id}")
+    @PutMapping("{id}/process")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
-    public ResponseEntity<ResponseObject<ReportSellerResponse>> processReportSeller(@PathVariable String id,@RequestParam String resolutionDetail) {
-        var result = reportSellerService.processReportSeller(id, resolutionDetail);
+    public ResponseEntity<ResponseObject<ReportSellerResponse>> processReportSeller(@PathVariable String id, @RequestBody ReportSellerProcessRequest request) {
+        var result = reportSellerService.processReportSeller(id, request);
         return ResponseEntity.ok(new ResponseObject.Builder<ReportSellerResponse>()
                 .success(true)
                 .code("SUCCESS")
