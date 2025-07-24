@@ -23,6 +23,7 @@ public class AchievementServiceImpl implements AchievementService {
     private final SellerAchievementRepository sellerAchievementRepository;
     private final OrderServiceClient orderServiceClient;
 
+    @Override
     public void evaluate(String sellerId, String type) {
         var conditions = achievementConditionRepository.findByType(type);
         conditions.forEach(condition -> {
@@ -56,7 +57,6 @@ public class AchievementServiceImpl implements AchievementService {
                 sa.setAchievedAt(LocalDateTime.now());
                 log.info("Achievement unlocked for seller {}: {}", sellerId, condition.getAchievement().getCode());
             }
-
             sellerAchievementRepository.save(sa);
         });
     }

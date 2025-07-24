@@ -79,7 +79,7 @@ public class ReportSellerController {
                 .build());
     }
 
-    @GetMapping("{sellerId}")
+    @GetMapping("seller/{sellerId}")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     public ResponseEntity<ResponseObject<List<ReportSellerResponse>>> getAllReportBySellerId(
             @PathVariable String sellerId,
@@ -182,7 +182,7 @@ public class ReportSellerController {
     @PostMapping("{id}/evidences/system")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     public ResponseEntity<ResponseObject<ReportSellerEvidenceResponse>> adminUploadEvidence(@PathVariable String id, @RequestBody CreateEvidenceRequest createEvidenceRequest) {
-        var result = reportSellerService.addCustomerEvidence(id, createEvidenceRequest);
+        var result = reportSellerService.addSystemEvidence(id, createEvidenceRequest);
         return ResponseEntity.ok(new ResponseObject.Builder<ReportSellerEvidenceResponse>()
                 .success(true)
                 .code("SUCCESS")
