@@ -13,7 +13,6 @@ import org.retrade.common.model.entity.BaseSQLEntity;
 @AllArgsConstructor
 @Entity(name = "achievement_conditions")
 public class AchievementConditionEntity extends BaseSQLEntity {
-
     @ManyToOne(targetEntity = AchievementEntity.class, fetch = FetchType.LAZY)
     @JoinColumn(name = "achievement_id", nullable = false)
     private AchievementEntity achievement;

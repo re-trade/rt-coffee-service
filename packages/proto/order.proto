@@ -1,0 +1,19 @@
+syntax = "proto3";
+option java_multiple_files = true;
+package order;
+option java_package = "org.retrade.proto";
+option java_outer_classname = "OrderProto";
+
+message CountCompletedOrdersRequest {
+  string seller_id = 1;
+}
+
+message CountCompletedOrdersResponse {
+  bool success = 1;
+  string message = 2;
+  int64 total_orders = 3;
+}
+
+service OrderService {
+  rpc CountCompletedOrders (CountCompletedOrdersRequest) returns (CountCompletedOrdersResponse);
+}
