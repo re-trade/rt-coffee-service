@@ -56,6 +56,7 @@ public class OrderServiceImpl implements OrderService {
         validateCreateOrderRequest(request);
         var orderDestinationEntity = wrapOrderDestination(contact);
         List<ProductEntity> products = validateAndGetProducts(request.getItems());
+        subtractProductQuantities(products, request.getItems());
 
         Map<SellerEntity, List<ProductEntity>> productsBySeller = groupProductsBySeller(products);
 
@@ -833,5 +834,21 @@ public class OrderServiceImpl implements OrderService {
                 .map(TopCustomerResponse.TopCustomerResponseBuilder::build)
                 .sorted((a, b) -> Long.compare(b.getOrderCount(), a.getOrderCount()))
                 .collect(Collectors.toList());
+    }
+
+    private void subtractProductQuantities(List<ProductEntity> products, List<OrderItemRequest> items) {
+        Map<String, Integer> orderedQuantities = items.stream()
+                .collect(Collectors.toMap(OrderItemRequest::getProductId, OrderItemRequest::getQuantity));
+        for (ProductEntity product : products) {
+            Integer orderedQuantity = orderedQuantities.get(product.getId());
+            if (orderedQuantity == null) {
+                throw new ValidationException("Product ID not found in request items: " + product.getId());
+            }
+            if (product.getQuantity() < orderedQuantity) {
+                throw new ValidationException("Insufficient stock for product: " + product.getName());
+            }
+            product.setQuantity(product.getQuantity() - orderedQuantity);
+        }
+        productRepository.saveAll(products);
     }
 }
