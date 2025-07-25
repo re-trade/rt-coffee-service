@@ -78,7 +78,7 @@ public class OrderServiceImpl implements OrderService {
         }
         List<OrderComboEntity> orderCombos = createOrderCombos(productsBySeller, orderDestination);
 
-        createOrderItems(savedOrder, products, orderCombos);
+        createOrderItems(savedOrder, products, orderCombos, request.getItems());
 
         cartService.clearCart();
 
@@ -567,13 +567,18 @@ public class OrderServiceImpl implements OrderService {
     }
 
     private void createOrderItems(OrderEntity order, List<ProductEntity> products,
-                                  List<OrderComboEntity> orderCombos) {
+                                  List<OrderComboEntity> orderCombos, List<OrderItemRequest> requestItems) {
         Map<SellerEntity, OrderComboEntity> sellerComboMap = orderCombos.stream()
                 .collect(Collectors.toMap(OrderComboEntity::getSeller, combo -> combo));
-
+        Map<String, Integer> requestItemMap = requestItems.stream()
+                .collect(Collectors.toMap(OrderItemRequest::getProductId, OrderItemRequest::getQuantity));
         for (ProductEntity product : products) {
             OrderComboEntity combo = sellerComboMap.get(product.getSeller());
 
+            var quantity = requestItemMap.get(product.getId());
+            if (quantity == null) {
+                throw new ValidationException("Ordered quantity not found for product: " + product.getId());
+            }
             OrderItemEntity orderItem = OrderItemEntity.builder()
                     .order(order)
                     .product(product)
@@ -582,7 +587,7 @@ public class OrderServiceImpl implements OrderService {
                     .shortDescription(product.getShortDescription())
                     .backgroundUrl(product.getThumbnail())
                     .basePrice(product.getCurrentPrice())
-                    .quantity(product.getQuantity())
+                    .quantity(quantity)
                     .unit("vnd")
                     .build();
 
