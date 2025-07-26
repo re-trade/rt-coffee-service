@@ -161,9 +161,6 @@ public class PaymentServiceImpl implements PaymentService {
         }
         var orderEntity = orderRepository.findOrderByOrderComboId(orderComboId).orElseThrow(() -> new ValidationException("Order not found"));
         var paymentHistory = paymentHistoryRepository.findByOrder(orderEntity);
-        if (paymentHistory.isEmpty()) {
-            throw new ValidationException("Order has no payment history");
-        }
 
         Map<String, List<PaymentHistoryEntity>> grouped = paymentHistory.stream()
                 .collect(Collectors.groupingBy(ph -> switch (ph.getPaymentStatus()) {
