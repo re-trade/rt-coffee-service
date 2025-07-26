@@ -3,6 +3,7 @@ package org.retrade.main.service.impl;
 import jakarta.persistence.criteria.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.retrade.common.model.constant.QueryOperatorEnum;
 import org.retrade.common.model.dto.request.QueryFieldWrapper;
 import org.retrade.common.model.dto.request.QueryWrapper;
 import org.retrade.common.model.dto.response.PaginationWrapper;
@@ -120,10 +121,54 @@ public class OrderServiceImpl implements OrderService {
         }
         return orderComboRepository.query(queryWrapper, (param) -> (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
-            var destinationJoin = root.join("orderDestination");
-            var orderJoin = destinationJoin.join("order");
-            var customerJoin = orderJoin.join("customer");
+            if (query != null) {
+                query.distinct(true);
+            }
+            var destinationJoin = root.join("orderDestination", JoinType.INNER);
+            var orderJoin = destinationJoin.join("order", JoinType.INNER);
+            var customerJoin = orderJoin.join("customer", JoinType.INNER);
+
             predicates.add(criteriaBuilder.equal(customerJoin.get("id"), customerEntity.getId()));
+            var keyword = param.remove("keyword");
+            var orderStatusId = param.remove("orderStatusId");
+            if (keyword != null && !keyword.getValue().toString().trim().isEmpty()) {
+                var value = keyword.getValue().toString().trim().toLowerCase();
+                var pattern = String.format("%%%s%%", value);
+                var orderItemJoin = root.joinSet("orderItems", JoinType.LEFT);
+                var sellerJoin = root.join("seller", JoinType.INNER);
+                Predicate sellerNamePredicate = criteriaBuilder.like(
+                        criteriaBuilder.lower(sellerJoin.get("shopName")), pattern
+                );
+                Predicate sellerDescriptionPredicate = criteriaBuilder.like(
+                        criteriaBuilder.lower(sellerJoin.get("description")), pattern
+                );
+                Predicate noItemsPredicate = criteriaBuilder.isEmpty(root.get("orderItems"));
+
+                Predicate productNamePredicate = criteriaBuilder.like(
+                        criteriaBuilder.lower(orderItemJoin.get("productName")), pattern
+                );
+                predicates.add(criteriaBuilder.or(
+                        productNamePredicate,
+                        sellerNamePredicate,
+                        sellerDescriptionPredicate,
+                        noItemsPredicate
+                ));
+            }
+            if (orderStatusId != null) {
+                var orderStatusJoin = root.join("orderStatus", JoinType.INNER);
+                switch (orderStatusId.getOperator()) {
+                    case QueryOperatorEnum.EQ -> {
+                        predicates.add(criteriaBuilder.equal(orderStatusJoin.get("id"), orderStatusId.getValue()));
+                    }
+                    case QueryOperatorEnum.IN -> {
+                        Object value = orderStatusId.getValue();
+                        if (value instanceof List<?>) {
+                            var idList = ((List<?>) value).stream().map(Object::toString).toList();
+                            predicates.add(orderStatusJoin.get("id").in(idList));
+                        }
+                    }
+                }
+            }
             return getOrderComboPredicate(param, root, criteriaBuilder, predicates);
         }, (items) -> {
             var list = items.map(this::wrapCustomerOrderComboResponse).stream().toList();
@@ -693,6 +738,12 @@ public class OrderServiceImpl implements OrderService {
         var orderDestination = combo.getOrderDestination();
         var orderDestinationResponse = wrapOrderDestinationResponse(orderDestination);
         var orderItemResponses = wrapCustomerOrderItemResponse(orderItems);
+        String paymentStatus;
+        if (Set.of(OrderStatusCodes.PENDING, OrderStatusCodes.PAYMENT_FAILED, OrderStatusCodes.PAYMENT_CANCELLED).contains(orderStatus.getCode())) {
+            paymentStatus = "Not Paid";
+        }else {
+            paymentStatus = "Paid";
+        }
         return CustomerOrderComboResponse.builder()
                 .comboId(combo.getId())
                 .sellerId(seller.getId())
@@ -704,6 +755,8 @@ public class OrderServiceImpl implements OrderService {
                 .items(orderItemResponses)
                 .destination(orderDestinationResponse)
                 .createDate(combo.getCreatedDate().toLocalDateTime())
+                .updateDate(combo.getUpdatedDate().toLocalDateTime())
+                .paymentStatus(paymentStatus)
                 .build();
     }
 

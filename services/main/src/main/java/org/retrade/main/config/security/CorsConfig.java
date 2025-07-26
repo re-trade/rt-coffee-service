@@ -1,6 +1,7 @@
 package org.retrade.main.config.security;
 
 import lombok.RequiredArgsConstructor;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.cors.CorsConfiguration;
@@ -22,7 +23,7 @@ public class CorsConfig {
     WebMvcConfigurer corsConfigurer() {
         return new WebMvcConfigurer() {
             @SuppressWarnings("null")
-            public void addCorsMappings(CorsRegistry registry) {
+            public void addCorsMappings(@NotNull CorsRegistry registry) {
                 registry.addMapping("/**")
                         .allowedOrigins(getCorsAllowed())
                         .allowedMethods("*")
