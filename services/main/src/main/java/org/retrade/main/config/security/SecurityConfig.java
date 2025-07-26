@@ -36,7 +36,7 @@ public class SecurityConfig {
                            "/passwords/**",
                            "/pings/**","/accounts/check-username", "/orders/status", "/wallets/banks/**"
                            ).permitAll()
-                           .requestMatchers(HttpMethod.GET, "/products/**", "/categories/**", "/payments/**", "/product-histories/**")
+                           .requestMatchers(HttpMethod.GET, "/products/**", "/categories/**", "/payments/**", "/product-histories/**", "/sellers/**")
                            .permitAll()
                            .anyRequest().authenticated();
                 }).exceptionHandling(exception -> {
