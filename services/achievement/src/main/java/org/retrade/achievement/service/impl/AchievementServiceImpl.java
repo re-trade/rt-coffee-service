@@ -1,64 +1,177 @@
 package org.retrade.achievement.service.impl;
 
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Root;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.retrade.achievement.client.OrderServiceClient;
-import org.retrade.achievement.model.constant.ConditionTypeCode;
-import org.retrade.achievement.model.entity.SellerAchievementEntity;
+import org.retrade.achievement.model.dto.request.AchievementConditionRequest;
+import org.retrade.achievement.model.dto.request.AchievementRequest;
+import org.retrade.achievement.model.dto.response.AchievementConditionResponse;
+import org.retrade.achievement.model.dto.response.AchievementResponse;
+import org.retrade.achievement.model.entity.AchievementConditionEntity;
+import org.retrade.achievement.model.entity.AchievementEntity;
 import org.retrade.achievement.repository.AchievementConditionRepository;
 import org.retrade.achievement.repository.AchievementRepository;
-import org.retrade.achievement.repository.SellerAchievementRepository;
 import org.retrade.achievement.service.AchievementService;
+import org.retrade.common.model.dto.request.QueryFieldWrapper;
+import org.retrade.common.model.dto.request.QueryWrapper;
+import org.retrade.common.model.dto.response.PaginationWrapper;
+import org.retrade.common.model.exception.ValidationException;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
-import java.util.Objects;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
-@Slf4j
 public class AchievementServiceImpl implements AchievementService {
     private final AchievementRepository achievementRepository;
     private final AchievementConditionRepository achievementConditionRepository;
-    private final SellerAchievementRepository sellerAchievementRepository;
-    private final OrderServiceClient orderServiceClient;
 
     @Override
-    public void evaluate(String sellerId, String type) {
-        var conditions = achievementConditionRepository.findByType(type);
-        conditions.forEach(condition -> {
-            boolean achieved = false;
-            double progress = 0.0;
+    public AchievementResponse createAchievement(AchievementRequest request) {
+        var entity = AchievementEntity.builder()
+                .code(request.getCode())
+                .name(request.getName())
+                .description(request.getDescription())
+                .build();
+        var result = achievementRepository.save(entity);
+        return mapToAchievementResponse(result);
+    }
 
-            if (Objects.equals(type, ConditionTypeCode.BECOME_SELLER)) {
-                achieved = true;
-                progress = 1.0;
+    @Override
+    public AchievementConditionResponse createAchievementCondition(AchievementConditionRequest request) {
+        var achievementEntity = achievementRepository.findById(request.getAchievementId()).orElseThrow(() -> new ValidationException(""));
+        if (Boolean.TRUE.equals(achievementEntity.getIsActivated())) {
+            throw new ValidationException("Achievement is already activated");
+        }
+        var achievementConditionEntity = AchievementConditionEntity.builder()
+                .achievement(achievementEntity)
+                .type(request.getType())
+                .threshold(request.getThreshold())
+                .periodDays(request.getPeriodDays())
+                .build();
+        var result = achievementConditionRepository.save(achievementConditionEntity);
+        return mapToAchievementConditionResponse(result);
+    }
 
-            } else if (Objects.equals(type, ConditionTypeCode.ORDER_COMPLETED)) {
-                long totalOrders = orderServiceClient.getOrderCount(sellerId);
-                progress = Math.min(1.0, totalOrders / condition.getThreshold());
-                achieved = totalOrders >= condition.getThreshold();
-            }
+    @Override
+    public void deleteAchievement(String id) {
+        achievementRepository.deleteById(id);
+    }
 
-            SellerAchievementEntity sa = sellerAchievementRepository
-                    .findBySellerIdAndAchievement_Id(condition.getAchievement().getId(), sellerId)
-                    .orElseGet(() -> {
-                        SellerAchievementEntity newSa = new SellerAchievementEntity();
-                        newSa.setSellerId(sellerId);
-                        newSa.setAchievement(condition.getAchievement());
-                        newSa.setAchieved(false);
-                        return newSa;
-                    });
+    @Override
+    public AchievementResponse getAchievement(String id) {
+        var entity = achievementRepository.findById(id)
+                .orElseThrow(() -> new ValidationException("Achievement not found"));
+        return mapToAchievementResponse(entity);
+    }
 
-            sa.setProgress(progress);
+    @Override
+    public AchievementResponse activateAchievement(String id) {
+        var entity = achievementRepository.findById(id)
+                .orElseThrow(() -> new ValidationException("Achievement not found"));
 
-            if (achieved && !sa.getAchieved()) {
-                sa.setAchieved(true);
-                sa.setAchievedAt(LocalDateTime.now());
-                log.info("Achievement unlocked for seller {}: {}", sellerId, condition.getAchievement().getCode());
-            }
-            sellerAchievementRepository.save(sa);
+        if (Boolean.TRUE.equals(entity.getIsActivated())) {
+            throw new ValidationException("Achievement already activated");
+        }
+
+        entity.setIsActivated(true);
+        var updated = achievementRepository.save(entity);
+        return mapToAchievementResponse(updated);
+    }
+
+    @Override
+    public AchievementConditionResponse updateAchievementCondition(String id, AchievementConditionRequest request) {
+        var condition = achievementConditionRepository.findById(id)
+                .orElseThrow(() -> new ValidationException("Condition not found"));
+
+        var achievement = achievementRepository.findById(request.getAchievementId())
+                .orElseThrow(() -> new ValidationException("Achievement not found"));
+
+        if (Boolean.TRUE.equals(achievement.getIsActivated())) {
+            throw new ValidationException("Achievement is already activated");
+        }
+
+        condition.setAchievement(achievement);
+        condition.setType(request.getType());
+        condition.setThreshold(request.getThreshold());
+        condition.setPeriodDays(request.getPeriodDays());
+
+        var updated = achievementConditionRepository.save(condition);
+        return mapToAchievementConditionResponse(updated);
+    }
+
+    @Override
+    public void deleteAchievementCondition(String id) {
+        achievementConditionRepository.deleteById(id);
+    }
+
+    @Override
+    public PaginationWrapper<List<AchievementResponse>> getAchievements(QueryWrapper queryWrapper) {
+        return achievementRepository.query(queryWrapper, (param) -> ((root, query1, criteriaBuilder) ->
+        {
+            List<Predicate> predicates = new ArrayList<>();
+            return getAchievementPredicate(param, root, criteriaBuilder, predicates);
+        }), (items) -> {
+            var list = items.map(this::mapToAchievementResponse).stream().toList();
+            return new PaginationWrapper.Builder<List<AchievementResponse>>()
+                    .setPaginationInfo(items)
+                    .setData(list)
+                    .build();
         });
     }
 
+    @Override
+    public PaginationWrapper<List<AchievementConditionResponse>> getAchievementConditionsByAchievementId(QueryWrapper queryWrapper, String id) {
+        return achievementConditionRepository.query(queryWrapper, (param) -> ((root, query1, criteriaBuilder) ->
+        {
+            List<Predicate> predicates = new ArrayList<>();
+            predicates.add(criteriaBuilder.equal(root.get("achievement").get("id"), id));
+            return getAchievementConditionPredicate(param, root, criteriaBuilder, predicates);
+        }), (items) -> {
+            var list = items.map(this::mapToAchievementConditionResponse).stream().toList();
+            return new PaginationWrapper.Builder<List<AchievementConditionResponse>>()
+                    .setPaginationInfo(items)
+                    .setData(list)
+                    .build();
+        });
+    }
+
+    private AchievementResponse mapToAchievementResponse(AchievementEntity entity) {
+        return AchievementResponse.builder()
+                .id(entity.getId())
+                .name(entity.getName())
+                .description(entity.getDescription())
+                .icon(entity.getIcon())
+                .isActivated(entity.getIsActivated())
+                .build();
+    }
+
+    private Predicate getAchievementPredicate(Map<String, QueryFieldWrapper> param, Root<AchievementEntity> root, CriteriaBuilder criteriaBuilder, List<Predicate> predicates) {
+        if (param != null && !param.isEmpty()) {
+            Predicate[] defaultPredicates = achievementRepository.createDefaultPredicate(criteriaBuilder, root, param);
+            predicates.addAll(Arrays.asList(defaultPredicates));
+        }
+        return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
+    }
+
+    private Predicate getAchievementConditionPredicate(Map<String, QueryFieldWrapper> param, Root<AchievementConditionEntity> root, CriteriaBuilder criteriaBuilder, List<Predicate> predicates) {
+        if (param != null && !param.isEmpty()) {
+            Predicate[] defaultPredicates = achievementConditionRepository.createDefaultPredicate(criteriaBuilder, root, param);
+            predicates.addAll(Arrays.asList(defaultPredicates));
+        }
+        return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
+    }
+
+    private AchievementConditionResponse mapToAchievementConditionResponse(AchievementConditionEntity entity) {
+        return AchievementConditionResponse.builder()
+                .id(entity.getId())
+                .type(entity.getType())
+                .threshold(entity.getThreshold())
+                .periodDays(entity.getPeriodDays())
+                .build();
+    }
 }

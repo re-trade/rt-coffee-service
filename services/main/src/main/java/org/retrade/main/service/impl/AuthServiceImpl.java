@@ -289,7 +289,6 @@ public class AuthServiceImpl implements AuthService {
                 .twoFA(false)
                 .build();
     }
-
     private String saveSession(HttpServletRequest request, AccountEntity account) {
         String deviceFingerprint = request.getHeader("x-device-fingerprint");
         String deviceName = request.getHeader("x-device-name");

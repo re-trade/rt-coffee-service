@@ -1,16 +1,14 @@
 package org.retrade.achievement.model.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import org.retrade.common.model.entity.BaseSQLEntity;
 
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 @Entity(name = "achievement_conditions")
 public class AchievementConditionEntity extends BaseSQLEntity {
     @ManyToOne(targetEntity = AchievementEntity.class, fetch = FetchType.LAZY)

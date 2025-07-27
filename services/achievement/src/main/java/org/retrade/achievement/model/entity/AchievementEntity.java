@@ -2,16 +2,14 @@ package org.retrade.achievement.model.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import org.retrade.common.model.entity.BaseSQLEntity;
 
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 @Entity(name = "achievements")
 public class AchievementEntity extends BaseSQLEntity {
     @Column(name = "code", nullable = false, unique = true)
