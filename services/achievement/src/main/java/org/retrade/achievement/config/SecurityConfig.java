@@ -5,6 +5,7 @@ import org.retrade.achievement.security.CustomAuthenticationEntryPoint;
 import org.retrade.achievement.security.JwtAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -25,6 +26,7 @@ public class SecurityConfig {
         http.cors(cors -> cors.configurationSource(corsConfig.corsConfigurationSource()));
         http.authorizeHttpRequests((auth) -> auth.requestMatchers("/api-docs/**", "/swagger-ui/**","/actuator/health")
                 .permitAll()
+                .requestMatchers(HttpMethod.GET, "/achievements/**", "/seller-achievements/sellers/**").permitAll()
                 .anyRequest().authenticated());
         http.exceptionHandling(exception -> {
             exception.authenticationEntryPoint(customAuthenticationEntryPoint);

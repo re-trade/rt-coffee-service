@@ -1,10 +1,7 @@
 package org.retrade.achievement.model.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import org.retrade.common.model.entity.BaseSQLEntity;
 
 import java.time.LocalDateTime;
@@ -14,6 +11,7 @@ import java.time.LocalDateTime;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 @Table(name = "seller_achievements", uniqueConstraints = @UniqueConstraint(columnNames = {"seller_id", "achievement_id"}))
 @Entity(name = "seller_achievements")
 public class SellerAchievementEntity extends BaseSQLEntity {

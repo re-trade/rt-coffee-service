@@ -9,13 +9,11 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class SellerAchievementResponse {
+public class AchievementResponse {
     private String id;
     private String code;
     private String name;
     private String description;
     private String icon;
-    private Boolean achieved;
-    private Double progress;
-    private String achievedAt;
+    private Boolean isActivated;
 }

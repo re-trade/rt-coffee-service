@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        service: [ main, feedback-notification, voucher, storage, prover, migration ]
+        service: [ main, feedback-notification, achievement, storage, prover, migration ]
       max-parallel: 3
     env:
       REGISTRY: ghcr.io/${{ inputs.repository }}
