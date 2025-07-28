@@ -36,6 +36,8 @@ public class AchievementServiceImpl implements AchievementService {
                 .code(request.getCode())
                 .name(request.getName())
                 .description(request.getDescription())
+                .icon(request.getIcon())
+                .isActivated(request.getIsActivated() != null ? request.getIsActivated() : false)
                 .build();
         var result = achievementRepository.save(entity);
         return mapToAchievementResponse(result);
@@ -144,6 +146,7 @@ public class AchievementServiceImpl implements AchievementService {
         return AchievementResponse.builder()
                 .id(entity.getId())
                 .name(entity.getName())
+                .code(entity.getCode())
                 .description(entity.getDescription())
                 .icon(entity.getIcon())
                 .isActivated(entity.getIsActivated())

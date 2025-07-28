@@ -6,10 +6,7 @@ import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.retrade.proto.authentication.GrpcTokenServiceGrpc;
-import org.retrade.proto.authentication.TokenRequest;
-import org.retrade.proto.authentication.TokenType;
-import org.retrade.proto.authentication.VerifyTokenResponse;
+import org.retrade.proto.authentication.*;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -31,7 +28,14 @@ public class TokenServiceClient {
     public VerifyTokenResponse verifyToken(String token, TokenType tokenType) {
         return blockingStub.verifyToken(TokenRequest.newBuilder()
                 .setToken(token)
-                .setType(TokenType.ACCESS_TOKEN)
+                .setType(tokenType)
+                .build());
+    }
+
+    public GetSellerProfileResponse getSellerProfileByToken(String token, TokenType tokenType) {
+        return blockingStub.getSellerProfile(TokenRequest.newBuilder()
+                .setToken(token)
+                .setType(tokenType)
                 .build());
     }
 
