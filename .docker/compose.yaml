@@ -202,6 +202,44 @@ services:
       - "traefik.constraint-label=retrade-service"
       - "traefik.http.services.voucher-service.loadbalancer.server.port=8080"
 
+  achievement-service:
+    container_name: achievement_service
+    image: ${REGISTRY}/rt-achievement-service:latest
+    restart: always
+    networks:
+      - retrade-network
+    environment:
+      GRPC_PORT: 9080
+      DB_HOST: retrade-database
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      RABBITMQ_HOST: retrade-rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USERNAME: ${RABBITMQ_USERNAME}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+      CONTEXT_PATH: /api/achievement/v1
+      PORT: 8080
+      ORIGIN_ALLOWS: ${ORIGIN_ALLOWS}
+      BASE_HOST: ${BASE_HOST}
+      FRONTEND_URL: ${FRONTEND_URL}
+      SWAGGER_CONTEXT_PATH: /api/achievement/v1
+      MAIN_SERVICE_GRPC_HOST: main-service
+      MAIN_SERVICE_GRPC_PORT: 9080
+      TZ: Asia/Ho_Chi_Minh
+    profiles:
+      - backend
+      - prod
+      - achievement
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.achievement-service.rule=PathPrefix(`/api/achievement/v1/`)"
+      - "traefik.http.routers.achievement-service.entrypoints=web"
+      - "traefik.docker.network=retrade-network"
+      - "traefik.constraint-label=retrade-service"
+      - "traefik.http.services.achievement-service.loadbalancer.server.port=8080"
+
   prover-service:
     container_name: prover_service
     image: ${REGISTRY}/rt-prover-service:latest
