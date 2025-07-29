@@ -36,3 +36,15 @@ jobs:
     with:
       services: main,feedback-notification,voucher,storage,prover,migration
     secrets: inherit
+
+  deploy-prod:
+    name: Deploy / Prod
+    needs: build-coffee-image
+    uses: ./.github/workflows/deploy-prod.yaml
+    permissions:
+      contents: read
+      packages: write
+    with:
+      actor: ${{ github.actor }}
+      repository: ${{ github.repository }}
+    secrets: inherit
