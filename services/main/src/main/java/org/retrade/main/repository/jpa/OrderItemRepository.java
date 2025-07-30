@@ -5,6 +5,7 @@ import org.retrade.main.model.entity.OrderComboEntity;
 import org.retrade.main.model.entity.OrderEntity;
 import org.retrade.main.model.entity.OrderItemEntity;
 import org.retrade.main.model.entity.ProductEntity;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Repository;
 
@@ -21,4 +22,5 @@ public interface OrderItemRepository extends BaseJpaRepository<OrderItemEntity, 
     boolean existsByProduct_IdAndOrderCombo_Id(@NonNull String id, @NonNull String id1);
 
     List<OrderItemEntity> findByOrder_Id(@NonNull String id);
+
 }

@@ -39,4 +39,6 @@ public interface ProductService {
 
 
     FieldAdvanceSearch filedAdvanceSearch(QueryWrapper queryWrapper);
+
+    PaginationWrapper<List<ProductResponse>> searchProductBestSelling(QueryWrapper queryWrapper);
 }

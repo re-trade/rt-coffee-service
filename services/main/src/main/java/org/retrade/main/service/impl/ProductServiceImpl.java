@@ -28,11 +28,8 @@ import org.retrade.main.model.entity.BrandEntity;
 import org.retrade.main.model.entity.CategoryEntity;
 import org.retrade.main.model.entity.ProductEntity;
 import org.retrade.main.model.entity.SellerEntity;
-import org.retrade.main.repository.jpa.CategoryRepository;
+import org.retrade.main.repository.jpa.*;
 import org.retrade.main.repository.elasticsearch.ProductElasticsearchRepository;
-import org.retrade.main.repository.jpa.ProductRepository;
-import org.retrade.main.repository.jpa.SellerRepository;
-import org.retrade.main.repository.jpa.BrandRepository;
 import org.retrade.main.service.ProductService;
 import org.retrade.main.util.AuthUtils;
 import org.springframework.data.domain.Page;
@@ -54,6 +51,8 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class ProductServiceImpl implements ProductService {
+
+
     private final ProductRepository productRepository;
     private final ProductElasticsearchRepository productSearchRepository;
     private final ElasticsearchOperations elasticsearchOperations;
@@ -63,6 +62,8 @@ public class ProductServiceImpl implements ProductService {
     private final AuthUtils authUtils;
     private final BrandRepository brandEntityRepository;
     private final ProductRecommendGrpcClient productRecommendGrpcClient;
+    private final OrderComboRepository orderComboRepository;
+    private final OrderItemRepository orderItemRepository;
 
     @Override
     @Transactional(rollbackFor = {ActionFailedException.class, Exception.class})
@@ -394,7 +395,18 @@ public class ProductServiceImpl implements ProductService {
                 .categoriesAdvanceSearch(categories)
                 .build();
     }
-
+    @Override
+    public PaginationWrapper<List<ProductResponse>> searchProductBestSelling(QueryWrapper queryWrapper) {
+        Page<ProductEntity> bestSelling = productRepository.findBestSellingProducts(queryWrapper.pagination());
+        List<ProductResponse> productResponses = bestSelling.getContent()
+                .stream()
+                .map(this::mapToProductResponse)
+                .toList();
+        return new PaginationWrapper.Builder<List<ProductResponse>>()
+                .setData(productResponses)
+                .setPaginationInfo(bestSelling)
+                .build();
+    }
     private Set<String> extractBucketKeys(AggregationsContainer<?> aggregations, String aggName) {
         Set<String> keys = new HashSet<>();
         if (aggregations == null) return keys;
