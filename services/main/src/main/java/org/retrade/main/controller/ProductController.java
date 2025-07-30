@@ -260,4 +260,21 @@ public class ProductController {
                 .messages("Product unverified successfully")
                 .build());
     }
+
+    @GetMapping("best-selling")
+    public ResponseEntity<ResponseObject<List<ProductResponse>>> searchProductBestSelling(
+            @PageableDefault Pageable pageable, @RequestParam(required = false, name = "q") String search
+    ) {
+        var queryWrapper = QueryWrapper.builder()
+                .search(search)
+                .pageable(pageable)
+                .build();
+        var result = productService.searchProductBestSelling(queryWrapper);
+        return ResponseEntity.ok(new ResponseObject.Builder<List<ProductResponse>>()
+                .success(true)
+                .code("SUCCESS")
+                .unwrapPaginationWrapper(result)
+                .messages("Products found successfully")
+                .build());
+    }
 }

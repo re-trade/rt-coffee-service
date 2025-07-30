@@ -50,6 +50,30 @@ public interface ProductRepository extends BaseJpaRepository<ProductEntity, Stri
     List<SellerEntity> findSellersByProducts(@Param("products") List<ProductEntity> products);
 
 
+//    @Query("SELECT p FROM products p " +
+//            "WHERE p.id IN (SELECT oi.id FROM order_items oi " +
+//            "JOIN oi.orderCombo oc " +
+//            "WHERE oc.orderStatus.code = 'CONFIRM')")
+//    Page<ProductEntity> findBestSellingProducts(Pageable pageable);
+
+    @Query(value = """
+    SELECT p.* FROM products p
+    JOIN order_items oi ON oi.product_id = p.id
+    JOIN order_combos oc ON oi.order_combo_id = oc.id
+    JOIN order_statuses os ON oc.order_status_id = os.id
+    WHERE os.code = 'CONFIRM'
+    GROUP BY p.id
+    ORDER BY SUM(oi.quantity) DESC
+    """,
+            countQuery = """
+    SELECT COUNT(DISTINCT p.id) FROM products p
+    JOIN order_items oi ON oi.product_id = p.id
+    JOIN order_combos oc ON oi.order_combo_id = oc.id
+    JOIN order_statuses os ON oc.order_status_id = os.id
+    WHERE os.code = 'CONFIRM'
+    """,
+            nativeQuery = true)
+    Page<ProductEntity> findBestSellingProducts(Pageable pageable);
 
 
 
