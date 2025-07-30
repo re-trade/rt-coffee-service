@@ -46,4 +46,8 @@ public interface OrderComboRepository extends BaseJpaRepository<OrderComboEntity
     Long getTotalItemsSoldBySellerAndStatus(@Param("seller") SellerEntity seller, @Param("status") OrderStatusEntity status);
 
     long countDistinctBySeller_IdAndOrderStatus_Code(@NonNull String id, @NonNull String code);
+
+    @Query("SELECT COUNT(o) FROM order_combos o WHERE o.orderStatus.code = 'COMPLETED'")
+    long countByOrderStatus();
+
 }

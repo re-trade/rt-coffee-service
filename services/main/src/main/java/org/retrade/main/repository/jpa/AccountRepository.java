@@ -2,6 +2,7 @@ package org.retrade.main.repository.jpa;
 
 import org.retrade.common.repository.BaseJpaRepository;
 import org.retrade.main.model.entity.AccountEntity;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
@@ -13,4 +14,7 @@ public interface AccountRepository extends BaseJpaRepository<AccountEntity, Stri
     Optional<AccountEntity> findByEmail(String email);
 
     boolean existsByUsername(String username);
+
+    @Query("SELECT COUNT(a) from  accounts a where a.enabled = true ")
+    long countAccounts();
 }
