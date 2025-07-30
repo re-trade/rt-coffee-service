@@ -18,6 +18,7 @@ import org.retrade.common.model.dto.response.PaginationWrapper;
 import org.retrade.common.model.exception.ActionFailedException;
 import org.retrade.common.model.exception.ValidationException;
 import org.retrade.main.client.ProductRecommendGrpcClient;
+import org.retrade.main.model.constant.OrderStatusCodes;
 import org.retrade.main.model.constant.ProductStatusEnum;
 import org.retrade.main.model.document.CategoryInfoDocument;
 import org.retrade.main.model.document.ProductDocument;
@@ -397,7 +398,7 @@ public class ProductServiceImpl implements ProductService {
     }
     @Override
     public PaginationWrapper<List<ProductResponse>> searchProductBestSelling(QueryWrapper queryWrapper) {
-        Page<ProductEntity> bestSelling = productRepository.findBestSellingProducts(queryWrapper.pagination());
+        Page<ProductEntity> bestSelling = productRepository.findBestSellingProducts(OrderStatusCodes.COMPLETED,0,queryWrapper.pagination());
         List<ProductResponse> productResponses = bestSelling.getContent()
                 .stream()
                 .map(this::mapToProductResponse)
