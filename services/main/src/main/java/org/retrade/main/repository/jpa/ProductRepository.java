@@ -29,6 +29,16 @@ public interface ProductRepository extends BaseJpaRepository<ProductEntity, Stri
     @Query("SELECT oi.product FROM order_items oi WHERE oi.order = :order")
     List<ProductEntity> findProductsByOrder(@Param("order") OrderEntity order);
 
+    long countBySellerAndQuantityGreaterThan(SellerEntity seller, int quantity);
+    long countBySellerAndVerifiedTrue(SellerEntity seller);
+
+    @Query("""
+        SELECT COALESCE(SUM(p.quantity), 0)
+        FROM products p
+        WHERE p.seller = :seller
+    """)
+    Long sumQuantityBySeller(SellerEntity seller);
+
 
     @Query(
             value = """
