@@ -67,7 +67,7 @@ public interface ProductRepository extends BaseJpaRepository<ProductEntity, Stri
         LEFT JOIN main.order_items oi ON oi.product_id = p.id
         LEFT JOIN main.order_combos oc ON oi.order_combo_id = oc.id
         LEFT JOIN main.order_statuses os ON oc.order_status_id = os.id AND os.code = :statusCode
-        WHERE p.status = :productStatus  And p.verify = true
+        WHERE p.status = :productStatus  And p.verified = true
         GROUP BY p.id
         ORDER BY COUNT(oi.id) DESC
         """,
@@ -77,7 +77,7 @@ public interface ProductRepository extends BaseJpaRepository<ProductEntity, Stri
         LEFT JOIN main.order_items oi ON oi.product_id = p.id
         LEFT JOIN main.order_combos oc ON oi.order_combo_id = oc.id
         LEFT JOIN main.order_statuses os ON oc.order_status_id = os.id AND os.code = :statusCode
-        WHERE p.status = :productStatus And p.verify = true
+        WHERE p.status = :productStatus And p.verified = true
         """,
             nativeQuery = true
     )
@@ -93,7 +93,7 @@ public interface ProductRepository extends BaseJpaRepository<ProductEntity, Stri
         LEFT JOIN main.order_items oi ON oi.product_id = p.id
         LEFT JOIN main.order_combos oc ON oi.order_combo_id = oc.id
         LEFT JOIN main.order_statuses os ON oc.order_status_id = os.id
-        WHERE p.verify = true
+        WHERE p.verified = true
           AND os.code = :statusCode
     """,
             nativeQuery = true
