@@ -52,8 +52,6 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class ProductServiceImpl implements ProductService {
-
-
     private final ProductRepository productRepository;
     private final ProductElasticsearchRepository productSearchRepository;
     private final ElasticsearchOperations elasticsearchOperations;
@@ -64,7 +62,8 @@ public class ProductServiceImpl implements ProductService {
     private final BrandRepository brandEntityRepository;
     private final ProductRecommendGrpcClient productRecommendGrpcClient;
     private final OrderComboRepository orderComboRepository;
-    private final OrderItemRepository orderItemRepository;
+    private final AccountRepository accountRepository;
+
 
     @Override
     @Transactional(rollbackFor = {ActionFailedException.class, Exception.class})
@@ -408,6 +407,22 @@ public class ProductServiceImpl implements ProductService {
                 .setPaginationInfo(bestSelling)
                 .build();
     }
+    @Override
+    public ProductHomeStatsResponse getStatsHome() {
+        var totalProducts = productRepository.countVerifiedProducts();
+        var totalProductSell= productRepository.countDistinctSoldVerifiedProducts(OrderStatusCodes.COMPLETED);
+        var totalAccount = accountRepository.countAccounts();
+
+        var totalOrder = orderComboRepository.countByOrderStatus();
+
+        return ProductHomeStatsResponse.builder()
+                .totalProducts(totalProducts)
+                .totaOrders(totalOrder)
+                .totalUsers(totalAccount)
+                .totalSoldProducts(totalProductSell)
+                .build();
+    }
+
     private Set<String> extractBucketKeys(AggregationsContainer<?> aggregations, String aggName) {
         Set<String> keys = new HashSet<>();
         if (aggregations == null) return keys;

@@ -5,6 +5,7 @@ import org.retrade.common.model.dto.response.PaginationWrapper;
 import org.retrade.main.model.dto.request.CreateProductRequest;
 import org.retrade.main.model.dto.request.UpdateProductRequest;
 import org.retrade.main.model.dto.response.FieldAdvanceSearch;
+import org.retrade.main.model.dto.response.ProductHomeStatsResponse;
 import org.retrade.main.model.dto.response.ProductResponse;
 
 import java.util.List;
@@ -41,4 +42,6 @@ public interface ProductService {
     FieldAdvanceSearch filedAdvanceSearch(QueryWrapper queryWrapper);
 
     PaginationWrapper<List<ProductResponse>> searchProductBestSelling(QueryWrapper queryWrapper);
+
+    ProductHomeStatsResponse getStatsHome();
 }

@@ -49,6 +49,10 @@ public interface ProductRepository extends BaseJpaRepository<ProductEntity, Stri
     @Query("SELECT DISTINCT p.seller FROM products p WHERE p IN :products")
     List<SellerEntity> findSellersByProducts(@Param("products") List<ProductEntity> products);
 
+    @Query("SELECT COUNT(p) FROM products p WHERE p.verified = true")
+    long countVerifiedProducts();
+
+
 
 //    @Query("SELECT p FROM products p " +
 //            "WHERE p.id IN (SELECT oi.id FROM order_items oi " +
@@ -82,8 +86,18 @@ public interface ProductRepository extends BaseJpaRepository<ProductEntity, Stri
             @Param("productStatus") int productStatus,
             Pageable pageable
     );
-
-
-
+    @Query(
+            value = """
+        SELECT COUNT(DISTINCT p.id)
+        FROM main.products p
+        LEFT JOIN main.order_items oi ON oi.product_id = p.id
+        LEFT JOIN main.order_combos oc ON oi.order_combo_id = oc.id
+        LEFT JOIN main.order_statuses os ON oc.order_status_id = os.id
+        WHERE p.verify = true
+          AND os.code = :statusCode
+    """,
+            nativeQuery = true
+    )
+    long countDistinctSoldVerifiedProducts(@Param("statusCode") String statusCode);
 
 }

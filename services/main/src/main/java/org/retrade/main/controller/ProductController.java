@@ -11,6 +11,7 @@ import org.retrade.common.model.dto.response.ResponseObject;
 import org.retrade.main.model.dto.request.CreateProductRequest;
 import org.retrade.main.model.dto.request.UpdateProductRequest;
 import org.retrade.main.model.dto.response.FieldAdvanceSearch;
+import org.retrade.main.model.dto.response.ProductHomeStatsResponse;
 import org.retrade.main.model.dto.response.ProductPriceHistoryResponse;
 import org.retrade.main.model.dto.response.ProductResponse;
 import org.retrade.main.service.ProductPriceHistoryService;
@@ -276,5 +277,16 @@ public class ProductController {
                 .unwrapPaginationWrapper(result)
                 .messages("Products found successfully")
                 .build());
+    }
+    @GetMapping("home-stats")
+    public ResponseEntity<ResponseObject<ProductHomeStatsResponse>> homeStats(){
+        var result = productService.getStatsHome();
+        return ResponseEntity.ok(new ResponseObject.Builder<ProductHomeStatsResponse>()
+                .success(true)
+                .code("SUCCESS")
+                .content(result)
+                .messages("fetch stats home successfully")
+                .build());
+
     }
 }
