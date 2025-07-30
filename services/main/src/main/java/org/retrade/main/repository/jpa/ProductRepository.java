@@ -56,24 +56,33 @@ public interface ProductRepository extends BaseJpaRepository<ProductEntity, Stri
 //            "WHERE oc.orderStatus.code = 'CONFIRM')")
 //    Page<ProductEntity> findBestSellingProducts(Pageable pageable);
 
-    @Query(value = """
-    SELECT p.* FROM products p
-    JOIN order_items oi ON oi.product_id = p.id
-    JOIN order_combos oc ON oi.order_combo_id = oc.id
-    JOIN order_statuses os ON oc.order_status_id = os.id
-    WHERE os.code = 'CONFIRM'
-    GROUP BY p.id
-    ORDER BY SUM(oi.quantity) DESC
-    """,
+    @Query(
+            value = """
+        SELECT p.*
+        FROM main.products p
+        LEFT JOIN main.order_items oi ON oi.product_id = p.id
+        LEFT JOIN main.order_combos oc ON oi.order_combo_id = oc.id
+        LEFT JOIN main.order_statuses os ON oc.order_status_id = os.id AND os.code = :statusCode
+        WHERE p.status = :productStatus
+        GROUP BY p.id
+        ORDER BY COUNT(oi.id) DESC
+        """,
             countQuery = """
-    SELECT COUNT(DISTINCT p.id) FROM products p
-    JOIN order_items oi ON oi.product_id = p.id
-    JOIN order_combos oc ON oi.order_combo_id = oc.id
-    JOIN order_statuses os ON oc.order_status_id = os.id
-    WHERE os.code = 'CONFIRM'
-    """,
-            nativeQuery = true)
-    Page<ProductEntity> findBestSellingProducts(Pageable pageable);
+        SELECT COUNT(DISTINCT p.id)
+        FROM main.products p
+        LEFT JOIN main.order_items oi ON oi.product_id = p.id
+        LEFT JOIN main.order_combos oc ON oi.order_combo_id = oc.id
+        LEFT JOIN main.order_statuses os ON oc.order_status_id = os.id AND os.code = :statusCode
+        WHERE p.status = :productStatus
+        """,
+            nativeQuery = true
+    )
+    Page<ProductEntity> findBestSellingProducts(
+            @Param("statusCode") String statusCode,
+            @Param("productStatus") int productStatus,
+            Pageable pageable
+    );
+
 
 
 
