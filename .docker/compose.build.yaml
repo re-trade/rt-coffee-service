@@ -32,6 +32,17 @@ services:
       - backend
       - build
       - voucher
+  achievement-services:
+    image: ${REGISTRY}/rt-achievement-service:latest
+    build:
+      context: ..
+      dockerfile: services/achievement/Dockerfile
+      tags:
+        - ${REGISTRY}/rt-achievement-service:${TAG}
+    profiles:
+      - backend
+      - build
+      - achievement
   storage-services:
     image: ${REGISTRY}/rt-storage-service:latest
     build:

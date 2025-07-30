@@ -16,7 +16,7 @@ import org.retrade.main.repository.jpa.OrderHistoryRepository;
 import org.retrade.main.repository.jpa.OrderStatusRepository;
 import org.retrade.main.service.OrderHistoryService;
 import org.retrade.main.util.AuthUtils;
-import org.retrade.main.util.OrderStatusValidator;
+import org.retrade.main.validator.OrderStatusValidator;
 import org.springframework.stereotype.Service;
 
 import java.sql.Timestamp;

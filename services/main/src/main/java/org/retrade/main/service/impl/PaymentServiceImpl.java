@@ -17,9 +17,7 @@ import org.retrade.main.model.dto.request.PaymentInitRequest;
 import org.retrade.main.model.dto.response.PaymentHistoryResponse;
 import org.retrade.main.model.dto.response.PaymentMethodResponse;
 import org.retrade.main.model.dto.response.PaymentOrderStatusResponse;
-import org.retrade.main.model.entity.CustomerEntity;
-import org.retrade.main.model.entity.PaymentHistoryEntity;
-import org.retrade.main.model.entity.PaymentMethodEntity;
+import org.retrade.main.model.entity.*;
 import org.retrade.main.model.other.PaymentAPICallback;
 import org.retrade.main.model.other.PaymentProviderCallbackWrapper;
 import org.retrade.main.repository.jpa.*;
@@ -46,6 +44,8 @@ public class PaymentServiceImpl implements PaymentService {
     private final ApplicationContext applicationContext;
     private final OrderRepository orderRepository;
     private final OrderComboRepository orderComboRepository;
+    private final OrderItemRepository orderItemRepository;
+    private final ProductRepository productRepository;
     @Value("${payment.callback}")
     private String callbackUrl;
     private final AuthUtils authUtils;
@@ -121,36 +121,6 @@ public class PaymentServiceImpl implements PaymentService {
         }
     }
 
-    private PaymentProviderCallbackWrapper getPaymentProviderCallbackWrapper(String methodCode, PaymentAPICallback paymentCallback) {
-        var paymentEntity = paymentHistoryRepository.findByPaymentCode(String.valueOf(paymentCallback.getId()))
-                .orElseThrow(() -> new ValidationException("Not found payment with this id"));
-        paymentEntity.setPaymentTime(LocalDateTime.now());
-        var order = paymentEntity.getOrder();
-        if (paymentCallback.isStatus()) {
-            paymentEntity.setPaymentStatus(PaymentStatusEnum.PAID);
-            var orderStatus = orderStatusRepository.findByCode("PAYMENT_CONFIRMATION")
-                    .orElseThrow(() -> new ValidationException("Not found order status"));
-            var orderCombos = orderComboRepository.findByOrderItems_Order_Id(order.getId());
-            orderCombos.forEach(orderCombo -> {
-                orderCombo.setOrderStatus(orderStatus);
-            });
-            orderComboRepository.saveAll(orderCombos);
-        } else {
-            paymentEntity.setPaymentStatus(PaymentStatusEnum.CANCELED);
-        }
-        try {
-            paymentHistoryRepository.save(paymentEntity);
-            orderRepository.save(order);
-        } catch (Exception ex) {
-            throw new ActionFailedException("Failed to update payment/order: " + ex.getMessage());
-        }
-        if (paymentCallback.isStatus()) {
-            return handleSuccessCallback(methodCode);
-        }
-        return handleErrorCallback(methodCode, "Payment has been cancelled");
-    }
-
-
     @Override
     public PaginationWrapper<List<PaymentMethodResponse>> getPaymentMethods(QueryWrapper queryWrapper) {
         return paymentMethodRepository.query(queryWrapper, (param) -> (root, query, criteriaBuilder) -> {
@@ -191,9 +161,6 @@ public class PaymentServiceImpl implements PaymentService {
         }
         var orderEntity = orderRepository.findOrderByOrderComboId(orderComboId).orElseThrow(() -> new ValidationException("Order not found"));
         var paymentHistory = paymentHistoryRepository.findByOrder(orderEntity);
-        if (paymentHistory.isEmpty()) {
-            throw new ValidationException("Order has no payment history");
-        }
 
         Map<String, List<PaymentHistoryEntity>> grouped = paymentHistory.stream()
                 .collect(Collectors.groupingBy(ph -> switch (ph.getPaymentStatus()) {
@@ -264,6 +231,51 @@ public class PaymentServiceImpl implements PaymentService {
                 .paymentTime(payment.getPaymentTime())
                 .build();
     }
+
+    private PaymentProviderCallbackWrapper getPaymentProviderCallbackWrapper(String methodCode, PaymentAPICallback paymentCallback) {
+        var paymentEntity = paymentHistoryRepository.findByPaymentCode(String.valueOf(paymentCallback.getId()))
+                .orElseThrow(() -> new ValidationException("Not found payment with this id"));
+        paymentEntity.setPaymentTime(LocalDateTime.now());
+        var order = paymentEntity.getOrder();
+        if (paymentCallback.isStatus()) {
+            paymentEntity.setPaymentStatus(PaymentStatusEnum.PAID);
+            var orderStatus = orderStatusRepository.findByCode("PAYMENT_CONFIRMATION")
+                    .orElseThrow(() -> new ValidationException("Not found order status"));
+            var orderCombos = orderComboRepository.findByOrderItems_Order_Id(order.getId());
+            orderCombos.forEach(orderCombo -> {
+                orderCombo.setOrderStatus(orderStatus);
+            });
+            orderComboRepository.saveAll(orderCombos);
+        } else {
+            paymentEntity.setPaymentStatus(PaymentStatusEnum.CANCELED);
+            restoreProductQuantities(order);
+        }
+        try {
+            paymentHistoryRepository.save(paymentEntity);
+            orderRepository.save(order);
+        } catch (Exception ex) {
+            throw new ActionFailedException("Failed to update payment/order: " + ex.getMessage());
+        }
+        if (paymentCallback.isStatus()) {
+            return handleSuccessCallback(methodCode);
+        }
+        return handleErrorCallback(methodCode, "Payment has been cancelled");
+    }
+
+    private void restoreProductQuantities(OrderEntity order) {
+        List<OrderItemEntity> orderItems = orderItemRepository.findByOrder_Id(order.getId());
+
+        for (OrderItemEntity item : orderItems) {
+            ProductEntity product = item.getProduct();
+            product.setQuantity(product.getQuantity() + item.getQuantity());
+        }
+        productRepository.saveAll(
+                orderItems.stream()
+                        .map(OrderItemEntity::getProduct)
+                        .collect(Collectors.toList())
+        );
+    }
+
 
     private Predicate getPredicate(Map<String, QueryFieldWrapper> param, Root<PaymentMethodEntity> root, CriteriaBuilder criteriaBuilder, List<Predicate> predicates) {
         if (param != null && !param.isEmpty()) {

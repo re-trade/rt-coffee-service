@@ -6,7 +6,11 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.retrade.common.model.dto.request.QueryWrapper;
 import org.retrade.common.model.dto.response.ResponseObject;
+import org.retrade.main.model.constant.SenderRoleEnum;
+import org.retrade.main.model.dto.request.CreateEvidenceRequest;
 import org.retrade.main.model.dto.request.CreateReportSellerRequest;
+import org.retrade.main.model.dto.request.ReportSellerProcessRequest;
+import org.retrade.main.model.dto.response.ReportSellerEvidenceResponse;
 import org.retrade.main.model.dto.response.ReportSellerResponse;
 import org.retrade.main.service.ReportSellerService;
 import org.springframework.data.domain.Pageable;
@@ -37,7 +41,7 @@ public class ReportSellerController {
                 .build());
     }
 
-    @GetMapping()
+    @GetMapping
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     public ResponseEntity<ResponseObject<List<ReportSellerResponse>>> getAllReportSeller(
             @Parameter(description = "Search query to filter reports") @RequestParam(required = false, name = "q") String search,
@@ -50,12 +54,32 @@ public class ReportSellerController {
         return ResponseEntity.ok(new ResponseObject.Builder<List<ReportSellerResponse>>()
                 .success(true)
                 .code("SUCCESS")
-                .content(result)
+                        .unwrapPaginationWrapper(result)
                 .messages("Get all report seller successfully")
                 .build());
     }
 
-    @GetMapping("{sellerId}")
+    @GetMapping("{id}/evidences/{type}" )
+    public ResponseEntity<ResponseObject<List<ReportSellerEvidenceResponse>>> getAllReportSellerEvidence(
+            @Parameter(description = "Search query to filter reports") @RequestParam(required = false, name = "q") String search,
+            @Parameter(description = "Pagination parameters") @PageableDefault(size = 10) Pageable pageable,
+            @Parameter(description = "Report Id") @PathVariable String id,
+            @Parameter(description = "Request Type") @PathVariable SenderRoleEnum type
+            ) {
+        var queryWrapper = new QueryWrapper.QueryWrapperBuilder()
+                .search(search)
+                .wrapSort(pageable)
+                .build();
+        var result = reportSellerService.getReportSellerEvidenceByReportId(id, type ,queryWrapper);
+        return ResponseEntity.ok(new ResponseObject.Builder<List<ReportSellerEvidenceResponse>>()
+                .success(true)
+                .code("SUCCESS")
+                .unwrapPaginationWrapper(result)
+                .messages("Get all report seller successfully")
+                .build());
+    }
+
+    @GetMapping("seller/{sellerId}")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     public ResponseEntity<ResponseObject<List<ReportSellerResponse>>> getAllReportBySellerId(
             @PathVariable String sellerId,
@@ -75,7 +99,7 @@ public class ReportSellerController {
                 new ResponseObject.Builder<List<ReportSellerResponse>>()
                         .success(true)
                         .code("SUCCESS")
-                        .content(result)
+                        .unwrapPaginationWrapper(result)
                         .messages("Get all report by seller id successfully")
                         .build()
         );
@@ -94,10 +118,10 @@ public class ReportSellerController {
                 .build());
     }
 
-    @PatchMapping("{id}")
+    @PatchMapping("{id}/accept")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
-    public ResponseEntity<ResponseObject<ReportSellerResponse>> acceptReportSeller(@PathVariable String id,@RequestParam boolean accept) {
-        var result = reportSellerService.acceptReportSeller(id,accept);
+    public ResponseEntity<ResponseObject<ReportSellerResponse>> acceptReportSeller(@PathVariable("id") String reportId) {
+        var result = reportSellerService.acceptReport(reportId);
         return ResponseEntity.ok(new ResponseObject.Builder<ReportSellerResponse>()
                 .success(true)
                 .code("SUCCESS")
@@ -106,15 +130,64 @@ public class ReportSellerController {
                 .build());
     }
 
-    @PutMapping("{id}")
+    @PatchMapping("{id}/reject")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
-    public ResponseEntity<ResponseObject<ReportSellerResponse>> processReportSeller(@PathVariable String id,@RequestParam String resolutionDetail) {
-        var result = reportSellerService.processReportSeller(id, resolutionDetail);
+    public ResponseEntity<ResponseObject<ReportSellerResponse>> rejectReportSeller(@PathVariable("id") String reportId) {
+        var result = reportSellerService.rejectReport(reportId);
+        return ResponseEntity.ok(new ResponseObject.Builder<ReportSellerResponse>()
+                .success(true)
+                .code("SUCCESS")
+                .content(result)
+                .messages("Reject report seller successfully")
+                .build());
+    }
+
+
+    @PutMapping("{id}/process")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    public ResponseEntity<ResponseObject<ReportSellerResponse>> processReportSeller(@PathVariable String id, @RequestBody ReportSellerProcessRequest request) {
+        var result = reportSellerService.processReportSeller(id, request);
         return ResponseEntity.ok(new ResponseObject.Builder<ReportSellerResponse>()
                 .success(true)
                 .code("SUCCESS")
                 .content(result)
                 .messages("Accept report seller successfully")
+                .build());
+    }
+
+    @PostMapping("{id}/evidences/seller")
+    @PreAuthorize("hasRole('ROLE_SELLER')")
+    public ResponseEntity<ResponseObject<ReportSellerEvidenceResponse>> sellerUploadEvidence(@PathVariable String id, @RequestBody CreateEvidenceRequest createEvidenceRequest) {
+        var result = reportSellerService.addSellerEvidence(id, createEvidenceRequest);
+        return ResponseEntity.ok(new ResponseObject.Builder<ReportSellerEvidenceResponse>()
+                .success(true)
+                .code("SUCCESS")
+                .content(result)
+                .messages("Seller send evidence successfully")
+                .build());
+    }
+
+    @PostMapping("{id}/evidences/customer")
+    @PreAuthorize("hasRole('ROLE_CUSTOMER')")
+    public ResponseEntity<ResponseObject<ReportSellerEvidenceResponse>> customerUploadEvidence(@PathVariable String id, @RequestBody CreateEvidenceRequest createEvidenceRequest) {
+        var result = reportSellerService.addCustomerEvidence(id, createEvidenceRequest);
+        return ResponseEntity.ok(new ResponseObject.Builder<ReportSellerEvidenceResponse>()
+                .success(true)
+                .code("SUCCESS")
+                .content(result)
+                .messages("Customer send evidence successfully")
+                .build());
+    }
+
+    @PostMapping("{id}/evidences/system")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    public ResponseEntity<ResponseObject<ReportSellerEvidenceResponse>> adminUploadEvidence(@PathVariable String id, @RequestBody CreateEvidenceRequest createEvidenceRequest) {
+        var result = reportSellerService.addSystemEvidence(id, createEvidenceRequest);
+        return ResponseEntity.ok(new ResponseObject.Builder<ReportSellerEvidenceResponse>()
+                .success(true)
+                .code("SUCCESS")
+                .content(result)
+                .messages("Admin send evidence successfully")
                 .build());
     }
 }

@@ -1,4 +1,4 @@
-package org.retrade.main.util;
+package org.retrade.main.validator;
 
 import lombok.RequiredArgsConstructor;
 import org.retrade.main.model.constant.OrderStatusCodes;

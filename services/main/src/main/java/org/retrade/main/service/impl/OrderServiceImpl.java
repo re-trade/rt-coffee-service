@@ -3,6 +3,7 @@ package org.retrade.main.service.impl;
 import jakarta.persistence.criteria.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.retrade.common.model.constant.QueryOperatorEnum;
 import org.retrade.common.model.dto.request.QueryFieldWrapper;
 import org.retrade.common.model.dto.request.QueryWrapper;
 import org.retrade.common.model.dto.response.PaginationWrapper;
@@ -17,7 +18,7 @@ import org.retrade.main.repository.jpa.*;
 import org.retrade.main.service.CartService;
 import org.retrade.main.service.OrderService;
 import org.retrade.main.util.AuthUtils;
-import org.retrade.main.util.OrderStatusValidator;
+import org.retrade.main.validator.OrderStatusValidator;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -56,10 +57,11 @@ public class OrderServiceImpl implements OrderService {
         validateCreateOrderRequest(request);
         var orderDestinationEntity = wrapOrderDestination(contact);
         List<ProductEntity> products = validateAndGetProducts(request.getItems());
+        subtractProductQuantities(products, request.getItems());
 
         Map<SellerEntity, List<ProductEntity>> productsBySeller = groupProductsBySeller(products);
 
-        BigDecimal subtotal = calculateSubtotal(products);
+        BigDecimal subtotal = calculateSubtotal(products, request.getItems());
         BigDecimal taxTotal = calculateTax(subtotal);
         BigDecimal discountTotal = BigDecimal.ZERO;
 
@@ -77,7 +79,7 @@ public class OrderServiceImpl implements OrderService {
         }
         List<OrderComboEntity> orderCombos = createOrderCombos(productsBySeller, orderDestination);
 
-        createOrderItems(savedOrder, products, orderCombos);
+        createOrderItems(savedOrder, products, orderCombos, request.getItems());
 
         cartService.clearCart();
 
@@ -119,10 +121,54 @@ public class OrderServiceImpl implements OrderService {
         }
         return orderComboRepository.query(queryWrapper, (param) -> (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
-            var destinationJoin = root.join("orderDestination");
-            var orderJoin = destinationJoin.join("order");
-            var customerJoin = orderJoin.join("customer");
+            if (query != null) {
+                query.distinct(true);
+            }
+            var destinationJoin = root.join("orderDestination", JoinType.INNER);
+            var orderJoin = destinationJoin.join("order", JoinType.INNER);
+            var customerJoin = orderJoin.join("customer", JoinType.INNER);
+
             predicates.add(criteriaBuilder.equal(customerJoin.get("id"), customerEntity.getId()));
+            var keyword = param.remove("keyword");
+            var orderStatusId = param.remove("orderStatusId");
+            if (keyword != null && !keyword.getValue().toString().trim().isEmpty()) {
+                var value = keyword.getValue().toString().trim().toLowerCase();
+                var pattern = String.format("%%%s%%", value);
+                var orderItemJoin = root.joinSet("orderItems", JoinType.LEFT);
+                var sellerJoin = root.join("seller", JoinType.INNER);
+                Predicate sellerNamePredicate = criteriaBuilder.like(
+                        criteriaBuilder.lower(sellerJoin.get("shopName")), pattern
+                );
+                Predicate sellerDescriptionPredicate = criteriaBuilder.like(
+                        criteriaBuilder.lower(sellerJoin.get("description")), pattern
+                );
+                Predicate noItemsPredicate = criteriaBuilder.isEmpty(root.get("orderItems"));
+
+                Predicate productNamePredicate = criteriaBuilder.like(
+                        criteriaBuilder.lower(orderItemJoin.get("productName")), pattern
+                );
+                predicates.add(criteriaBuilder.or(
+                        productNamePredicate,
+                        sellerNamePredicate,
+                        sellerDescriptionPredicate,
+                        noItemsPredicate
+                ));
+            }
+            if (orderStatusId != null) {
+                var orderStatusJoin = root.join("orderStatus", JoinType.INNER);
+                switch (orderStatusId.getOperator()) {
+                    case QueryOperatorEnum.EQ -> {
+                        predicates.add(criteriaBuilder.equal(orderStatusJoin.get("id"), orderStatusId.getValue()));
+                    }
+                    case QueryOperatorEnum.IN -> {
+                        Object value = orderStatusId.getValue();
+                        if (value instanceof List<?>) {
+                            var idList = ((List<?>) value).stream().map(Object::toString).toList();
+                            predicates.add(orderStatusJoin.get("id").in(idList));
+                        }
+                    }
+                }
+            }
             return getOrderComboPredicate(param, root, criteriaBuilder, predicates);
         }, (items) -> {
             var list = items.map(this::wrapCustomerOrderComboResponse).stream().toList();
@@ -395,20 +441,33 @@ public class OrderServiceImpl implements OrderService {
             predicates.add(criteriaBuilder.equal(root.get("seller"), seller));
             if (orderStatus != null) {
                 predicates.add(criteriaBuilder.equal(root.get("orderStatus").get("code"), orderStatus));
+            } else {
+                predicates.add(criteriaBuilder.not(root.get("orderStatus").get("code")).in(
+                        OrderStatusCodes.PENDING, OrderStatusCodes.PAYMENT_CANCELLED, OrderStatusCodes.PAYMENT_FAILED
+                ));
             }
-            predicates.add(criteriaBuilder.notEqual(root.get("orderStatus").get("code"), "PENDING"));
-            predicates.add(criteriaBuilder.notEqual(root.get("orderStatus").get("code"), "PAYMENT_CANCELLED"));
-            predicates.add(criteriaBuilder.notEqual(root.get("orderStatus").get("code"), "PAYMENT_FAILED"));
+
             if (keyword != null && !keyword.getValue().toString().trim().isEmpty()) {
                 String searchPattern = "%" + keyword.getValue().toString().toLowerCase() + "%";
                 Join<OrderComboEntity, OrderDestinationEntity> destinationJoin = root.join("orderDestination", JoinType.LEFT);
                 Join<OrderComboEntity, OrderItemEntity> itemJoin = root.joinSet("orderItems", JoinType.LEFT);
+                Predicate customerNamePredicate = criteriaBuilder.like(
+                        criteriaBuilder.lower(destinationJoin.get("customerName")), searchPattern
+                );
+                Predicate productNamePredicate = criteriaBuilder.like(
+                        criteriaBuilder.lower(itemJoin.get("productName")), searchPattern
+                );
+                Predicate noItemsPredicate = criteriaBuilder.isEmpty(root.get("orderItems"));
+
                 predicates.add(criteriaBuilder.or(
-                        criteriaBuilder.like(criteriaBuilder.lower(destinationJoin.get("customerName")), searchPattern),
-                        criteriaBuilder.like(criteriaBuilder.lower(itemJoin.get("productName")), searchPattern)
+                        customerNamePredicate,
+                        productNamePredicate,
+                        noItemsPredicate
                 ));
             }
-
+            if (query != null) {
+                query.distinct(true);
+            }
             return getOrderComboPredicate(param, root, criteriaBuilder, predicates);
         }, (items) -> {
             var list = items.map(this::wrapSellerOrderComboResponse).stream().toList();
@@ -438,7 +497,7 @@ public class OrderServiceImpl implements OrderService {
                 .id(orderStatus.getId())
                 .code(orderStatus.getCode())
                 .name(orderStatus.getName())
-                //.enabled(orderStatus.getEnabled())
+                .enabled(orderStatus.getEnabled())
                 .build();
     }
 
@@ -498,10 +557,11 @@ public class OrderServiceImpl implements OrderService {
                 .collect(Collectors.groupingBy(ProductEntity::getSeller));
     }
 
-    private BigDecimal calculateSubtotal(List<ProductEntity> products) {
+    private BigDecimal calculateSubtotal(List<ProductEntity> products, List<OrderItemRequest> items) {
         return products.stream()
                 .map(product -> {
-                    return product.getCurrentPrice().multiply(BigDecimal.valueOf(product.getQuantity()));
+                    var quantity = items.stream().filter(item -> item.getProductId().equals(product.getId())).findFirst().orElseThrow(() -> new ValidationException("Product " + product.getId() + " not found in order items")).getQuantity();
+                    return product.getCurrentPrice().multiply(BigDecimal.valueOf(quantity));
                 })
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
@@ -552,13 +612,18 @@ public class OrderServiceImpl implements OrderService {
     }
 
     private void createOrderItems(OrderEntity order, List<ProductEntity> products,
-                                  List<OrderComboEntity> orderCombos) {
+                                  List<OrderComboEntity> orderCombos, List<OrderItemRequest> requestItems) {
         Map<SellerEntity, OrderComboEntity> sellerComboMap = orderCombos.stream()
                 .collect(Collectors.toMap(OrderComboEntity::getSeller, combo -> combo));
-
+        Map<String, Integer> requestItemMap = requestItems.stream()
+                .collect(Collectors.toMap(OrderItemRequest::getProductId, OrderItemRequest::getQuantity));
         for (ProductEntity product : products) {
             OrderComboEntity combo = sellerComboMap.get(product.getSeller());
 
+            var quantity = requestItemMap.get(product.getId());
+            if (quantity == null) {
+                throw new ValidationException("Ordered quantity not found for product: " + product.getId());
+            }
             OrderItemEntity orderItem = OrderItemEntity.builder()
                     .order(order)
                     .product(product)
@@ -567,7 +632,7 @@ public class OrderServiceImpl implements OrderService {
                     .shortDescription(product.getShortDescription())
                     .backgroundUrl(product.getThumbnail())
                     .basePrice(product.getCurrentPrice())
-                    .quantity(product.getQuantity())
+                    .quantity(quantity)
                     .unit("vnd")
                     .build();
 
@@ -673,6 +738,12 @@ public class OrderServiceImpl implements OrderService {
         var orderDestination = combo.getOrderDestination();
         var orderDestinationResponse = wrapOrderDestinationResponse(orderDestination);
         var orderItemResponses = wrapCustomerOrderItemResponse(orderItems);
+        String paymentStatus;
+        if (Set.of(OrderStatusCodes.PENDING, OrderStatusCodes.PAYMENT_FAILED, OrderStatusCodes.PAYMENT_CANCELLED).contains(orderStatus.getCode())) {
+            paymentStatus = "Not Paid";
+        }else {
+            paymentStatus = "Paid";
+        }
         return CustomerOrderComboResponse.builder()
                 .comboId(combo.getId())
                 .sellerId(seller.getId())
@@ -684,6 +755,8 @@ public class OrderServiceImpl implements OrderService {
                 .items(orderItemResponses)
                 .destination(orderDestinationResponse)
                 .createDate(combo.getCreatedDate().toLocalDateTime())
+                .updateDate(combo.getUpdatedDate().toLocalDateTime())
+                .paymentStatus(paymentStatus)
                 .build();
     }
 
@@ -695,6 +768,7 @@ public class OrderServiceImpl implements OrderService {
                 .id(combo.getOrderStatus().getId())
                 .code(combo.getOrderStatus().getCode())
                 .name(combo.getOrderStatus().getName())
+                .enabled(combo.getOrderStatus().getEnabled())
                 .build();
 
         var orderDestination = combo.getOrderDestination();
@@ -818,5 +892,21 @@ public class OrderServiceImpl implements OrderService {
                 .map(TopCustomerResponse.TopCustomerResponseBuilder::build)
                 .sorted((a, b) -> Long.compare(b.getOrderCount(), a.getOrderCount()))
                 .collect(Collectors.toList());
+    }
+
+    private void subtractProductQuantities(List<ProductEntity> products, List<OrderItemRequest> items) {
+        Map<String, Integer> orderedQuantities = items.stream()
+                .collect(Collectors.toMap(OrderItemRequest::getProductId, OrderItemRequest::getQuantity));
+        for (ProductEntity product : products) {
+            Integer orderedQuantity = orderedQuantities.get(product.getId());
+            if (orderedQuantity == null) {
+                throw new ValidationException("Product ID not found in request items: " + product.getId());
+            }
+            if (product.getQuantity() < orderedQuantity) {
+                throw new ValidationException("Insufficient stock for product: " + product.getName());
+            }
+            product.setQuantity(product.getQuantity() - orderedQuantity);
+        }
+        productRepository.saveAll(products);
     }
 }

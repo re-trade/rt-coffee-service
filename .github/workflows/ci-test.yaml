@@ -12,7 +12,7 @@ jobs:
 
     strategy:
       matrix:
-        service: [ main, feedback-notification, voucher, storage, prover, migration ]
+        service: [ main, feedback-notification, achievement, storage, prover, migration ]
 
     steps:
       - name: Checkout Code
@@ -46,7 +46,7 @@ jobs:
 
     strategy:
       matrix:
-        service: [ main, feedback-notification, voucher, storage, prover, migration ]
+        service: [ main, feedback-notification, achievement, storage, prover, migration ]
 
     steps:
       - name: Checkout Code
