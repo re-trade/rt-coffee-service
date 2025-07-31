@@ -4,7 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.retrade.common.model.exception.ValidationException;
 import org.retrade.main.model.constant.DashboardMetricCodes;
 import org.retrade.main.model.constant.OrderStatusCodes;
-import org.retrade.main.model.dto.response.DashboardMetricResponse;
+import org.retrade.main.model.dto.response.*;
 import org.retrade.main.repository.jpa.OrderComboRepository;
 import org.retrade.main.repository.jpa.OrderItemRepository;
 import org.retrade.main.repository.jpa.OrderStatusRepository;
@@ -12,6 +12,7 @@ import org.retrade.main.repository.jpa.ProductRepository;
 import org.retrade.main.service.DashboardService;
 import org.retrade.main.util.AuthUtils;
 import org.retrade.main.util.DateUtils;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -92,6 +93,65 @@ public class DashboardServiceImpl implements DashboardService {
                 new DashboardMetricResponse(DashboardMetricCodes.SOLD_RATE, soldRate, 0.0),
                 new DashboardMetricResponse(DashboardMetricCodes.VERIFIED_RATE, verifiedRate, 0.0)
         );
+    }
+
+    @Override
+    public List<RevenuePerMonthResponse> getRevenuePerMonth(int year) {
+        var account = authUtils.getUserAccountFromAuthentication();
+        if (account.getSeller() == null) {
+            throw new ValidationException("Seller is not found");
+        }
+        var seller = account.getSeller();
+        var result =  orderComboRepository.getRevenuePerMonth(seller, year);
+        return result.stream().map(item -> RevenuePerMonthResponse.builder()
+                .month(item.getMonth())
+                .total(item.getTotal())
+                .build()).toList();
+    }
+
+    @Override
+    public List<OrderStatusCountResponse> getOrderStatusCounts() {
+        var account = authUtils.getUserAccountFromAuthentication();
+        if (account.getSeller() == null) {
+            throw new ValidationException("Seller is not found");
+        }
+        var seller = account.getSeller();
+        var result =  orderComboRepository.getOrderStatusCounts(seller);
+        return result.stream().map(item -> OrderStatusCountResponse.builder()
+                .code(item.getCode())
+                .count(item.getCount())
+                .build()).toList();
+    }
+
+    @Override
+    public List<RecentOrderResponse> getRecentOrders(int limit) {
+        var account = authUtils.getUserAccountFromAuthentication();
+        if (account.getSeller() == null) {
+            throw new ValidationException("Seller is not found");
+        }
+        var seller = account.getSeller();
+        var result =  orderComboRepository.getRecentOrders(seller, PageRequest.of(0, limit));
+        return result.stream().map(item -> RecentOrderResponse.builder()
+                .id(item.getId())
+                .grandPrice(item.getGrandPrice())
+                .createdDate(item.getCreatedDate().toLocalDateTime())
+                .receiverName(item.getReceiverName())
+                .build()).toList();
+    }
+
+    @Override
+    public List<TopSellingProductResponse> getBestSellerProducts() {
+        var account = authUtils.getUserAccountFromAuthentication();
+        if (account.getSeller() == null) {
+            throw new ValidationException("Seller is not found");
+        }
+        var seller = account.getSeller();
+        var response = orderItemRepository.getBestSellerProducts(seller);
+        return response.stream().map(item -> TopSellingProductResponse.builder()
+                .productName(item.getProductName())
+                .quantitySold(item.getQuantitySold())
+                .revenue(item.getRevenue())
+                .build()).toList();
     }
 
 }

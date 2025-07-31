@@ -2,7 +2,7 @@ package org.retrade.main.controller;
 
 import lombok.RequiredArgsConstructor;
 import org.retrade.common.model.dto.response.ResponseObject;
-import org.retrade.main.model.dto.response.DashboardMetricResponse;
+import org.retrade.main.model.dto.response.*;
 import org.retrade.main.service.DashboardService;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
@@ -33,4 +33,50 @@ public class DashboardController {
                 .messages("Seller Dashboard retrieved successfully")
                 .build());
     }
+
+    @GetMapping("seller/revenue")
+    public ResponseEntity<ResponseObject<List<RevenuePerMonthResponse>>> getRevenuePerMonth(int year) {
+        var result = dashboardService.getRevenuePerMonth(year);
+        return ResponseEntity.ok(new ResponseObject.Builder<List<RevenuePerMonthResponse>>()
+                .success(true)
+                .code("SELLER_DASHBOARD_RETRIEVED")
+                .content(result)
+                .messages("Seller Dashboard retrieved successfully")
+                .build());
+    }
+
+    @GetMapping("seller/order-count")
+    public ResponseEntity<ResponseObject<List<OrderStatusCountResponse>>> getOrderStatusCount() {
+        var result = dashboardService.getOrderStatusCounts();
+        return ResponseEntity.ok(new ResponseObject.Builder<List<OrderStatusCountResponse>>()
+                .success(true)
+                .code("SELLER_DASHBOARD_RETRIEVED")
+                .content(result)
+                .messages("Seller Dashboard retrieved successfully")
+                .build());
+    }
+
+
+    @GetMapping("seller/order")
+    public ResponseEntity<ResponseObject<List<RecentOrderResponse>>> getRecentOrders(int limit) {
+        var result = dashboardService.getRecentOrders(limit);
+        return ResponseEntity.ok(new ResponseObject.Builder<List<RecentOrderResponse>>()
+                .success(true)
+                .code("SELLER_DASHBOARD_RETRIEVED")
+                .content(result)
+                .messages("Seller Dashboard retrieved successfully")
+                .build());
+    }
+
+    @GetMapping("seller/best-product")
+    public ResponseEntity<ResponseObject<List<TopSellingProductResponse>>> getBestSellerProducts() {
+        var result = dashboardService.getBestSellerProducts();
+        return ResponseEntity.ok(new ResponseObject.Builder<List<TopSellingProductResponse>>()
+                .success(true)
+                .code("SELLER_DASHBOARD_RETRIEVED")
+                .content(result)
+                .messages("Seller Dashboard retrieved successfully")
+                .build());
+    }
+
 }

@@ -2,6 +2,10 @@ package org.retrade.main.repository.jpa;
 
 import org.retrade.common.repository.BaseJpaRepository;
 import org.retrade.main.model.entity.*;
+import org.retrade.main.model.projection.OrderStatusCountProjection;
+import org.retrade.main.model.projection.RecentOrderProjection;
+import org.retrade.main.model.projection.RevenueMonthProjection;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.lang.NonNull;
@@ -63,4 +67,31 @@ public interface OrderComboRepository extends BaseJpaRepository<OrderComboEntity
     long countBySellerAndCancelledReasonNotNullAndCreatedDateBetween(SellerEntity seller, Timestamp createdDateStart, Timestamp createdDateEnd);
 
     long countBySellerAndOrderStatusAndCreatedDateBetween(@NonNull SellerEntity seller, @NonNull OrderStatusEntity orderStatus, @NonNull Timestamp createdDateStart, @NonNull Timestamp createdDateEnd);
+
+    @Query("""
+        SELECT MONTH(o.createdDate) AS month, SUM(o.grandPrice) AS total
+        FROM order_combos o
+        WHERE o.seller = :seller AND YEAR(o.createdDate) = :year AND o.orderStatus.code = 'COMPLETED'
+        GROUP BY MONTH(o.createdDate)
+        ORDER BY MONTH(o.createdDate)
+    """)
+    List<RevenueMonthProjection> getRevenuePerMonth(@Param("seller") SellerEntity seller, int year);
+
+    @Query("""
+        SELECT os.code AS code, COUNT(o) AS count
+        FROM order_statuses os
+        LEFT JOIN order_combos o
+          ON o.orderStatus = os AND o.seller = :seller
+        GROUP BY os.code
+    """)
+    List<OrderStatusCountProjection> getOrderStatusCounts(@Param("seller") SellerEntity seller);
+
+    @Query("""
+        SELECT o.id AS id, o.grandPrice AS grandPrice, o.createdDate AS createdDate, od.customerName AS receiverName
+        FROM order_combos o
+        JOIN o.orderDestination od
+        WHERE o.seller = :seller
+        ORDER BY o.createdDate DESC
+    """)
+    List<RecentOrderProjection> getRecentOrders(@Param("seller") SellerEntity seller, Pageable pageable);
 }
