@@ -5,6 +5,7 @@ import org.retrade.common.model.exception.ValidationException;
 import org.retrade.main.model.constant.DashboardMetricCodes;
 import org.retrade.main.model.constant.OrderStatusCodes;
 import org.retrade.main.model.dto.response.*;
+import org.retrade.main.model.projection.RevenueMonthProjection;
 import org.retrade.main.repository.jpa.OrderComboRepository;
 import org.retrade.main.repository.jpa.OrderItemRepository;
 import org.retrade.main.repository.jpa.OrderStatusRepository;
@@ -19,6 +20,9 @@ import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 @Service
 @RequiredArgsConstructor
@@ -102,11 +106,18 @@ public class DashboardServiceImpl implements DashboardService {
             throw new ValidationException("Seller is not found");
         }
         var seller = account.getSeller();
-        var result =  orderComboRepository.getRevenuePerMonth(seller, year);
-        return result.stream().map(item -> RevenuePerMonthResponse.builder()
-                .month(item.getMonth())
-                .total(item.getTotal())
-                .build()).toList();
+        var rawResult =  orderComboRepository.getRevenuePerMonth(seller, year);
+        Map<Integer, BigDecimal> map = rawResult.stream()
+                .collect(Collectors.toMap(
+                        RevenueMonthProjection::getMonth,
+                        RevenueMonthProjection::getTotal
+                ));
+        return IntStream.rangeClosed(1, 12)
+                .mapToObj(month -> RevenuePerMonthResponse.builder()
+                        .month(month)
+                        .total(map.getOrDefault(month, BigDecimal.ZERO))
+                        .build())
+                .toList();
     }
 
     @Override

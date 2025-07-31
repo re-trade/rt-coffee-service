@@ -75,7 +75,7 @@ public interface OrderComboRepository extends BaseJpaRepository<OrderComboEntity
         GROUP BY MONTH(o.createdDate)
         ORDER BY MONTH(o.createdDate)
     """)
-    List<RevenueMonthProjection> getRevenuePerMonth(@Param("seller") SellerEntity seller, int year);
+    List<RevenueMonthProjection> getRevenuePerMonth(@Param("seller") SellerEntity seller, @Param("year") int year);
 
     @Query("""
         SELECT os.code AS code, COUNT(o) AS count
