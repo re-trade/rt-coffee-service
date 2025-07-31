@@ -2,6 +2,7 @@ package org.retrade.main.service.impl;
 
 import lombok.RequiredArgsConstructor;
 import org.retrade.common.model.exception.ValidationException;
+import org.retrade.main.model.constant.DashboardMetricCodes;
 import org.retrade.main.model.constant.OrderStatusCodes;
 import org.retrade.main.model.dto.response.DashboardMetricResponse;
 import org.retrade.main.repository.jpa.OrderComboRepository;
@@ -38,7 +39,8 @@ public class DashboardServiceImpl implements DashboardService {
                 .orElseThrow(() -> new ValidationException("Order status not found"));
 
         long totalProduct = productRepository.countBySeller(seller);
-        BigDecimal currentRevenue = orderComboRepository.getTotalGrandPriceBySellerAndStatusAndDateRange(seller, orderStatus, fromDate, toDate);
+        BigDecimal currentRevenue = orderComboRepository.getTotalGrandPriceBySellerAndStatusAndDateRange(
+                seller, orderStatus, fromDate, toDate);
         long currentOrders = orderComboRepository.countBySellerAndOrderStatusAndCreatedDateBetween(
                 seller, orderStatus, Timestamp.valueOf(fromDate), Timestamp.valueOf(toDate));
         double avgVote = productRepository.getAverageVote(seller);
@@ -54,7 +56,6 @@ public class DashboardServiceImpl implements DashboardService {
 
         BigDecimal previousRevenue = orderComboRepository.getTotalGrandPriceBySellerAndStatusAndDateRange(
                 seller, orderStatus, previousFromDate, previousToDate);
-
         long previousOrders = orderComboRepository.countBySellerAndOrderStatusAndCreatedDateBetween(
                 seller, orderStatus, Timestamp.valueOf(previousFromDate), Timestamp.valueOf(previousToDate));
 
@@ -63,38 +64,34 @@ public class DashboardServiceImpl implements DashboardService {
             changeRevenue = DateUtils.calculatePercentageChange(
                     currentRevenue.doubleValue(), previousRevenue.doubleValue());
         }
-
         double changeOrders = DateUtils.calculatePercentageChange(
                 currentOrders, previousOrders);
-
 
         long countActiveProducts = productRepository.countBySellerAndQuantityGreaterThan(seller, 0);
         long totalQuantityInStock = productRepository.sumQuantityBySeller(seller);
         long totalQuantitySold = orderItemRepository.getTotalProductSoldBySellerAndStatusAndDateRange(
-                seller, orderStatus, Timestamp.valueOf(fromDate), Timestamp.valueOf(toDate)
-        );
+                seller, orderStatus, Timestamp.valueOf(fromDate), Timestamp.valueOf(toDate));
         double soldRate = 0.0;
         if (totalQuantityInStock + totalQuantitySold > 0) {
             soldRate = ((double) totalQuantitySold / (totalQuantityInStock + totalQuantitySold)) * 100;
         }
 
         long totalVerifiedProducts = productRepository.countBySellerAndVerifiedTrue(seller);
-
         double verifiedRate = 0.0;
         if (totalProduct > 0) {
             verifiedRate = ((double) totalVerifiedProducts / totalProduct) * 100;
         }
 
         return List.of(
-                new DashboardMetricResponse("Tổng sản phẩm", String.valueOf(totalProduct), "", 0.0, "toàn bộ"),
-                new DashboardMetricResponse("Doanh thu", currentRevenue.toString(), "đ", changeRevenue, "so với kỳ trước"),
-                new DashboardMetricResponse("Đơn hàng", String.valueOf(currentOrders), "", changeOrders, "so với kỳ trước"),
-                new DashboardMetricResponse("Tỷ lệ hoàn hàng", String.format("%.2f", returnRate), "%", 0.0, "so với kỳ trước"),
-                new DashboardMetricResponse("Đánh giá trung bình", String.format("%.1f/5.0", avgVote), "", 0.0, "toàn bộ"),
-                new DashboardMetricResponse("Sản phẩm còn bán được", String.valueOf(countActiveProducts), "", 0.0, "toàn bộ"),
-                new DashboardMetricResponse("Tỷ lệ sản phẩm đã bán", String.format("%.2f", soldRate), "%", 0.0, "toàn bộ"),
-                new DashboardMetricResponse("Tỷ lệ sản phẩm đã duyệt", String.format("%.2f", verifiedRate), "%", 0.0, "toàn bộ")
+                new DashboardMetricResponse(DashboardMetricCodes.TOTAL_PRODUCTS, totalProduct, 0.0),
+                new DashboardMetricResponse(DashboardMetricCodes.REVENUE, currentRevenue, changeRevenue),
+                new DashboardMetricResponse(DashboardMetricCodes.TOTAL_ORDERS, currentOrders, changeOrders),
+                new DashboardMetricResponse(DashboardMetricCodes.RETURN_RATE, returnRate, 0.0),
+                new DashboardMetricResponse(DashboardMetricCodes.AVERAGE_VOTE, avgVote, 0.0),
+                new DashboardMetricResponse(DashboardMetricCodes.ACTIVE_PRODUCTS, countActiveProducts, 0.0),
+                new DashboardMetricResponse(DashboardMetricCodes.SOLD_RATE, soldRate, 0.0),
+                new DashboardMetricResponse(DashboardMetricCodes.VERIFIED_RATE, verifiedRate, 0.0)
         );
-
     }
+
 }

@@ -10,9 +10,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 public class DashboardMetricResponse {
-    private String nane;
-    private String value;
-    private String unit;
+    private String code;
+    private Object value;
     private Double change;
-    private String period;
 }
