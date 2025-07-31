@@ -8,6 +8,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -22,8 +23,21 @@ public interface ProductRepository extends BaseJpaRepository<ProductEntity, Stri
     @Query("SELECT p FROM products p JOIN p.categories c WHERE c.name = :categoryName")
     Page<ProductEntity> findByCategoryName(@Param("categoryName") String categoryName, Pageable pageable);
 
+    @Query("SELECT AVG(p.avgVote) FROM products p WHERE p.verified = true AND p.seller = :seller")
+    Double getAverageVote(@Param("seller") SellerEntity seller);
+
     @Query("SELECT oi.product FROM order_items oi WHERE oi.order = :order")
     List<ProductEntity> findProductsByOrder(@Param("order") OrderEntity order);
+
+    long countBySellerAndQuantityGreaterThan(SellerEntity seller, int quantity);
+    long countBySellerAndVerifiedTrue(SellerEntity seller);
+
+    @Query("""
+        SELECT COALESCE(SUM(p.quantity), 0)
+        FROM products p
+        WHERE p.seller = :seller
+    """)
+    Long sumQuantityBySeller(SellerEntity seller);
 
 
     @Query(
@@ -100,4 +114,5 @@ public interface ProductRepository extends BaseJpaRepository<ProductEntity, Stri
     )
     long countDistinctSoldVerifiedProducts(@Param("statusCode") String statusCode);
 
+    long countBySeller(@NonNull SellerEntity seller);
 }

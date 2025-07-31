@@ -219,7 +219,7 @@ public class ReportSellerServiceImpl implements ReportSellerService {
         if (!Objects.equals(report.getSeller().getId(), account.getSeller().getId())) {
             throw new ValidationException("User is not a seller, please register seller or contact with Admin");
         }
-        return addEvidence(report, account, request);
+        return addEvidence(report, account, request, SenderRoleEnum.SELLER);
     }
 
     @Override
@@ -229,7 +229,7 @@ public class ReportSellerServiceImpl implements ReportSellerService {
         if (!Objects.equals(report.getCustomer().getId(), account.getCustomer().getId())) {
             throw new ValidationException("User is not a seller, please register seller or contact with Admin");
         }
-        return addEvidence(report, account, request);
+        return addEvidence(report, account, request, SenderRoleEnum.CUSTOMER);
     }
 
     @Override
@@ -246,40 +246,24 @@ public class ReportSellerServiceImpl implements ReportSellerService {
                 .notes("System adding evidence to report " + reportId + " by admin " + account.getId() + " with notes: " + request.getNote() + " and evidence urls: " + request.getEvidenceUrls())
                 .build();
         reportSellerHistoryRepository.save(history);
-        return addSystemEvidence(report, account, request);
+        return addEvidence(report, account, request, SenderRoleEnum.SYSTEM);
     }
 
-    private ReportSellerEvidenceResponse addSystemEvidence(ReportSellerEntity report, AccountEntity account , CreateEvidenceRequest request) {
+
+    private ReportSellerEvidenceResponse addEvidence(ReportSellerEntity report, AccountEntity account , CreateEvidenceRequest request, SenderRoleEnum type) {
         if (Set.of("ACCEPTED", "REJECTED").contains(report.getResolutionStatus())) {
             throw new ValidationException("Report is already accepted or rejected");
         }
         var evidenceEntity = ReportSellerEvidenceEntity.builder()
                 .reportSeller(report)
-                .senderRole(SenderRoleEnum.SYSTEM)
+                .senderRole(type)
                 .note(request.getNote())
                 .evidenceUrls(request.getEvidenceUrls())
                 .sender(account)
                 .build();
         report.getReportSellerEvidence().add(evidenceEntity);
         var result = reportSellerEvidenceRepository.save(evidenceEntity);
-        return mapToReportSellerEvidenceResponse(result, SenderRoleEnum.SELLER);
-    }
-
-
-    private ReportSellerEvidenceResponse addEvidence(ReportSellerEntity report, AccountEntity account , CreateEvidenceRequest request) {
-        if (Set.of("ACCEPTED", "REJECTED").contains(report.getResolutionStatus())) {
-            throw new ValidationException("Report is already accepted or rejected");
-        }
-        var evidenceEntity = ReportSellerEvidenceEntity.builder()
-                .reportSeller(report)
-                .senderRole(SenderRoleEnum.SELLER)
-                .note(request.getNote())
-                .evidenceUrls(request.getEvidenceUrls())
-                .sender(account)
-                .build();
-        report.getReportSellerEvidence().add(evidenceEntity);
-        var result = reportSellerEvidenceRepository.save(evidenceEntity);
-        return mapToReportSellerEvidenceResponse(result, SenderRoleEnum.SELLER);
+        return mapToReportSellerEvidenceResponse(result, type);
     }
 
     private void validateReportSummitRequest(CreateReportSellerRequest request) {
