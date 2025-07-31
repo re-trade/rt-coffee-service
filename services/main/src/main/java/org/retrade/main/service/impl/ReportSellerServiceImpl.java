@@ -246,7 +246,23 @@ public class ReportSellerServiceImpl implements ReportSellerService {
                 .notes("System adding evidence to report " + reportId + " by admin " + account.getId() + " with notes: " + request.getNote() + " and evidence urls: " + request.getEvidenceUrls())
                 .build();
         reportSellerHistoryRepository.save(history);
-        return addEvidence(report, account, request);
+        return addSystemEvidence(report, account, request);
+    }
+
+    private ReportSellerEvidenceResponse addSystemEvidence(ReportSellerEntity report, AccountEntity account , CreateEvidenceRequest request) {
+        if (Set.of("ACCEPTED", "REJECTED").contains(report.getResolutionStatus())) {
+            throw new ValidationException("Report is already accepted or rejected");
+        }
+        var evidenceEntity = ReportSellerEvidenceEntity.builder()
+                .reportSeller(report)
+                .senderRole(SenderRoleEnum.SYSTEM)
+                .note(request.getNote())
+                .evidenceUrls(request.getEvidenceUrls())
+                .sender(account)
+                .build();
+        report.getReportSellerEvidence().add(evidenceEntity);
+        var result = reportSellerEvidenceRepository.save(evidenceEntity);
+        return mapToReportSellerEvidenceResponse(result, SenderRoleEnum.SELLER);
     }
 
 
