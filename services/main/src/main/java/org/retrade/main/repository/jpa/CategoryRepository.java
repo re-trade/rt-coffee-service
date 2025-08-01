@@ -53,9 +53,9 @@ public interface CategoryRepository extends BaseJpaRepository<CategoryEntity, St
         JOIN ancestors a ON c.id = a.parent_id
       )
       SELECT CASE WHEN COUNT(*) > 0 THEN TRUE ELSE FALSE END
-      FROM ancestors WHERE id = :categoryId
+      FROM ancestors WHERE id = :id
     """, nativeQuery = true)
-    boolean isCategoryLoop(@Param("id") String id);
+    boolean isCategoryLoop(@Param("id") String id, @Param("newParentId") String newCategoryId);
 
 
     @Query(value = """

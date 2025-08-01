@@ -53,10 +53,10 @@ public class CategoryServiceImpl implements CategoryService {
     public CategoryResponse updateCategory(String id, CategoryRequest request) {
         CategoryEntity category = getCategoryEntityById(id);
         CategoryEntity categoryParent = null;
-        if (categoryRepository.isCategoryLoop(request.getCategoryParentId())) {
-            throw new ValidationException("Category loop detected");
-        }
         if (request.getCategoryParentId() != null) {
+            if (categoryRepository.isCategoryLoop(category.getId(), request.getCategoryParentId())) {
+                throw new ValidationException("Category loop detected");
+            }
             categoryParent = getCategoryEntityById(request.getCategoryParentId());
         }
         if (request.getName() != null && !request.getName().equals(category.getName())) {
