@@ -30,6 +30,7 @@ public class ProductResponse {
     private String brandId;
     private String brand;
     private Integer quantity;
+    @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate warrantyExpiryDate;
     private String model;
     private BigDecimal currentPrice;
