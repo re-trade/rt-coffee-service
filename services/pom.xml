@@ -73,7 +73,6 @@
 	<modules>
 		<module>main</module>
 		<module>feedback-notification</module>
-        <module>voucher</module>
         <module>storage</module>
 		<module>prover</module>
         <module>migration</module>
