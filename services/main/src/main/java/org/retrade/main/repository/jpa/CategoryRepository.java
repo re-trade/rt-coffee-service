@@ -42,6 +42,21 @@ public interface CategoryRepository extends BaseJpaRepository<CategoryEntity, St
     """, nativeQuery = true)
     boolean isSameRootCategory(@Param("ids") Set<String> ids);
 
+    @Query(value = """
+      WITH RECURSIVE ancestors AS (
+        SELECT id, parent_id
+        FROM main.categories
+        WHERE id = :newParentId
+        UNION ALL
+        SELECT c.id, c.parent_id
+        FROM main.categories c
+        JOIN ancestors a ON c.id = a.parent_id
+      )
+      SELECT CASE WHEN COUNT(*) > 0 THEN TRUE ELSE FALSE END
+      FROM ancestors WHERE id = :categoryId
+    """, nativeQuery = true)
+    boolean isCategoryLoop(@Param("id") String id);
+
 
     @Query(value = """
     WITH RECURSIVE upward AS (
