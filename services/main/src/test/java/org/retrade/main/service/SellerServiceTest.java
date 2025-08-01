@@ -9,7 +9,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.retrade.common.model.dto.request.QueryFieldWrapper;
 import org.retrade.common.model.dto.request.QueryWrapper;
 import org.retrade.common.model.dto.response.PaginationWrapper;
-import org.retrade.common.model.exception.ActionFailedException;
 import org.retrade.common.model.exception.ValidationException;
 import org.retrade.main.model.constant.IdentityVerifiedStatusEnum;
 import org.retrade.main.model.dto.request.ApproveSellerRequest;
@@ -17,11 +16,7 @@ import org.retrade.main.model.dto.request.SellerRegisterRequest;
 import org.retrade.main.model.dto.request.SellerUpdateRequest;
 import org.retrade.main.model.dto.response.SellerBaseResponse;
 import org.retrade.main.model.dto.response.SellerRegisterResponse;
-import org.retrade.main.model.entity.AccountEntity;
-import org.retrade.main.model.entity.AccountRoleEntity;
-import org.retrade.main.model.entity.CustomerEntity;
-import org.retrade.main.model.entity.RoleEntity;
-import org.retrade.main.model.entity.SellerEntity;
+import org.retrade.main.model.entity.*;
 import org.retrade.main.model.message.CCCDVerificationMessage;
 import org.retrade.main.model.message.CCCDVerificationResultMessage;
 import org.retrade.main.model.other.SellerWrapperBase;
@@ -33,7 +28,6 @@ import org.retrade.main.util.AuthUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.jpa.domain.Specification;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -227,20 +221,18 @@ public class SellerServiceTest {
     @Test
     void getSellers_Success() {
         // Arrange
-        QueryWrapper queryWrapper = new QueryWrapper();
-        queryWrapper.setPage(0);
-        queryWrapper.setSize(10);
+        QueryWrapper queryWrapper = QueryWrapper.builder()
+                .wrapSort(PageRequest.of(0, 10))
+                .build();
         Page<SellerEntity> page = new PageImpl<>(List.of(sellerEntity), PageRequest.of(0, 10), 1);
-        when(sellerRepository.query(any(QueryWrapper.class), any(), any())).thenReturn(page);
+        when(sellerRepository.query(any(QueryWrapper.class), any(), any())).thenReturn((PaginationWrapper<List<?>>) page);
 
-        // Act
         PaginationWrapper<List<SellerBaseResponse>> response = sellerService.getSellers(queryWrapper);
 
-        // Assert
         assertNotNull(response);
         assertEquals(1, response.getData().size());
-        assertEquals(sellerEntity.getId(), response.getData().get(0).getId());
-        verify(sellerRepository, times(1)).query(any(), any(), any());
+        assertEquals(sellerEntity.getId(), response.getData().getFirst().getId());
+        verify(sellerRepository, times(1)).query((Map<String, QueryFieldWrapper>) any(), any(), any());
     }
 
     @Test
@@ -318,43 +310,34 @@ public class SellerServiceTest {
 
     @Test
     void updateVerifiedSeller_Success() {
-        // Arrange
-        CCCDVerificationResultMessage message = new CCCDVerificationResultMessage(sellerEntity.getId(), true);
+        CCCDVerificationResultMessage message = new CCCDVerificationResultMessage(sellerEntity.getId(), true, "");
         when(sellerRepository.findById(anyString())).thenReturn(Optional.of(sellerEntity));
         when(sellerRepository.save(any(SellerEntity.class))).thenReturn(sellerEntity);
 
-        // Act
         sellerService.updateVerifiedSeller(message);
 
-        // Assert
         assertEquals(IdentityVerifiedStatusEnum.VERIFIED, sellerEntity.getIdentityVerified());
         verify(sellerRepository, times(1)).save(sellerEntity);
     }
 
     @Test
     void getSellerBaseInfoById_Success() {
-        // Arrange
         when(sellerRepository.findById(anyString())).thenReturn(Optional.of(sellerEntity));
 
-        // Act
         Optional<SellerWrapperBase> response = sellerService.getSellerBaseInfoById(sellerEntity.getId());
 
-        // Assert
         assertTrue(response.isPresent());
-        assertEquals(sellerEntity.getId(), response.get().getId());
-        assertEquals(mockAccount.getEmail(), response.get().getEmail());
+        assertEquals(sellerEntity.getId(), response.get().sellerId());
+        assertEquals(mockAccount.getEmail(), response.get().email());
     }
 
     @Test
     void getSellerDetails_Success() {
-        // Arrange
         sellerEntity.setVerified(true);
         when(sellerRepository.findById(anyString())).thenReturn(Optional.of(sellerEntity));
 
-        // Act
         SellerBaseResponse response = sellerService.getSellerDetails(sellerEntity.getId());
 
-        // Assert
         assertNotNull(response);
         assertEquals(sellerEntity.getId(), response.getId());
         assertEquals(sellerEntity.getShopName(), response.getShopName());
@@ -362,21 +345,17 @@ public class SellerServiceTest {
 
     @Test
     void getSellerDetails_NotVerified_ThrowsValidationException() {
-        // Arrange
         sellerEntity.setVerified(false);
         when(sellerRepository.findById(anyString())).thenReturn(Optional.of(sellerEntity));
 
-        // Act & Assert
         assertThrows(ValidationException.class, () -> sellerService.getSellerDetails(sellerEntity.getId()));
     }
 
     @Test
     void getMySellers_Success() {
-        // Arrange
         mockAccount.setSeller(sellerEntity);
         when(authUtils.getUserAccountFromAuthentication()).thenReturn(mockAccount);
 
-        // Act
         SellerBaseResponse response = sellerService.getMySellers();
 
         // Assert
