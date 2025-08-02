@@ -172,6 +172,7 @@ public class WalletServiceImpl implements WalletService {
 
     private WithdrawRequestBaseResponse wrapWithdrawRequestBaseResponse(WithdrawRequestEntity withdrawRequestEntity, Map<String, VietQrBankEntity> bankMap) {
         var bank = bankMap.get(withdrawRequestEntity.getBankBin());
+        var processedDate = withdrawRequestEntity.getProcessedDate() != null ? withdrawRequestEntity.getProcessedDate().toLocalDateTime() : null;
         return WithdrawRequestBaseResponse.builder()
                 .id(withdrawRequestEntity.getId())
                 .amount(withdrawRequestEntity.getAmount())
@@ -179,6 +180,8 @@ public class WalletServiceImpl implements WalletService {
                 .bankBin(withdrawRequestEntity.getBankBin())
                 .bankName(bank.getName())
                 .bankUrl(bank.getLogo())
+                .processedDate(processedDate)
+                .createdDate(withdrawRequestEntity.getCreatedDate().toLocalDateTime())
                 .build();
     }
 

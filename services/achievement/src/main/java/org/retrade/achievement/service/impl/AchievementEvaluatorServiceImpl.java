@@ -6,7 +6,6 @@ import org.retrade.achievement.client.OrderServiceClient;
 import org.retrade.achievement.model.constant.ConditionTypeCode;
 import org.retrade.achievement.model.entity.SellerAchievementEntity;
 import org.retrade.achievement.repository.AchievementConditionRepository;
-import org.retrade.achievement.repository.AchievementRepository;
 import org.retrade.achievement.repository.SellerAchievementRepository;
 import org.retrade.achievement.service.AchievementEvaluatorService;
 import org.springframework.stereotype.Service;
@@ -18,13 +17,13 @@ import java.util.Objects;
 @RequiredArgsConstructor
 @Slf4j
 public class AchievementEvaluatorServiceImpl implements AchievementEvaluatorService {
-    private final AchievementRepository achievementRepository;
     private final AchievementConditionRepository achievementConditionRepository;
     private final SellerAchievementRepository sellerAchievementRepository;
     private final OrderServiceClient orderServiceClient;
 
     @Override
     public void evaluate(String sellerId, String type) {
+        var totalOrders = orderServiceClient.getOrderCount(sellerId);
         var conditions = achievementConditionRepository.findByType(type);
         conditions.forEach(condition -> {
             boolean achieved = false;
@@ -35,7 +34,6 @@ public class AchievementEvaluatorServiceImpl implements AchievementEvaluatorServ
                 progress = 1.0;
 
             } else if (Objects.equals(type, ConditionTypeCode.ORDER_COMPLETED)) {
-                long totalOrders = orderServiceClient.getOrderCount(sellerId);
                 progress = Math.min(1.0, totalOrders / condition.getThreshold());
                 achieved = totalOrders >= condition.getThreshold();
             }
