@@ -116,3 +116,7 @@ public interface ProductRepository extends BaseJpaRepository<ProductEntity, Stri
 
     long countBySeller(@NonNull SellerEntity seller);
 }
+
+
+
+

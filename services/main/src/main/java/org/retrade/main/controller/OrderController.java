@@ -10,11 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.retrade.common.model.dto.request.QueryWrapper;
 import org.retrade.common.model.dto.response.ResponseObject;
 import org.retrade.main.model.dto.request.CreateOrderRequest;
-import org.retrade.main.model.dto.response.CustomerOrderComboResponse;
-import org.retrade.main.model.dto.response.OrderResponse;
-import org.retrade.main.model.dto.response.TopSellersResponse;
-import org.retrade.main.model.dto.response.SellerOrderComboResponse;
-import org.retrade.main.model.dto.response.OrderStatusResponse;
+import org.retrade.main.model.dto.response.*;
 import org.retrade.main.model.dto.response.SellerOrderComboResponse;
 import org.retrade.main.service.OrderService;
 import org.springframework.data.domain.Pageable;
@@ -338,6 +334,15 @@ public class OrderController {
                 .messages("Order cancelled successfully")
                 .build());
     }
-
-
+    @PreAuthorize("hasRole('ROLE_CUSTOMER')")
+    @GetMapping("customer-stats")
+    public ResponseEntity<ResponseObject<OrderStatsResponse>> statsOrderCustomer() {
+        OrderStatsResponse stats = orderService.getStatsOrderCustomer();
+        return ResponseEntity.ok(new ResponseObject.Builder<OrderStatsResponse>()
+                .success(true)
+                .code("SUCCESS")
+                .messages("Get order stats successfully")
+                .content(stats)
+                .build());
+    }
 }

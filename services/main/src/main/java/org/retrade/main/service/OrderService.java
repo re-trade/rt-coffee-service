@@ -40,4 +40,6 @@ public interface OrderService {
     PaginationWrapper<List<OrderStatusResponse>> getOrderStatusesTemplate(QueryWrapper queryWrapper);
 
     void cancelOrderCustomer(String orderId, String reason);
+
+    OrderStatsResponse getStatsOrderCustomer();
 }
