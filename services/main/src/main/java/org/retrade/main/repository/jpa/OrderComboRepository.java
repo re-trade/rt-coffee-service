@@ -2,12 +2,18 @@ package org.retrade.main.repository.jpa;
 
 import org.retrade.common.repository.BaseJpaRepository;
 import org.retrade.main.model.entity.*;
+import org.retrade.main.model.projection.OrderStatusCountProjection;
+import org.retrade.main.model.projection.RecentOrderProjection;
+import org.retrade.main.model.projection.RevenueMonthProjection;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -15,8 +21,6 @@ import java.util.Optional;
 public interface OrderComboRepository extends BaseJpaRepository<OrderComboEntity, String> {
     List<OrderComboEntity> findBySeller(SellerEntity seller);
     List<OrderComboEntity> findByOrderDestination(OrderDestinationEntity orderDestination);
-    List<OrderComboEntity> findByOrderStatus(OrderStatusEntity orderStatus);
-    List<OrderComboEntity> findBySellerAndOrderStatus(SellerEntity seller, OrderStatusEntity orderStatus);
     List<OrderComboEntity> findByOrderItems_Order_Id(String orderId);
 
     boolean existsByOrderDestination_Order_CustomerAndId(@NonNull CustomerEntity customer, @NonNull String id);
@@ -27,8 +31,18 @@ public interface OrderComboRepository extends BaseJpaRepository<OrderComboEntity
     @Query("SELECT COALESCE(SUM(o.grandPrice), 0) FROM order_combos o WHERE o.seller = :seller AND o.orderStatus = :status")
     BigDecimal getTotalGrandPriceBySellerAndStatus(@Param("seller") SellerEntity seller, @Param("status") OrderStatusEntity status);
 
+    @Query("SELECT COALESCE(SUM(o.grandPrice), 0) FROM order_combos o WHERE o.seller = :seller AND o.orderStatus = :status")
+    BigDecimal getTotalGrandPriceBySellerAndStatusAndDateRange(
+            @Param("seller") SellerEntity seller,
+            @Param("status") OrderStatusEntity status,
+            @Param("fromDate")LocalDateTime fromDate,
+            @Param("toDate")LocalDateTime toDate
+    );
+
     @Query("SELECT COUNT(o) FROM order_combos o WHERE o.seller = :seller AND o.orderStatus = :status")
     Long countOrdersBySellerAndStatus(@Param("seller") SellerEntity seller, @Param("status") OrderStatusEntity status);
+
+
 
     @Query("SELECT COALESCE(SUM(o.grandPrice * (1 - CASE " +
             "WHEN o.grandPrice < 500000 THEN 0.05 " +
@@ -50,5 +64,34 @@ public interface OrderComboRepository extends BaseJpaRepository<OrderComboEntity
     @Query("SELECT COUNT(o) FROM order_combos o WHERE o.orderStatus.code = 'COMPLETED'")
     long countByOrderStatus();
 
+    long countBySellerAndCancelledReasonNotNullAndCreatedDateBetween(SellerEntity seller, Timestamp createdDateStart, Timestamp createdDateEnd);
 
+    long countBySellerAndOrderStatusAndCreatedDateBetween(@NonNull SellerEntity seller, @NonNull OrderStatusEntity orderStatus, @NonNull Timestamp createdDateStart, @NonNull Timestamp createdDateEnd);
+
+    @Query("""
+        SELECT MONTH(o.createdDate) AS month, SUM(o.grandPrice) AS total
+        FROM order_combos o
+        WHERE o.seller = :seller AND YEAR(o.createdDate) = :year AND o.orderStatus.code = 'COMPLETED'
+        GROUP BY MONTH(o.createdDate)
+        ORDER BY MONTH(o.createdDate)
+    """)
+    List<RevenueMonthProjection> getRevenuePerMonth(@Param("seller") SellerEntity seller, @Param("year") int year);
+
+    @Query("""
+        SELECT os.code AS code, COUNT(o) AS count
+        FROM order_statuses os
+        LEFT JOIN order_combos o
+          ON o.orderStatus = os AND o.seller = :seller
+        GROUP BY os.code
+    """)
+    List<OrderStatusCountProjection> getOrderStatusCounts(@Param("seller") SellerEntity seller);
+
+    @Query("""
+        SELECT o.id AS id, o.grandPrice AS grandPrice, o.createdDate AS createdDate, od.customerName AS receiverName
+        FROM order_combos o
+        JOIN o.orderDestination od
+        WHERE o.seller = :seller
+        ORDER BY o.createdDate DESC
+    """)
+    List<RecentOrderProjection> getRecentOrders(@Param("seller") SellerEntity seller, Pageable pageable);
 }

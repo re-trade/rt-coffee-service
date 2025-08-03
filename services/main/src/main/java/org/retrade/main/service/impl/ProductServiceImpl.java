@@ -7,10 +7,7 @@ import co.elastic.clients.elasticsearch._types.aggregations.StringTermsBucket;
 import co.elastic.clients.elasticsearch._types.query_dsl.Operator;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch._types.query_dsl.TextQueryType;
-import jakarta.persistence.criteria.CriteriaBuilder;
-import jakarta.persistence.criteria.Predicate;
-import jakarta.persistence.criteria.Root;
-import jakarta.persistence.criteria.Subquery;
+import jakarta.persistence.criteria.*;
 import lombok.RequiredArgsConstructor;
 import org.retrade.common.model.dto.request.QueryFieldWrapper;
 import org.retrade.common.model.dto.request.QueryWrapper;
@@ -29,8 +26,8 @@ import org.retrade.main.model.entity.BrandEntity;
 import org.retrade.main.model.entity.CategoryEntity;
 import org.retrade.main.model.entity.ProductEntity;
 import org.retrade.main.model.entity.SellerEntity;
-import org.retrade.main.repository.jpa.*;
 import org.retrade.main.repository.elasticsearch.ProductElasticsearchRepository;
+import org.retrade.main.repository.jpa.*;
 import org.retrade.main.service.ProductService;
 import org.retrade.main.util.AuthUtils;
 import org.springframework.data.domain.Page;
@@ -395,17 +392,33 @@ public class ProductServiceImpl implements ProductService {
                 .categoriesAdvanceSearch(categories)
                 .build();
     }
+
     @Override
     public PaginationWrapper<List<ProductResponse>> searchProductBestSelling(QueryWrapper queryWrapper) {
-        Page<ProductEntity> bestSelling = productRepository.findBestSellingProducts(OrderStatusCodes.COMPLETED,0,queryWrapper.pagination());
-        List<ProductResponse> productResponses = bestSelling.getContent()
-                .stream()
-                .map(this::mapToProductResponse)
-                .toList();
-        return new PaginationWrapper.Builder<List<ProductResponse>>()
-                .setData(productResponses)
-                .setPaginationInfo(bestSelling)
-                .build();
+        return productRepository.query(queryWrapper, (param) -> ((root, query, criteriaBuilder) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            var orderItemJoin = root.joinSet("orderItems", JoinType.LEFT);
+            var orderComboJoin = orderItemJoin.join("orderCombo", JoinType.LEFT);
+            var orderComboStatusJoin = orderComboJoin.join("orderStatus", JoinType.LEFT);
+            Set<String> statusValidSet = Set.of(OrderStatusCodes.DELIVERED, OrderStatusCodes.COMPLETED, OrderStatusCodes.DELIVERING, OrderStatusCodes.PAYMENT_CONFIRMATION);
+            predicates.add(criteriaBuilder.or(
+                    criteriaBuilder.in(orderComboStatusJoin.get("code")).value(statusValidSet),
+                    criteriaBuilder.isNull(orderComboStatusJoin.get("code"))
+            ));
+            predicates.add(criteriaBuilder.equal(root.get("status"), ProductStatusEnum.ACTIVE));
+            predicates.add(criteriaBuilder.equal(root.get("verified"), true));
+            if (query != null) {
+                query.groupBy(root.get("id"));
+                query.orderBy(criteriaBuilder.desc(criteriaBuilder.sum(orderItemJoin.get("quantity"))));
+            }
+            return getPredicate(param, root, criteriaBuilder, predicates);
+        }), (items) -> {
+            var list = items.map(this::mapToProductResponse).stream().toList();
+            return new PaginationWrapper.Builder<List<ProductResponse>>()
+                    .setPaginationInfo(items)
+                    .setData(list)
+                    .build();
+        });
     }
     @Override
     public ProductHomeStatsResponse getStatsHome() {

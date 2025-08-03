@@ -1,4 +1,4 @@
-package org.retrade.main.model.constant;
+package org.retrade.achievement.model.constant;
 
 import lombok.Getter;
 
@@ -12,9 +12,7 @@ public enum QueueNameEnum {
     IDENTITY_VERIFICATION_QUEUE("identity.verification.queue"),
     IDENTITY_RETRY_QUEUE("identity.dlx.queue"),
     IDENTITY_VERIFIED_RESULT_QUEUE("identity.verified.result.queue"),
-    IDENTITY_VERIFIED_RETRY_QUEUE("identity.verified.retry.queue"),
-    ACHIEVEMENT_SELLER_EVENT_QUEUE("achievement.seller.event.queue"),
-    ACHIEVEMENT_SELLER_EVENT_RETRY_QUEUE("achievement.seller.event.retry.queue");
+    IDENTITY_VERIFIED_RETRY_QUEUE("identity.verified.retry.queue");
     private final String name;
     QueueNameEnum(String name) {
         this.name = name;

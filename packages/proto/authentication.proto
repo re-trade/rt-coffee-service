@@ -79,4 +79,6 @@ service GrpcTokenService {
     rpc GetSellerProfile (TokenRequest) returns (GetSellerProfileResponse);
     rpc GetCustomerProfileById (AccountIdRequest) returns (GetCustomerProfileResponse);
     rpc GetSellerProfileById (AccountIdRequest) returns (GetSellerProfileResponse);
+    rpc GetSellerProfileBySellerId (AccountIdRequest) returns (GetSellerProfileResponse);
+    rpc GetCustomerProfileByCustomerId (AccountIdRequest) returns (GetCustomerProfileResponse);
 }

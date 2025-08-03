@@ -20,7 +20,6 @@ public class CategoryResponse {
     private String parentId;
     private String parentName;
     private Boolean visible;
-    private String type;
     private List<CategoryResponse> children;
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createdAt;
