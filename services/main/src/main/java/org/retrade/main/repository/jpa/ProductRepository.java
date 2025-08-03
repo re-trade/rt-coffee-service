@@ -101,3 +101,7 @@ public interface ProductRepository extends BaseJpaRepository<ProductEntity, Stri
     long countDistinctSoldVerifiedProducts(@Param("statusCode") String statusCode);
 
 }
+
+
+
+

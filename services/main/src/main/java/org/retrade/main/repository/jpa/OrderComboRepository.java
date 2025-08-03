@@ -50,4 +50,5 @@ public interface OrderComboRepository extends BaseJpaRepository<OrderComboEntity
     @Query("SELECT COUNT(o) FROM order_combos o WHERE o.orderStatus.code = 'COMPLETED'")
     long countByOrderStatus();
 
+
 }

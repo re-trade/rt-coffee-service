@@ -551,6 +551,51 @@ public class OrderServiceImpl implements OrderService {
 
         return products;
     }
+    @Override
+    public OrderStatsResponse getStatsOrderCustomer() {
+        var account = authUtils.getUserAccountFromAuthentication();
+        var customerEntity = account.getCustomer();
+        if (customerEntity == null) {
+            throw new ValidationException("User is not a customer");
+        }
+        QueryWrapper queryWrapper = new QueryWrapper();
+        PaginationWrapper<List<OrderComboEntity>> result = orderComboRepository.query(queryWrapper, (param) -> (root, query, criteriaBuilder) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            var destinationJoin = root.join("orderDestination", JoinType.INNER);
+            var orderJoin = destinationJoin.join("order", JoinType.INNER);
+            var customerJoin = orderJoin.join("customer", JoinType.INNER);
+
+            predicates.add(criteriaBuilder.equal(customerJoin.get("id"), customerEntity.getId()));
+            return getOrderComboPredicate(param, root, criteriaBuilder, predicates);
+        }, (items) -> {
+            return new PaginationWrapper.Builder<List<OrderComboEntity>>()
+                    .setPaginationInfo(items)
+                    .setData(items.getContent())
+                    .build();
+        });
+        List<OrderComboEntity> orderComboEntities = result.getData();
+        long totalOrders = orderComboEntities.size();
+        long totalOrdersCompleted = orderComboEntities.stream()
+                .filter(cb -> OrderStatusCodes.COMPLETED.equalsIgnoreCase(cb.getOrderStatus().getCode()))
+                .count();
+        long totalOrdersBeingDelivered = orderComboEntities.stream()
+                .filter(cb-> OrderStatusCodes.DELIVERING.equalsIgnoreCase(cb.getOrderStatus().getCode()))
+                .count();
+        BigDecimal totalCost = orderComboEntities.stream()
+                .filter(combo -> OrderStatusCodes.COMPLETED.equalsIgnoreCase(combo.getOrderStatus().getCode()))
+                .map(OrderComboEntity::getGrandPrice)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+
+
+        return OrderStatsResponse.builder()
+                .totalOrdersBeingDelivered(totalOrdersBeingDelivered)
+                .totalOrders(totalOrders)
+                .totalOrdersCompleted(totalOrdersCompleted)
+                .totalPaymentCost(totalCost)
+                .build();
+    }
+
 
     private Map<SellerEntity, List<ProductEntity>> groupProductsBySeller(List<ProductEntity> products) {
         return products.stream()
