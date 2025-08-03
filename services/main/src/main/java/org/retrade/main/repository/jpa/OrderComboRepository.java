@@ -94,4 +94,8 @@ public interface OrderComboRepository extends BaseJpaRepository<OrderComboEntity
         ORDER BY o.createdDate DESC
     """)
     List<RecentOrderProjection> getRecentOrders(@Param("seller") SellerEntity seller, Pageable pageable);
+
+    long countBySellerAndOrderStatus_Code(SellerEntity seller, String code);
+
+    long countBySeller(@NonNull SellerEntity seller);
 }

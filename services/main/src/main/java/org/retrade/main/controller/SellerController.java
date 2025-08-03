@@ -7,9 +7,9 @@ import org.retrade.common.model.dto.response.ResponseObject;
 import org.retrade.main.model.dto.request.ApproveSellerRequest;
 import org.retrade.main.model.dto.request.SellerRegisterRequest;
 import org.retrade.main.model.dto.request.SellerUpdateRequest;
+import org.retrade.main.model.dto.response.SellerBaseMetricResponse;
 import org.retrade.main.model.dto.response.SellerBaseResponse;
 import org.retrade.main.model.dto.response.SellerRegisterResponse;
-import org.retrade.main.model.dto.response.TopSellersResponse;
 import org.retrade.main.service.FileService;
 import org.retrade.main.service.OrderService;
 import org.retrade.main.service.SellerService;
@@ -142,6 +142,17 @@ public class SellerController {
                 .success(true)
                 .code("SUCCESS")
                 .messages("ban seller with" + id + " successfully")
+                .build());
+    }
+
+    @GetMapping("{id}/metric")
+    public ResponseEntity<ResponseObject<SellerBaseMetricResponse>> getSellerStats (@PathVariable String id) {
+        var metrics = sellerService.getSellerBaseMetric(id);
+        return ResponseEntity.ok(new ResponseObject.Builder<SellerBaseMetricResponse>()
+                .success(true)
+                .code("SUCCESS")
+                .content(metrics)
+                .messages("Get Seller Stats Successfully")
                 .build());
     }
 }
