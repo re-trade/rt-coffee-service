@@ -146,7 +146,7 @@ public class SellerController {
     }
 
     @GetMapping("{id}/metric")
-    public ResponseEntity<ResponseObject<SellerBaseMetricResponse>> getSellerStats (String id) {
+    public ResponseEntity<ResponseObject<SellerBaseMetricResponse>> getSellerStats (@PathVariable String id) {
         var metrics = sellerService.getSellerBaseMetric(id);
         return ResponseEntity.ok(new ResponseObject.Builder<SellerBaseMetricResponse>()
                 .success(true)
