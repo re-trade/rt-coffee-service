@@ -20,6 +20,7 @@ import org.retrade.main.service.OrderService;
 import org.retrade.main.util.AuthUtils;
 import org.retrade.main.validator.OrderStatusValidator;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -558,35 +559,28 @@ public class OrderServiceImpl implements OrderService {
         if (customerEntity == null) {
             throw new ValidationException("User is not a customer");
         }
-        QueryWrapper queryWrapper = new QueryWrapper();
-        PaginationWrapper<List<OrderComboEntity>> result = orderComboRepository.query(queryWrapper, (param) -> (root, query, criteriaBuilder) -> {
+
+        List<OrderComboEntity> orderComboEntities = orderComboRepository.findAll((root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
             var destinationJoin = root.join("orderDestination", JoinType.INNER);
             var orderJoin = destinationJoin.join("order", JoinType.INNER);
             var customerJoin = orderJoin.join("customer", JoinType.INNER);
 
             predicates.add(criteriaBuilder.equal(customerJoin.get("id"), customerEntity.getId()));
-            return getOrderComboPredicate(param, root, criteriaBuilder, predicates);
-        }, (items) -> {
-            return new PaginationWrapper.Builder<List<OrderComboEntity>>()
-                    .setPaginationInfo(items)
-                    .setData(items.getContent())
-                    .build();
+            return getOrderComboPredicate(new HashMap<>(), root, criteriaBuilder, predicates);
         });
-        List<OrderComboEntity> orderComboEntities = result.getData();
+
         long totalOrders = orderComboEntities.size();
         long totalOrdersCompleted = orderComboEntities.stream()
                 .filter(cb -> OrderStatusCodes.COMPLETED.equalsIgnoreCase(cb.getOrderStatus().getCode()))
                 .count();
         long totalOrdersBeingDelivered = orderComboEntities.stream()
-                .filter(cb-> OrderStatusCodes.DELIVERING.equalsIgnoreCase(cb.getOrderStatus().getCode()))
+                .filter(cb -> OrderStatusCodes.DELIVERING.equalsIgnoreCase(cb.getOrderStatus().getCode()))
                 .count();
         BigDecimal totalCost = orderComboEntities.stream()
                 .filter(combo -> OrderStatusCodes.COMPLETED.equalsIgnoreCase(combo.getOrderStatus().getCode()))
                 .map(OrderComboEntity::getGrandPrice)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-
 
         return OrderStatsResponse.builder()
                 .totalOrdersBeingDelivered(totalOrdersBeingDelivered)
