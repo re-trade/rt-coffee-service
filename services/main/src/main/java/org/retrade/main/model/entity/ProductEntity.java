@@ -65,4 +65,6 @@ public class ProductEntity extends BaseSQLEntity {
     private Set<ProductEntity> childProducts;
     @OneToMany(fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST}, mappedBy = "product")
     private Set<ProductPriceHistoryEntity> productPriceHistories;
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "product")
+    private Set<OrderItemEntity> orderItems;
 }

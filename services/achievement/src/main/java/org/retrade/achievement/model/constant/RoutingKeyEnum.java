@@ -1,4 +1,4 @@
-package org.retrade.main.model.constant;
+package org.retrade.achievement.model.constant;
 
 import lombok.Getter;
 
@@ -11,9 +11,7 @@ public enum RoutingKeyEnum {
     DEAD_LETTER_ROUTING_KEY("dead.letter"),
     IDENTITY_VERIFICATION_ROUTING_KEY("identity.verification"),
     IDENTITY_VERIFIED_ROUTING_KEY("identity.verified"),
-    IDENTITY_RETRY_ROUTING_KEY("identity.retry"),
-    ACHIEVEMENT_ROUTING_KEY("achievement.seller.event.routing-key"),
-    ACHIEVEMENT_RETRY_ROUTING_KEY("achievement.seller.event.retry.routing-key");
+    IDENTITY_RETRY_ROUTING_KEY("identity.retry");
     private final String name;
     RoutingKeyEnum(String name) {
         this.name = name;

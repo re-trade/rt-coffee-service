@@ -14,6 +14,7 @@ import java.time.LocalDateTime;
 @Data
 public class SellerBaseResponse {
     private String id;
+    private String accountId;
     private String shopName;
     private String description;
     private Integer businessType;

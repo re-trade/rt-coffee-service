@@ -210,9 +210,6 @@ public class SellerServiceImpl implements SellerService {
         SellerEntity  seller = sellerRepository.findById(id).orElseThrow(
                 () -> new ValidationException("No such seller existed seller")
         );
-        if(!seller.getVerified()){
-            throw new ValidationException("Seller is not verified");
-        }
         return wrapSellerBaseResponse(seller);
     }
 
@@ -252,8 +249,10 @@ public class SellerServiceImpl implements SellerService {
     }
 
     private SellerBaseResponse wrapSellerBaseResponse(SellerEntity sellerEntity) {
+        var account = sellerEntity.getAccount();
         return SellerBaseResponse.builder()
                 .id(sellerEntity.getId())
+                .accountId(account.getId())
                 .shopName(sellerEntity.getShopName())
                 .description(sellerEntity.getDescription())
                 .avatarUrl(sellerEntity.getAvatarUrl())

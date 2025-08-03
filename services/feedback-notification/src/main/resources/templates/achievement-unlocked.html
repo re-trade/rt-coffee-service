@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head>
+    <meta charset="UTF-8" />
+    <title>ReTrade - Thành tựu mới mở khoá</title>
+    <style>
+        body {
+            background: #f8f8f8;
+            font-family: Arial, sans-serif;
+            color: #333;
+            margin: 0;
+            padding: 40px 0;
+        }
+
+        .container {
+            max-width: 600px;
+            background: #fff;
+            margin: 0 auto;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+        }
+
+        .header {
+            background: linear-gradient(to right, #fb923c, #f97316);
+            color: #fff;
+            text-align: center;
+            padding: 30px 20px;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 28px;
+        }
+
+        .content {
+            padding: 30px 20px;
+        }
+
+        .content p {
+            line-height: 1.6;
+            margin: 0 0 20px;
+        }
+
+        .achievement {
+            border: 1px solid #f97316;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            background: #fff7ed;
+        }
+
+        .achievement img {
+            width: 60px;
+            height: 60px;
+            margin-right: 15px;
+            border-radius: 8px;
+            background: #fff;
+            border: 1px solid #f97316;
+        }
+
+        .achievement-details h3 {
+            margin: 0 0 5px;
+            color: #ea580c;
+        }
+
+        .footer {
+            background: #f97316;
+            color: #fff;
+            text-align: center;
+            padding: 15px 20px;
+            font-size: 12px;
+        }
+
+        .button {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 12px 24px;
+            background: linear-gradient(to right, #fb923c, #f97316);
+            color: #fff !important;
+            text-decoration: none;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>🎉 Chúc mừng bạn!</h1>
+    </div>
+    <div class="content">
+        <p>Xin chào <strong th:text="${sellerName}">Seller Name</strong>,</p>
+        <p>Bạn vừa mở khoá thành công những thành tựu mới trên <strong>ReTrade</strong>:</p>
+
+        <div th:each="ach : ${achievements}" class="achievement">
+            <img th:src="${ach.icon}" alt="Achievement Icon" />
+            <div class="achievement-details">
+                <h3 th:text="${ach.name}">Tên thành tựu</h3>
+                <p th:text="${ach.description}">Mô tả thành tựu</p>
+            </div>
+        </div>
+
+        <p>Hãy tiếp tục đồng hành cùng <strong>ReTrade</strong> để đạt nhiều thành tựu hơn nữa!</p>
+
+        <div style="text-align: center;">
+            <a href="#" class="button">Xem bảng thành tựu</a>
+        </div>
+    </div>
+    <div class="footer">
+        © 2025 ReTrade. Tất cả quyền được bảo lưu.
+    </div>
+</div>
+</body>
+</html>
