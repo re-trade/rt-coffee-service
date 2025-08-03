@@ -210,9 +210,6 @@ public class SellerServiceImpl implements SellerService {
         SellerEntity  seller = sellerRepository.findById(id).orElseThrow(
                 () -> new ValidationException("No such seller existed seller")
         );
-        if(!seller.getVerified()){
-            throw new ValidationException("Seller is not verified");
-        }
         return wrapSellerBaseResponse(seller);
     }
 
