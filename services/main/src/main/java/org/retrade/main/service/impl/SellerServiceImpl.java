@@ -249,8 +249,10 @@ public class SellerServiceImpl implements SellerService {
     }
 
     private SellerBaseResponse wrapSellerBaseResponse(SellerEntity sellerEntity) {
+        var account = sellerEntity.getAccount();
         return SellerBaseResponse.builder()
                 .id(sellerEntity.getId())
+                .accountId(account.getId())
                 .shopName(sellerEntity.getShopName())
                 .description(sellerEntity.getDescription())
                 .avatarUrl(sellerEntity.getAvatarUrl())
