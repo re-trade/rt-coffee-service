@@ -39,6 +39,11 @@ public class TokenServiceClient {
                 .build());
     }
 
+    public GetSellerProfileResponse getSellerProfileBySellerId(String id) {
+        return blockingStub.getSellerProfileBySellerId(AccountIdRequest.newBuilder().setId(id)
+                .build());
+    }
+
     @PostConstruct
     public void init() {
         channel = ManagedChannelBuilder.forAddress(mainServiceHost, mainServicePort)

@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Welcome to ReTrade Service</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Chào mừng đến với ReTrade!</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -11,71 +11,85 @@
             color: #333;
             max-width: 600px;
             margin: 0 auto;
-            padding: 20px;
+            padding: 40px 0;
+            background: #f8f8f8;
+        }
+        .container {
+            background: #fff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
         }
         .header {
-            background-color: #5D4037;
-            color: white;
-            padding: 20px;
+            background: linear-gradient(to right, #fb923c, #f97316);
+            color: #fff;
             text-align: center;
-            border-radius: 5px 5px 0 0;
+            padding: 30px 20px;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
         }
         .content {
-            padding: 20px;
-            background-color: #f9f9f9;
-            border: 1px solid #ddd;
-            border-top: none;
-            border-radius: 0 0 5px 5px;
+            padding: 30px 20px;
         }
-        .footer {
-            text-align: center;
-            margin-top: 20px;
-            font-size: 12px;
-            color: #777;
+        .content p {
+            margin: 0 0 20px;
+        }
+        .content ul {
+            padding-left: 20px;
+            margin-bottom: 20px;
         }
         .button {
             display: inline-block;
-            background-color: #5D4037;
-            color: white;
-            padding: 10px 20px;
+            background: linear-gradient(to right, #fb923c, #f97316);
+            color: #fff !important;
+            padding: 12px 24px;
             text-decoration: none;
-            border-radius: 5px;
-            margin-top: 20px;
+            border-radius: 6px;
+            font-weight: bold;
+        }
+        .footer {
+            background: #f97316;
+            color: #fff;
+            text-align: center;
+            padding: 15px 20px;
+            font-size: 12px;
         }
     </style>
 </head>
 <body>
+<div class="container">
     <div class="header">
-        <h1>Welcome to ReTrade!</h1>
+        <h1>Chào mừng đến với ReTrade!</h1>
     </div>
     <div class="content">
-        <p>Hello <span th:text="${firstName}">User</span> <span th:text="${lastName}">Name</span>,</p>
-        
-        <p>Thank you for registering with ReTrade! We're excited to have you join our community.</p>
-        
-        <p>Your account has been successfully created with the username: <strong th:text="${username}">username</strong></p>
-        
-        <p>With your new account, you can:</p>
+        <p>Xin chào <strong th:text="${firstName}">User</strong> <strong th:text="${lastName}">Name</strong>,</p>
+
+        <p>Cảm ơn bạn đã đăng ký tài khoản tại ReTrade! Chúng tôi rất vui khi được chào đón bạn trở thành một phần của cộng đồng.</p>
+
+        <p>Tài khoản của bạn đã được tạo thành công với tên đăng nhập: <strong th:text="${username}">username</strong>.</p>
+
+        <p>Với tài khoản ReTrade, bạn có thể:</p>
         <ul>
-            <li>Browse our selection of premium products</li>
-            <li>Earn rewards with every purchase</li>
-            <li>Receive exclusive offers and promotions</li>
+            <li>Khám phá hàng ngàn sản phẩm chất lượng</li>
+            <li>Nhận ưu đãi & tích lũy điểm thưởng</li>
+            <li>Nhận tin tức & khuyến mãi độc quyền</li>
         </ul>
-        
-        <p>If you have any questions or need assistance, please don't hesitate to contact our customer support team.</p>
-        
+
+        <p>Nếu bạn cần hỗ trợ, đừng ngần ngại liên hệ đội ngũ CSKH của chúng tôi.</p>
+
         <div style="text-align: center;">
-            <a href="#" class="button">Visit Our Website</a>
+            <a th:href="${websiteUrl}" class="button">Khám phá ngay</a>
         </div>
-        
-        <p>Enjoy your journey with us!</p>
-        
-        <p>Best regards,<br>
-        The ReTrade Service Team</p>
+
+        <p>Chúc bạn có trải nghiệm tuyệt vời cùng ReTrade!</p>
+
+        <p>Trân trọng,<br> Đội ngũ ReTrade</p>
     </div>
     <div class="footer">
-        <p>© 2025 ReTrade Service. All rights reserved.</p>
-        <p>This email was sent to you because you registered for an account on our platform.</p>
+        © 2025 ReTrade. Tất cả quyền được bảo lưu.
     </div>
+</div>
 </body>
 </html>
