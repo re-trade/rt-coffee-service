@@ -222,6 +222,7 @@ public class ProductReviewServiceImpl implements ProductReviewService {
                 .updatedAt(entity.getUpdatedDate().toLocalDateTime())
                 .vote(entity.getVote())
                 .content(entity.getContent())
+                .images(entity.getImageReview())
                 .author(author)
                 .orderId(entity.getOrderCombo().getId())
                 .status(entity.getStatus())
