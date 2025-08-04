@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.retrade.common.model.dto.request.QueryWrapper;
 import org.retrade.common.model.dto.response.ResponseObject;
+import org.retrade.main.model.constant.IdentityCardTypeEnum;
 import org.retrade.main.model.dto.request.ApproveSellerRequest;
 import org.retrade.main.model.dto.request.SellerRegisterRequest;
 import org.retrade.main.model.dto.request.SellerUpdateRequest;
@@ -15,6 +16,8 @@ import org.retrade.main.service.OrderService;
 import org.retrade.main.service.SellerService;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -154,5 +157,14 @@ public class SellerController {
                 .content(metrics)
                 .messages("Get Seller Stats Successfully")
                 .build());
+    }
+
+    @GetMapping("{id}/id-card")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    public ResponseEntity<byte[]> getWithdrawQrByWithdrawId(@PathVariable String id, @RequestParam IdentityCardTypeEnum cardType) {
+        var result = fileService.getSellerIdentityCard(id, cardType);
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.parseMediaType(result.mimeType()));
+        return new ResponseEntity<>(result.bytes(), headers, HttpStatus.OK);
     }
 }

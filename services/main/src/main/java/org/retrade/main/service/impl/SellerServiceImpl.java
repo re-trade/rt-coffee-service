@@ -92,11 +92,13 @@ public class SellerServiceImpl implements SellerService {
         validateApproveSeller(sellerEntity, request.getForced());
         if (!request.getApprove()) {
             sellerEntity.setVerified(false);
-            sellerEntity.setIdentityVerified(IdentityVerifiedStatusEnum.FAILED);
             sellerEntity.setFrontSideIdentityCard("example");
             sellerEntity.setBackSideIdentityCard("example");
         } else {
             sellerEntity.setVerified(true);
+            if (request.getForced()) {
+                sellerEntity.setIdentityVerified(IdentityVerifiedStatusEnum.VERIFIED);
+            }
             var roleEntity = roleRepository.findByCode("ROLE_SELLER").orElseThrow(() -> new ValidationException("System can't sign role as this moment, please try again next time"));
             signRoleSellerToUser(sellerEntity, roleEntity);
         }
@@ -276,6 +278,7 @@ public class SellerServiceImpl implements SellerService {
                 .background(sellerEntity.getBackground())
                 .phoneNumber(sellerEntity.getPhoneNumber())
                 .verified(sellerEntity.getVerified())
+                .identityVerifiedStatus(sellerEntity.getIdentityVerified())
                 .createdAt(sellerEntity.getCreatedDate().toLocalDateTime())
                 .updatedAt(sellerEntity.getUpdatedDate().toLocalDateTime())
                 .addressLine(sellerEntity.getAddressLine())

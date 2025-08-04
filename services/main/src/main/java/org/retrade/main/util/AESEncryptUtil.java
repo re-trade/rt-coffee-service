@@ -42,4 +42,16 @@ public class AESEncryptUtil {
                 new CipherInputStream(inputStream, cipher)
         );
     }
+
+    public static InputStream decryptStream(InputStream encryptedInputStream, SecretKey secretKey) throws GeneralSecurityException, IOException {
+        Cipher cipher = Cipher.getInstance(TRANSFORMATION);
+        byte[] iv = new byte[IV_SIZE];
+        if (encryptedInputStream.read(iv) != IV_SIZE) {
+            throw new IOException("Failed to read IV from encrypted stream.");
+        }
+        IvParameterSpec ivSpec = new IvParameterSpec(iv);
+        cipher.init(Cipher.DECRYPT_MODE, secretKey, ivSpec);
+
+        return new CipherInputStream(encryptedInputStream, cipher);
+    }
 }
