@@ -275,6 +275,7 @@ public class SellerServiceImpl implements SellerService {
                 .description(sellerEntity.getDescription())
                 .avatarUrl(sellerEntity.getAvatarUrl())
                 .email(sellerEntity.getEmail())
+                .avgVote(sellerEntity.getAvgVote())
                 .background(sellerEntity.getBackground())
                 .phoneNumber(sellerEntity.getPhoneNumber())
                 .verified(sellerEntity.getVerified())
