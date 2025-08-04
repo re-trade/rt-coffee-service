@@ -18,6 +18,8 @@ public interface AccountService {
 
     boolean checkUsernameExisted(String username);
 
+    boolean checkEmailExisted(String email);
+
     AccountResponse getAccountById(String id);
 
     void updatePassword(UpdatePasswordRequest request);

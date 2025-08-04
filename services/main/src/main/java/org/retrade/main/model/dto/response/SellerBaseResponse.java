@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.retrade.main.model.constant.IdentityVerifiedStatusEnum;
 
 import java.time.LocalDateTime;
 
@@ -27,6 +28,7 @@ public class SellerBaseResponse {
     private String background;
     private String phoneNumber;
     private Boolean verified;
+    private IdentityVerifiedStatusEnum identityVerifiedStatus;
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createdAt;
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")

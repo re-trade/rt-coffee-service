@@ -5,6 +5,7 @@ import org.retrade.common.model.dto.response.PaginationWrapper;
 import org.retrade.main.model.dto.request.ApproveSellerRequest;
 import org.retrade.main.model.dto.request.SellerRegisterRequest;
 import org.retrade.main.model.dto.request.SellerUpdateRequest;
+import org.retrade.main.model.dto.response.SellerBaseMetricResponse;
 import org.retrade.main.model.dto.response.SellerBaseResponse;
 import org.retrade.main.model.dto.response.SellerRegisterResponse;
 import org.retrade.main.model.dto.response.TopSellersResponse;
@@ -18,6 +19,8 @@ public interface SellerService {
     SellerRegisterResponse createSeller(SellerRegisterRequest request);
 
     void approveSeller(ApproveSellerRequest request);
+
+    SellerBaseMetricResponse getSellerBaseMetric(String sellerId);
 
     PaginationWrapper<List<SellerBaseResponse>> getSellers (QueryWrapper wrapper);
 

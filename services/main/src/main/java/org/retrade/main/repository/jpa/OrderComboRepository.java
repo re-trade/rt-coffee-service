@@ -94,4 +94,16 @@ public interface OrderComboRepository extends BaseJpaRepository<OrderComboEntity
         ORDER BY o.createdDate DESC
     """)
     List<RecentOrderProjection> getRecentOrders(@Param("seller") SellerEntity seller, Pageable pageable);
+
+    long countBySellerAndOrderStatus_Code(SellerEntity seller, String code);
+
+    long countBySeller(@NonNull SellerEntity seller);
+
+    @Query("""
+        SELECT COUNT(oc) FROM order_combos oc
+        WHERE oc.orderDestination.order.customer = :customer
+        AND oc.orderStatus.code = 'COMPLETED'
+    """)
+    Long countCompletedOrdersByCustomer(@Param("customer") CustomerEntity customer);
+
 }

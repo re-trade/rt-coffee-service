@@ -36,6 +36,12 @@ public interface OrderItemRepository extends BaseJpaRepository<OrderItemEntity, 
                                                           Timestamp toDate);
 
     @Query("""
+        SELECT COALESCE(SUM(oi.quantity)) FROM order_items oi
+        WHERE oi.order.customer = :customer
+    """)
+    Long sumQuantityByCustomerId(@Param("customer") CustomerEntity customer);
+
+    @Query("""
         SELECT oi.product.name AS productName,
                SUM(oi.quantity) AS quantitySold,
                SUM(oi.basePrice * oi.quantity) AS revenue

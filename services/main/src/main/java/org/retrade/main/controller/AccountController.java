@@ -118,6 +118,61 @@ public class AccountController {
                 .build());
     }
 
+    @Operation(
+            summary = "Check if email exists",
+            description = "Checks whether a given email already exists in the system"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Email check completed successfully",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ResponseObject.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "email_exists",
+                                            summary = "Email exists",
+                                            value = """
+                        {
+                            "success": true,
+                            "code": "SUCCESS",
+                            "content": {
+                                "existed": true
+                            },
+                            "messages": "Account retrieved successfully"
+                        }
+                        """
+                                    ),
+                                    @ExampleObject(
+                                            name = "username_not_exists",
+                                            summary = "Username doesn't exist",
+                                            value = """
+                        {
+                            "success": true,
+                            "code": "SUCCESS",
+                            "content": {
+                                "existed": false
+                            },
+                            "messages": "Account retrieved successfully"
+                        }
+                        """
+                                    )
+                            }
+                    )
+            )
+    })
+    @GetMapping("check-email")
+    public ResponseEntity<ResponseObject<Map<String, Boolean>>> checkEmailExisted(@Valid @RequestParam String email) {
+        var response = accountService.checkEmailExisted(email);
+        return ResponseEntity.ok(new ResponseObject.Builder<Map<String, Boolean>>()
+                .success(true)
+                .code("SUCCESS")
+                .content(Map.of("existed", response))
+                .messages("Account retrieved successfully")
+                .build());
+    }
+
     @PutMapping("password")
     public ResponseEntity<ResponseObject<Void>> updatePassword(
             @Valid @RequestBody UpdatePasswordRequest request) {

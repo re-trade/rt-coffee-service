@@ -23,6 +23,8 @@ public interface WalletService {
 
     PaginationWrapper<List<WithdrawRequestBaseResponse>> getWithdrawRequestList(QueryWrapper queryWrapper);
 
+    PaginationWrapper<List<WithdrawRequestBaseResponse>> getAccountWithdrawRequest(QueryWrapper queryWrapper);
+
     BankResponse getBankByBin(String id);
 
     DecodedFile getQrCodeByWithdrawRequestId(String withdrawRequestId);

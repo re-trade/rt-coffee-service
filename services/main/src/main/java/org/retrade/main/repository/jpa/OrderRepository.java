@@ -5,6 +5,7 @@ import org.retrade.main.model.entity.CustomerEntity;
 import org.retrade.main.model.entity.OrderEntity;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
@@ -25,4 +26,5 @@ public interface OrderRepository extends BaseJpaRepository<OrderEntity, String> 
 
     Optional<OrderEntity> findByIdAndCustomer(String id, CustomerEntity customer);
 
+    long countByCustomer(@NonNull CustomerEntity customer);
 }

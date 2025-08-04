@@ -14,6 +14,7 @@ import org.retrade.main.model.constant.IdentityVerifiedStatusEnum;
 import org.retrade.main.model.dto.request.ApproveSellerRequest;
 import org.retrade.main.model.dto.request.SellerRegisterRequest;
 import org.retrade.main.model.dto.request.SellerUpdateRequest;
+import org.retrade.main.model.dto.response.SellerBaseMetricResponse;
 import org.retrade.main.model.dto.response.SellerBaseResponse;
 import org.retrade.main.model.dto.response.SellerRegisterResponse;
 import org.retrade.main.model.entity.AccountRoleEntity;
@@ -22,9 +23,7 @@ import org.retrade.main.model.entity.SellerEntity;
 import org.retrade.main.model.message.CCCDVerificationMessage;
 import org.retrade.main.model.message.CCCDVerificationResultMessage;
 import org.retrade.main.model.other.SellerWrapperBase;
-import org.retrade.main.repository.jpa.AccountRoleRepository;
-import org.retrade.main.repository.jpa.RoleRepository;
-import org.retrade.main.repository.jpa.SellerRepository;
+import org.retrade.main.repository.jpa.*;
 import org.retrade.main.service.MessageProducerService;
 import org.retrade.main.service.SellerService;
 import org.retrade.main.util.AuthUtils;
@@ -41,6 +40,8 @@ public class SellerServiceImpl implements SellerService {
     private final AuthUtils authUtils;
     private final RoleRepository roleRepository;
     private final AccountRoleRepository accountRoleRepository;
+    private final ProductRepository productRepository;
+    private final OrderComboRepository orderComboRepository;
 
     @Override
     public SellerRegisterResponse createSeller(SellerRegisterRequest request) {
@@ -91,11 +92,13 @@ public class SellerServiceImpl implements SellerService {
         validateApproveSeller(sellerEntity, request.getForced());
         if (!request.getApprove()) {
             sellerEntity.setVerified(false);
-            sellerEntity.setIdentityVerified(IdentityVerifiedStatusEnum.FAILED);
             sellerEntity.setFrontSideIdentityCard("example");
             sellerEntity.setBackSideIdentityCard("example");
         } else {
             sellerEntity.setVerified(true);
+            if (request.getForced()) {
+                sellerEntity.setIdentityVerified(IdentityVerifiedStatusEnum.VERIFIED);
+            }
             var roleEntity = roleRepository.findByCode("ROLE_SELLER").orElseThrow(() -> new ValidationException("System can't sign role as this moment, please try again next time"));
             signRoleSellerToUser(sellerEntity, roleEntity);
         }
@@ -104,6 +107,21 @@ public class SellerServiceImpl implements SellerService {
         } catch (Exception ex) {
             throw new ActionFailedException("Failed to approve seller", ex);
         }
+    }
+
+    @Override
+    public SellerBaseMetricResponse getSellerBaseMetric(String sellerId) {
+        var seller = sellerRepository.findById(sellerId).orElseThrow(() -> new ValidationException("No such seller existed seller"));
+        var products = productRepository.countBySeller(seller);
+        var avgVote = productRepository.getAverageVote(seller);
+        var totalOrderSold = orderComboRepository.countBySellerAndOrderStatus_Code(seller, "COMPLETED");
+        var totalOrder = orderComboRepository.countBySeller(seller);
+        return SellerBaseMetricResponse.builder()
+                .productQuantity(products)
+                .avgVote(avgVote)
+                .totalOrder(totalOrder)
+                .totalOrderSold(totalOrderSold)
+                .build();
     }
 
     @Override
@@ -260,6 +278,7 @@ public class SellerServiceImpl implements SellerService {
                 .background(sellerEntity.getBackground())
                 .phoneNumber(sellerEntity.getPhoneNumber())
                 .verified(sellerEntity.getVerified())
+                .identityVerifiedStatus(sellerEntity.getIdentityVerified())
                 .createdAt(sellerEntity.getCreatedDate().toLocalDateTime())
                 .updatedAt(sellerEntity.getUpdatedDate().toLocalDateTime())
                 .addressLine(sellerEntity.getAddressLine())

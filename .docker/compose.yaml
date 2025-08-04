@@ -59,6 +59,7 @@ services:
       MINIO_BUCKET_NAME: ${MINIO_BUCKET_NAME}
       RECOMMENDATION_SERVICE_GRPC_HOST: go-recommender
       RECOMMENDATION_SERVICE_GRPC_PORT: 8386
+      DEVELOP_MODE: ${DEVELOP_MODE}
     profiles:
       - backend
       - prod

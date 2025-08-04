@@ -69,9 +69,23 @@ public class WalletController {
 
     @GetMapping("me/withdraw")
     public ResponseEntity<ResponseObject<List<WithdrawRequestBaseResponse>>> getAccountWithdrawalHistory(@PageableDefault Pageable pageable, @RequestParam(required = false) String q) {
-        var result = walletService.getWithdrawRequestList(QueryWrapper.builder()
+        var result = walletService.getAccountWithdrawRequest(QueryWrapper.builder()
                         .wrapSort(pageable)
                         .search(q)
+                .build());
+        return ResponseEntity.ok(new ResponseObject.Builder<List<WithdrawRequestBaseResponse>>()
+                .code("WITHDRAW_HISTORY_RETRIEVED")
+                .success(true)
+                .messages("Withdraw history retrieved successfully")
+                .unwrapPaginationWrapper(result)
+                .build());
+    }
+
+    @GetMapping("withdraw")
+    public ResponseEntity<ResponseObject<List<WithdrawRequestBaseResponse>>> getAllWithdrawHistory(@PageableDefault Pageable pageable, @RequestParam(required = false) String q) {
+        var result = walletService.getWithdrawRequestList(QueryWrapper.builder()
+                .wrapSort(pageable)
+                .search(q)
                 .build());
         return ResponseEntity.ok(new ResponseObject.Builder<List<WithdrawRequestBaseResponse>>()
                 .code("WITHDRAW_HISTORY_RETRIEVED")

@@ -150,6 +150,23 @@ public class WalletServiceImpl implements WalletService {
     }
 
     @Override
+    public PaginationWrapper<List<WithdrawRequestBaseResponse>> getAccountWithdrawRequest(QueryWrapper queryWrapper) {
+        var account = authUtils.getUserAccountFromAuthentication();
+        return withdrawRepository.query(queryWrapper, (param) -> (root, query, criteriaBuilder) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            predicates.add(criteriaBuilder.equal(root.get("account"), account));
+            return getPredicate(param, root, criteriaBuilder, predicates);
+        }, (items)  -> {
+            var map = vietQrBankRepository.getBankMap();
+            var list = items.map(item ->this.wrapWithdrawRequestBaseResponse(item, map)).stream().toList();
+            return new PaginationWrapper.Builder<List<WithdrawRequestBaseResponse>>()
+                    .setPaginationInfo(items)
+                    .setData(list)
+                    .build();
+        });
+    }
+
+    @Override
     public BankResponse getBankByBin(String id) {
         var result = vietQrBankRepository.getBankByBin(id);
         if (result.isPresent()) {

@@ -4,17 +4,20 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.retrade.common.model.dto.request.QueryWrapper;
 import org.retrade.common.model.dto.response.ResponseObject;
+import org.retrade.main.model.constant.IdentityCardTypeEnum;
 import org.retrade.main.model.dto.request.ApproveSellerRequest;
 import org.retrade.main.model.dto.request.SellerRegisterRequest;
 import org.retrade.main.model.dto.request.SellerUpdateRequest;
+import org.retrade.main.model.dto.response.SellerBaseMetricResponse;
 import org.retrade.main.model.dto.response.SellerBaseResponse;
 import org.retrade.main.model.dto.response.SellerRegisterResponse;
-import org.retrade.main.model.dto.response.TopSellersResponse;
 import org.retrade.main.service.FileService;
 import org.retrade.main.service.OrderService;
 import org.retrade.main.service.SellerService;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -143,5 +146,25 @@ public class SellerController {
                 .code("SUCCESS")
                 .messages("ban seller with" + id + " successfully")
                 .build());
+    }
+
+    @GetMapping("{id}/metric")
+    public ResponseEntity<ResponseObject<SellerBaseMetricResponse>> getSellerStats (@PathVariable String id) {
+        var metrics = sellerService.getSellerBaseMetric(id);
+        return ResponseEntity.ok(new ResponseObject.Builder<SellerBaseMetricResponse>()
+                .success(true)
+                .code("SUCCESS")
+                .content(metrics)
+                .messages("Get Seller Stats Successfully")
+                .build());
+    }
+
+    @GetMapping("{id}/id-card")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    public ResponseEntity<byte[]> getSellerIdentityCard(@PathVariable String id, @RequestParam IdentityCardTypeEnum cardType) {
+        var result = fileService.getSellerIdentityCard(id, cardType);
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.parseMediaType(result.mimeType()));
+        return new ResponseEntity<>(result.bytes(), headers, HttpStatus.OK);
     }
 }

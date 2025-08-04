@@ -14,12 +14,12 @@ import org.retrade.common.model.exception.ValidationException;
 import org.retrade.main.model.dto.request.CustomerContactRequest;
 import org.retrade.main.model.dto.request.UpdateCustomerProfileRequest;
 import org.retrade.main.model.dto.request.UpdatePhoneRequest;
+import org.retrade.main.model.dto.response.CustomerBaseMetricResponse;
 import org.retrade.main.model.dto.response.CustomerContactResponse;
 import org.retrade.main.model.dto.response.CustomerResponse;
 import org.retrade.main.model.entity.CustomerContactEntity;
 import org.retrade.main.model.entity.CustomerEntity;
-import org.retrade.main.repository.jpa.CustomerContactRepository;
-import org.retrade.main.repository.jpa.CustomerRepository;
+import org.retrade.main.repository.jpa.*;
 import org.retrade.main.service.CustomerService;
 import org.retrade.main.util.AuthUtils;
 import org.springframework.data.domain.Page;
@@ -28,6 +28,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -38,6 +39,9 @@ import java.util.Map;
 public class CustomerServiceImpl implements CustomerService {
     private final CustomerRepository customerRepository;
     private final CustomerContactRepository customerContactRepository;
+    private final OrderComboRepository orderComboRepository;
+    private final OrderItemRepository orderItemRepository;
+    private final OrderRepository orderRepository;
     private final AuthUtils authUtils;
     private final PasswordEncoder passwordEncoder;
 
@@ -119,6 +123,24 @@ public class CustomerServiceImpl implements CustomerService {
                     .setData(list)
                     .build();
         });
+    }
+
+    @Override
+    public CustomerBaseMetricResponse getCustomerBaseMetric() {
+        var account = authUtils.getUserAccountFromAuthentication();
+        var customer = account.getCustomer();
+        if (customer == null) {
+            throw new ValidationException("Customer profile not found");
+        }
+        var boughtProduct = orderItemRepository.sumQuantityByCustomerId(customer);
+        var orderPlace = orderRepository.countByCustomer(customer);
+        var orderCompleted = orderComboRepository.countCompletedOrdersByCustomer(customer);
+        return CustomerBaseMetricResponse.builder()
+                .boughtItems(boughtProduct)
+                .orderPlace(orderPlace)
+                .orderComplete(orderCompleted)
+                .walletBalance(account.getBalance() != null ? account.getBalance() : BigDecimal.ZERO)
+                .build();
     }
 
     @Override
