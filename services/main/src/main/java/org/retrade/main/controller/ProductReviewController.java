@@ -170,4 +170,15 @@ public class ProductReviewController {
                 .build());
     }
 
+    @GetMapping("product/{productId}/count")
+    public ResponseEntity<ResponseObject<Long>> getProductReviewCount(@PathVariable String productId){
+        Long result = productReviewService.totalReviewByProductId(productId);
+        return ResponseEntity.ok(new ResponseObject.Builder<Long>()
+                .success(true)
+                .code("SUCCESS")
+                .content(result)
+                .messages("Get count review success")
+                .build());
+    }
+
 }

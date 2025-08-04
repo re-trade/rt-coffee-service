@@ -32,4 +32,6 @@ public interface ProductReviewService {
     ReviewStatsResponse getStatsSeller();
 
     PaginationWrapper <List<ProductReviewResponse>> getAllProductReviewsBySellerAndSearch(Double vote,String isReply, QueryWrapper queryWrapper);
+
+    Long totalReviewByProductId(String productId);
 }
