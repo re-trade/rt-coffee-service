@@ -38,6 +38,8 @@ public class SecurityConfig {
                            ).permitAll()
                            .requestMatchers(HttpMethod.GET, "/products/**", "/categories/**", "/payments/**", "/product-histories/**", "/sellers/**")
                            .permitAll()
+                           .requestMatchers(HttpMethod.GET, "/product-review/**").permitAll()
+                           .requestMatchers(HttpMethod.GET, "/product-review/stats", "/product-review/search").authenticated()
                            .anyRequest().authenticated();
                 }).exceptionHandling(exception -> {
                     exception.authenticationEntryPoint(customAuthenticationEntryPoint);

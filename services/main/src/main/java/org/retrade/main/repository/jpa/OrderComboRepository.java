@@ -98,4 +98,6 @@ public interface OrderComboRepository extends BaseJpaRepository<OrderComboEntity
     long countBySellerAndOrderStatus_Code(SellerEntity seller, String code);
 
     long countBySeller(@NonNull SellerEntity seller);
+
+
 }

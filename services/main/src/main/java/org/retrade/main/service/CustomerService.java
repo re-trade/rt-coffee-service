@@ -5,6 +5,7 @@ import org.retrade.common.model.dto.response.PaginationWrapper;
 import org.retrade.main.model.dto.request.CustomerContactRequest;
 import org.retrade.main.model.dto.request.UpdateCustomerProfileRequest;
 import org.retrade.main.model.dto.request.UpdatePhoneRequest;
+import org.retrade.main.model.dto.response.CustomerBaseMetricResponse;
 import org.retrade.main.model.dto.response.CustomerContactResponse;
 import org.retrade.main.model.dto.response.CustomerResponse;
 
@@ -20,6 +21,8 @@ public interface CustomerService {
     void updateUserAvatar(String avatarUrl);
 
     PaginationWrapper<List<CustomerContactResponse>> getCustomerContacts(QueryWrapper queryWrapper);
+
+    CustomerBaseMetricResponse getCustomerBaseMetric();
 
     CustomerContactResponse getCustomerContactById(String id);
 
