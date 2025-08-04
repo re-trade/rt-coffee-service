@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.Set;
 
 @Data
 @Builder
@@ -19,6 +20,7 @@ public class ProductReviewResponse {
     private AuthorBaseResponse author;
     private double vote;
     private Boolean status;
+    private Set<String> images;
     private String orderId;
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createdAt;
