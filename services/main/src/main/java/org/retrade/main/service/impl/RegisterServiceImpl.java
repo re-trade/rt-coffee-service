@@ -38,10 +38,7 @@ public class RegisterServiceImpl implements RegisterService {
     @Override
     @Transactional(rollbackFor = {ActionFailedException.class, Exception.class})
     public CustomerAccountRegisterResponse customerRegister(CustomerAccountRegisterRequest request) {
-        var accountCheck = accountRepository.findByUsername(request.getUsername());
-        if (accountCheck.isPresent()) {
-            throw new ValidationException("Username already exists");
-        }
+        validateCustomerRegisterRequest(request);
         var roleCustomer = roleRepository.findByCode("ROLE_CUSTOMER")
                 .orElseThrow(() -> new ValidationException("Role not found"));
         var customerAccount = AccountEntity.builder()
@@ -77,6 +74,17 @@ public class RegisterServiceImpl implements RegisterService {
             return wrapAccountRegisterResponse(result);
         } catch (Exception ex) {
             throw new ActionFailedException("Failed to register account", ex);
+        }
+    }
+
+    private void validateCustomerRegisterRequest(CustomerAccountRegisterRequest request) {
+        var accountCheck = accountRepository.existsByUsername(request.getUsername());
+        var emailCheck = accountRepository.existsByEmail(request.getEmail());
+        if (accountCheck) {
+            throw new ValidationException("Username already exists");
+        }
+        if (emailCheck) {
+            throw new ValidationException("Email already exists");
         }
     }
 
