@@ -37,4 +37,6 @@ public interface ProductReviewService {
     Long totalReviewByProductId(String productId);
 
     PaginationWrapper <List<ProductOrderNoReview>> getAllProductNoReviewByCustomer(QueryWrapper queryWrapper);
+
+    PaginationWrapper <List<ProductReviewResponse>> getAllProductReviewByCustomer(QueryWrapper queryWrapper);
 }
