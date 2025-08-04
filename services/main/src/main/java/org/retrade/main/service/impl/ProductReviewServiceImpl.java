@@ -273,8 +273,26 @@ public class ProductReviewServiceImpl implements ProductReviewService {
                 .map(this::convertToProductOrderNoReview)
                 .collect(Collectors.toList());
 
+
         return new PaginationWrapper.Builder<List<ProductOrderNoReview>>()
                 .setData(productOrderNoReviews)
+                .build();
+    }
+
+    @Override
+    public PaginationWrapper<List<ProductReviewResponse>> getAllProductReviewByCustomer(QueryWrapper queryWrapper) {
+        var customer = getCustomer();
+        if (customer == null) {
+            throw new ValidationException("Customer not found");
+        }
+        var reviews = productReviewRepository.findProductReviewsByCustomerAndStatusTrue(customer,queryWrapper.pagination());
+        List<ProductReviewResponse> productReviewResponses = reviews.getContent()
+                .stream()
+                .map(this::maptoProductReviewResponse)
+                .toList();
+        return new PaginationWrapper.Builder<List<ProductReviewResponse>>()
+                .setPaginationInfo(reviews)
+                .setData(productReviewResponses)
                 .build();
     }
 

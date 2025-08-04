@@ -198,4 +198,23 @@ public class ProductReviewController {
                 .messages("Get product no review success")
                 .build());
     }
+
+    @GetMapping("my")
+    public ResponseEntity<ResponseObject<List<ProductReviewResponse>>> getAllProductReviewByCustomer(
+            @RequestParam(required = false, name = "q") String search,
+            @PageableDefault(size = 10) Pageable pageable) {
+        var queryWrapper = new QueryWrapper.QueryWrapperBuilder()
+                .search(search)
+                .wrapSort(pageable)
+                .build();
+
+        var result = productReviewService.getAllProductReviewByCustomer(queryWrapper);
+        return ResponseEntity.ok(new ResponseObject.Builder<List<ProductReviewResponse>>()
+                .success(true)
+                .code("SUCCESS")
+                .unwrapPaginationWrapper(result)
+                .messages("Get product no review success")
+                .build());
+    }
+
 }

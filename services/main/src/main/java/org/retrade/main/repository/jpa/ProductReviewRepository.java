@@ -48,19 +48,19 @@ public interface ProductReviewRepository extends BaseJpaRepository<ProductReview
     Double findAverageRatingByProduct(@Param("product") ProductEntity product);
 
     @Query("""
-    SELECT r
-    FROM product_reviews r
-    WHERE r.status = true
-      AND r.vote = :vote
-      AND r.seller = :seller
-""")
+                SELECT r
+                FROM product_reviews r
+                WHERE r.status = true
+                  AND r.vote = :vote
+                  AND r.seller = :seller
+            """)
     Page<ProductReviewEntity> findReviewsBySellerAndStatusIsTrueWithVote(
             @Param("vote") double vote,
             @Param("seller") SellerEntity seller,
             Pageable pageable
     );
 
-//    @Query("""
+    //    @Query("""
 //        SELECT r
 //        FROM product_reviews r
 //        WHERE r.status = true
@@ -74,38 +74,38 @@ public interface ProductReviewRepository extends BaseJpaRepository<ProductReview
 //            @Param("keyword") String keyword,
 //            Pageable pageable
 //    );
-@Query("""
-    SELECT r
-    FROM product_reviews r
-    JOIN r.customer c
-    JOIN r.product p
-    WHERE r.status = true
-      AND r.seller = :seller
-      AND (:vote IS NULL OR r.vote = :vote)
-      AND (
-        :keyword IS NULL OR (
-          LOWER(CAST(r.content AS string)) LIKE LOWER(CONCAT('%', :keyword, '%'))
-          OR LOWER(CAST(r.replyContent AS string)) LIKE LOWER(CONCAT('%', :keyword, '%'))
-          OR LOWER(p.name) LIKE LOWER(CONCAT('%', :keyword, '%'))
-          OR LOWER(c.firstName) LIKE LOWER(CONCAT('%', :keyword, '%'))
-          OR LOWER(c.lastName) LIKE LOWER(CONCAT('%', :keyword, '%'))
-        )
-      )
-""")
-Page<ProductReviewEntity> findProductReviewsBySellerAndKeyword(
-        @Param("vote") Double vote,
-        @Param("seller") SellerEntity seller,
-        @Param("keyword") String keyword,
-        Pageable pageable
-);
+    @Query("""
+                SELECT r
+                FROM product_reviews r
+                JOIN r.customer c
+                JOIN r.product p
+                WHERE r.status = true
+                  AND r.seller = :seller
+                  AND (:vote IS NULL OR r.vote = :vote)
+                  AND (
+                    :keyword IS NULL OR (
+                      LOWER(CAST(r.content AS string)) LIKE LOWER(CONCAT('%', :keyword, '%'))
+                      OR LOWER(CAST(r.replyContent AS string)) LIKE LOWER(CONCAT('%', :keyword, '%'))
+                      OR LOWER(p.name) LIKE LOWER(CONCAT('%', :keyword, '%'))
+                      OR LOWER(c.firstName) LIKE LOWER(CONCAT('%', :keyword, '%'))
+                      OR LOWER(c.lastName) LIKE LOWER(CONCAT('%', :keyword, '%'))
+                    )
+                  )
+            """)
+    Page<ProductReviewEntity> findProductReviewsBySellerAndKeyword(
+            @Param("vote") Double vote,
+            @Param("seller") SellerEntity seller,
+            @Param("keyword") String keyword,
+            Pageable pageable
+    );
 
-
+    Page<ProductReviewEntity> findProductReviewsByCustomerAndStatusTrue(CustomerEntity customer, Pageable pageable);
 
     @Query("""
-    SELECT COUNT(r)
-    FROM product_reviews r
-    WHERE r.status = true AND r.seller = :seller
-""")
+                SELECT COUNT(r)
+                FROM product_reviews r
+                WHERE r.status = true AND r.seller = :seller
+            """)
     long countTotalReviews(@Param("seller") SellerEntity seller);
 
     @Query("""
@@ -119,13 +119,13 @@ Page<ProductReviewEntity> findProductReviewsBySellerAndKeyword(
     long countRepliedReviews(@Param("seller") SellerEntity seller);
 
     @Query("""
-    SELECT r.vote, COUNT(r)
-    FROM product_reviews r
-    WHERE r.status = true AND r.seller = :seller
-    GROUP BY r.vote
-    HAVING r.vote BETWEEN 1 AND 5
-    ORDER BY r.vote DESC
-""")
+                SELECT r.vote, COUNT(r)
+                FROM product_reviews r
+                WHERE r.status = true AND r.seller = :seller
+                GROUP BY r.vote
+                HAVING r.vote BETWEEN 1 AND 5
+                ORDER BY r.vote DESC
+            """)
     List<Object[]> getRatingDistribution(@Param("seller") SellerEntity seller);
 
 
