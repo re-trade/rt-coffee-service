@@ -17,7 +17,7 @@ public class CustomerContactEntity extends BaseSQLEntity {
     private String phone;
     @Column(name = "state", length = 50, nullable = false)
     private String state;
-    @Column(name = "country", length = 20, nullable = false)
+    @Column(name = "country", length = 50, nullable = false)
     private String country;
     @Column(name = "district", length = 50, nullable = false)
     private String district;
