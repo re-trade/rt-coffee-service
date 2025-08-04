@@ -33,6 +33,7 @@ import java.util.stream.IntStream;
 @RequiredArgsConstructor
 public class ProductReviewServiceImpl implements ProductReviewService {
 
+
     private final ProductReviewRepository productReviewRepository;
     private final AuthUtils authUtils;
     private final ProductRepository productRepository;
@@ -227,6 +228,14 @@ public class ProductReviewServiceImpl implements ProductReviewService {
                 .product(product)
                 .reply(reply)
                 .build();
+    }
+
+    @Override
+    public Long totalReviewByProductId(String productId) {
+        ProductEntity productEntity = productRepository.findById(productId).orElseThrow(
+                () -> new ValidationException("Product not found")
+        );
+        return productReviewRepository.countByProductAndStatusTrue(productEntity);
     }
 
     @Override

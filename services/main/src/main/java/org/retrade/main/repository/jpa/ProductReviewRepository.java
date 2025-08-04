@@ -128,4 +128,7 @@ Page<ProductReviewEntity> findProductReviewsBySellerAndKeyword(
 """)
     List<Object[]> getRatingDistribution(@Param("seller") SellerEntity seller);
 
+
+    long countByProductAndStatusTrue(ProductEntity product);
+
 }
