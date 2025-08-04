@@ -5,6 +5,7 @@ import org.retrade.common.model.dto.request.QueryWrapper;
 import org.retrade.common.model.dto.response.ResponseObject;
 import org.retrade.main.model.dto.request.CreateProductReviewRequest;
 import org.retrade.main.model.dto.request.UpdateProductReviewRequest;
+import org.retrade.main.model.dto.response.ProductOrderNoReview;
 import org.retrade.main.model.dto.response.ProductReviewResponse;
 import org.retrade.main.model.dto.response.ReviewStatsResponse;
 import org.retrade.main.service.ProductReviewService;
@@ -180,5 +181,21 @@ public class ProductReviewController {
                 .messages("Get count review success")
                 .build());
     }
+    @GetMapping("no-review")
+    public ResponseEntity<ResponseObject<List<ProductOrderNoReview>>> getAllProductNoReviewByCustomer(
+            @RequestParam(required = false, name = "q") String search,
+            @PageableDefault(size = 10) Pageable pageable) {
+        var queryWrapper = new QueryWrapper.QueryWrapperBuilder()
+                .search(search)
+                .wrapSort(pageable)
+                .build();
 
+        var result = productReviewService.getAllProductNoReviewByCustomer(queryWrapper);
+        return ResponseEntity.ok(new ResponseObject.Builder<List<ProductOrderNoReview>>()
+                .success(true)
+                .code("SUCCESS")
+                .unwrapPaginationWrapper(result)
+                .messages("Get product no review success")
+                .build());
+    }
 }

@@ -8,14 +8,12 @@ import org.retrade.common.model.dto.request.QueryWrapper;
 import org.retrade.common.model.dto.response.PaginationWrapper;
 import org.retrade.common.model.exception.ActionFailedException;
 import org.retrade.common.model.exception.ValidationException;
+import org.retrade.main.model.constant.OrderStatusCodes;
 import org.retrade.main.model.dto.request.CreateProductReviewRequest;
 import org.retrade.main.model.dto.request.UpdateProductReviewRequest;
 import org.retrade.main.model.dto.response.*;
 import org.retrade.main.model.entity.*;
-import org.retrade.main.repository.jpa.OrderComboRepository;
-import org.retrade.main.repository.jpa.ProductRepository;
-import org.retrade.main.repository.jpa.ProductReviewRepository;
-import org.retrade.main.repository.jpa.SellerRepository;
+import org.retrade.main.repository.jpa.*;
 import org.retrade.main.service.ProductReviewService;
 import org.retrade.main.util.AuthUtils;
 import org.springframework.data.domain.Page;
@@ -39,6 +37,7 @@ public class ProductReviewServiceImpl implements ProductReviewService {
     private final ProductRepository productRepository;
     private final OrderComboRepository orderComboRepository;
     private final SellerRepository sellerRepository;
+    private final OrderItemRepository orderItemRepository;
     private LocalDateTime lastSyncTime = LocalDateTime.now().minusDays(1);
 
     @Override
@@ -237,6 +236,93 @@ public class ProductReviewServiceImpl implements ProductReviewService {
                 () -> new ValidationException("Product not found")
         );
         return productReviewRepository.countByProductAndStatusTrue(productEntity);
+    }
+
+    @Override
+    public PaginationWrapper<List<ProductOrderNoReview>> getAllProductNoReviewByCustomer(QueryWrapper queryWrapper) {
+        var customer = getCustomer();
+        if (customer == null) {
+            throw new ValidationException("Customer not found");
+        }
+
+        // Thực hiện truy vấn với OrderItemRepository
+        Page<OrderItemEntity> pageResult = orderItemRepository.query(queryWrapper, (param) -> (root, query, criteriaBuilder) -> {
+            List<Predicate> predicates = new ArrayList<>();
+
+            // JOIN từ OrderItemEntity sang các bảng liên quan
+            var orderJoin = root.join("order", JoinType.INNER);
+            var customerJoin = orderJoin.join("customer", JoinType.INNER);
+            var orderComboJoin = root.join("orderCombo", JoinType.INNER);
+            var orderStatusJoin = orderComboJoin.join("orderStatus", JoinType.INNER);
+            var productJoin = root.join("product", JoinType.INNER);
+            var reviewJoin = productJoin.join("productReviews", JoinType.LEFT);
+
+            predicates.add(criteriaBuilder.equal(customerJoin.get("id"), customer.getId()));
+
+            predicates.add(criteriaBuilder.equal(orderStatusJoin.get("code"), OrderStatusCodes.COMPLETED));
+
+            predicates.add(criteriaBuilder.isNull(reviewJoin.get("id")));
+            predicates.add(criteriaBuilder.equal(reviewJoin.get("customer"), customer.getId()));
+
+            query.distinct(true);
+
+            return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
+        });
+
+        List<ProductOrderNoReview> productOrderNoReviews = pageResult.getContent().stream()
+                .map(this::convertToProductOrderNoReview)
+                .collect(Collectors.toList());
+
+        return new PaginationWrapper.Builder<List<ProductOrderNoReview>>()
+                .setData(productOrderNoReviews)
+                .build();
+    }
+
+    // Phương thức chuyển đổi từ OrderItemEntity sang ProductOrderNoReview
+    private ProductOrderNoReview convertToProductOrderNoReview(OrderItemEntity entity) {
+        ProductOrderNoReview result = new ProductOrderNoReview();
+        result.setProduct(mapToProductResponse(entity.getProduct()));
+        result.setOrderDate(entity.getCreatedDate().toLocalDateTime());
+        result.setOrderId(entity.getOrder().getId());
+        result.setOrderComboId(entity.getOrderCombo().getId());
+        return result;
+    }
+    private ProductResponse mapToProductResponse(ProductEntity product) {
+        var brand = product.getBrand();
+        return ProductResponse.builder()
+                .id(product.getId())
+                .name(product.getName())
+                .sellerId(product.getSeller().getId())
+                .sellerShopName(product.getSeller().getShopName())
+                .shortDescription(product.getShortDescription())
+                .description(product.getDescription())
+                .thumbnail(product.getThumbnail())
+                .productImages(product.getProductImages())
+                .brand(brand != null ? brand.getName() : "N/A")
+                .brandId(brand != null ? brand.getId() : null)
+                .quantity(product.getQuantity())
+                .warrantyExpiryDate(product.getWarrantyExpiryDate())
+                .condition(product.getCondition())
+                .status(product.getStatus())
+                .model(product.getModel())
+                .currentPrice(product.getCurrentPrice())
+                .categories(covertCategoryEntitiesToCategories(product.getCategories()))
+                .tags(product.getTags())
+                .verified(product.getVerified())
+                .createdAt(product.getCreatedDate() != null ? product.getCreatedDate().toLocalDateTime() : null)
+                .updatedAt(product.getUpdatedDate() != null ? product.getUpdatedDate().toLocalDateTime() : null)
+                .avgVote(Optional.ofNullable(product.getAvgVote()).orElse(0.0))
+                .build();
+    }
+
+    private List<CategoryBaseResponse> covertCategoryEntitiesToCategories(Set<CategoryEntity> categoryEntities) {
+        if (categoryEntities == null || categoryEntities.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        return categoryEntities.stream()
+                .map(cat -> new CategoryBaseResponse(cat.getId(), cat.getName()))
+                .collect(Collectors.toList());
     }
 
     @Override
