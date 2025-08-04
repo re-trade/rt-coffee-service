@@ -161,7 +161,7 @@ public class SellerController {
 
     @GetMapping("{id}/id-card")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
-    public ResponseEntity<byte[]> getWithdrawQrByWithdrawId(@PathVariable String id, @RequestParam IdentityCardTypeEnum cardType) {
+    public ResponseEntity<byte[]> getSellerIdentityCard(@PathVariable String id, @RequestParam IdentityCardTypeEnum cardType) {
         var result = fileService.getSellerIdentityCard(id, cardType);
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.parseMediaType(result.mimeType()));
