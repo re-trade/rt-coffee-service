@@ -19,10 +19,7 @@ import org.retrade.main.model.dto.response.CustomerContactResponse;
 import org.retrade.main.model.dto.response.CustomerResponse;
 import org.retrade.main.model.entity.CustomerContactEntity;
 import org.retrade.main.model.entity.CustomerEntity;
-import org.retrade.main.repository.jpa.CustomerContactRepository;
-import org.retrade.main.repository.jpa.CustomerRepository;
-import org.retrade.main.repository.jpa.OrderComboRepository;
-import org.retrade.main.repository.jpa.OrderItemRepository;
+import org.retrade.main.repository.jpa.*;
 import org.retrade.main.service.CustomerService;
 import org.retrade.main.util.AuthUtils;
 import org.springframework.data.domain.Page;
@@ -44,6 +41,7 @@ public class CustomerServiceImpl implements CustomerService {
     private final CustomerContactRepository customerContactRepository;
     private final OrderComboRepository orderComboRepository;
     private final OrderItemRepository orderItemRepository;
+    private final OrderRepository orderRepository;
     private final AuthUtils authUtils;
     private final PasswordEncoder passwordEncoder;
 
@@ -134,10 +132,13 @@ public class CustomerServiceImpl implements CustomerService {
         if (customer == null) {
             throw new ValidationException("Customer profile not found");
         }
+        var boughtProduct = orderItemRepository.sumQuantityByCustomerId(customer);
+        var orderPlace = orderRepository.countByCustomer(customer);
+        var orderCompleted = orderComboRepository.countCompletedOrdersByCustomer(customer);
         return CustomerBaseMetricResponse.builder()
-                .soldProduct(0L)
-                .orderPlace(0L)
-                .orderComplete(0L)
+                .boughtItems(boughtProduct)
+                .orderPlace(orderPlace)
+                .orderComplete(orderCompleted)
                 .walletBalance(account.getBalance() != null ? account.getBalance() : BigDecimal.ZERO)
                 .build();
     }

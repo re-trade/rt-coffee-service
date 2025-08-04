@@ -11,6 +11,7 @@ import org.retrade.main.model.dto.request.CustomerBankInfoRequest;
 import org.retrade.main.model.dto.request.UpdateCustomerProfileRequest;
 import org.retrade.main.model.dto.request.UpdatePhoneRequest;
 import org.retrade.main.model.dto.response.CustomerBankInfoResponse;
+import org.retrade.main.model.dto.response.CustomerBaseMetricResponse;
 import org.retrade.main.model.dto.response.CustomerResponse;
 import org.retrade.main.service.AccountService;
 import org.retrade.main.service.CustomerBankInfoService;
@@ -187,6 +188,17 @@ public class CustomerController {
                 .success(true)
                 .content(result)
                 .messages("Customer bank info deleted successfully")
+                .build());
+    }
+
+    @GetMapping("metric")
+    public ResponseEntity<ResponseObject<CustomerBaseMetricResponse>> getCustomerBaseMetric() {
+        var result = customerService.getCustomerBaseMetric();
+        return ResponseEntity.ok(new ResponseObject.Builder<CustomerBaseMetricResponse>()
+                .code("SUCCESS")
+                .success(true)
+                .content(result)
+                .messages("Customer metric info retrieved successfully")
                 .build());
     }
 }

@@ -99,5 +99,11 @@ public interface OrderComboRepository extends BaseJpaRepository<OrderComboEntity
 
     long countBySeller(@NonNull SellerEntity seller);
 
+    @Query("""
+        SELECT COUNT(oc) FROM order_combos oc
+        WHERE oc.orderDestination.order.customer = :customer
+        AND oc.orderStatus.code = 'COMPLETED'
+    """)
+    Long countCompletedOrdersByCustomer(@Param("customer") CustomerEntity customer);
 
 }

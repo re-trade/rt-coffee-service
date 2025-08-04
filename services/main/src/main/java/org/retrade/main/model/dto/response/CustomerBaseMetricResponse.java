@@ -12,7 +12,7 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 @Builder
 public class CustomerBaseMetricResponse {
-    private Long soldProduct;
+    private Long boughtItems;
     private Long orderPlace;
     private Long orderComplete;
     private BigDecimal walletBalance;
