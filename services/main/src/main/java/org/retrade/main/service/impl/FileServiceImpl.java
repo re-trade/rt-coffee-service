@@ -72,7 +72,7 @@ public class FileServiceImpl implements FileService {
             byte[] buffer = inputStream.readAllBytes();
             String mimeType = Files.probeContentType(file.toPath());
             if (mimeType == null) {
-                mimeType = "application/octet-stream";
+                mimeType = "image/jpeg";
             }
             return new DecodedFile(buffer, mimeType);
         } catch (IOException e) {
