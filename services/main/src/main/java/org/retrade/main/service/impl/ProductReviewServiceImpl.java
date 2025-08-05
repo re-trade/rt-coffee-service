@@ -249,7 +249,6 @@ public class ProductReviewServiceImpl implements ProductReviewService {
         Page<OrderItemEntity> pageResult = orderItemRepository.query(queryWrapper, (param) -> (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
 
-            // JOIN từ OrderItemEntity sang các bảng liên quan
             var orderJoin = root.join("order", JoinType.INNER);
             var customerJoin = orderJoin.join("customer", JoinType.INNER);
             var orderComboJoin = root.join("orderCombo", JoinType.INNER);
@@ -259,14 +258,14 @@ public class ProductReviewServiceImpl implements ProductReviewService {
             predicates.add(criteriaBuilder.equal(customerJoin.get("id"), customer.getId()));
             predicates.add(criteriaBuilder.equal(orderStatusJoin.get("code"), OrderStatusCodes.COMPLETED));
 
-            // Subquery kiểm tra xem có đánh giá nào cho OrderItemEntity cụ thể không
+            // Subquery kiểm tra xem có đánh giá nào cho cặp product và orderCombo không
             Subquery<ProductReviewEntity> reviewSubquery = query.subquery(ProductReviewEntity.class);
             Root<ProductReviewEntity> reviewRoot = reviewSubquery.from(ProductReviewEntity.class);
             reviewSubquery.select(reviewRoot);
             reviewSubquery.where(
                     criteriaBuilder.equal(reviewRoot.get("product"), productJoin),
                     criteriaBuilder.equal(reviewRoot.get("customer").get("id"), customer.getId()),
-                    criteriaBuilder.equal(reviewRoot.get("orderItem"), root) // Giả định ProductReviewEntity có tham chiếu đến OrderItemEntity
+                    criteriaBuilder.equal(reviewRoot.get("orderCombo"), orderComboJoin) // Sử dụng orderCombo thay vì orderItem
             );
             predicates.add(criteriaBuilder.not(criteriaBuilder.exists(reviewSubquery)));
 
