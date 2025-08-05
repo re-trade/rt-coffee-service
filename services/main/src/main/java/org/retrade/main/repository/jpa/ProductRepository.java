@@ -23,7 +23,7 @@ public interface ProductRepository extends BaseJpaRepository<ProductEntity, Stri
     @Query("SELECT p FROM products p JOIN p.categories c WHERE c.name = :categoryName")
     Page<ProductEntity> findByCategoryName(@Param("categoryName") String categoryName, Pageable pageable);
 
-    @Query("SELECT AVG(p.avgVote) FROM products p WHERE p.verified = true AND p.seller = :seller")
+    @Query("SELECT COALESCE(AVG(p.avgVote), 0) FROM products p WHERE p.verified = true AND p.seller = :seller")
     Double getAverageVote(@Param("seller") SellerEntity seller);
 
     @Query("SELECT oi.product FROM order_items oi WHERE oi.order = :order")
