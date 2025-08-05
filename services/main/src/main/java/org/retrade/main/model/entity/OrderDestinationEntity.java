@@ -18,13 +18,13 @@ public class OrderDestinationEntity extends BaseSQLEntity {
     private String customerName;
     @Column(name = "phone", length = 12, nullable = false)
     private String phone;
-    @Column(name = "state", length = 20)
+    @Column(name = "state", length = 50)
     private String state;
-    @Column(name = "country", length = 20)
+    @Column(name = "country", length = 50)
     private String country;
-    @Column(name = "district", length = 20)
+    @Column(name = "district", length = 50)
     private String district;
-    @Column(name = "ward", length = 20)
+    @Column(name = "ward", length = 50)
     private String ward;
     @Column(name = "address_line", length = 500)
     private String addressLine;
