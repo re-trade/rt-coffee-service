@@ -257,15 +257,16 @@ public class ProductReviewServiceImpl implements ProductReviewService {
             var productJoin = root.join("product", JoinType.INNER);
 
             predicates.add(criteriaBuilder.equal(customerJoin.get("id"), customer.getId()));
-
             predicates.add(criteriaBuilder.equal(orderStatusJoin.get("code"), OrderStatusCodes.COMPLETED));
 
+            // Subquery kiểm tra xem có đánh giá nào cho OrderItemEntity cụ thể không
             Subquery<ProductReviewEntity> reviewSubquery = query.subquery(ProductReviewEntity.class);
             Root<ProductReviewEntity> reviewRoot = reviewSubquery.from(ProductReviewEntity.class);
             reviewSubquery.select(reviewRoot);
             reviewSubquery.where(
                     criteriaBuilder.equal(reviewRoot.get("product"), productJoin),
-                    criteriaBuilder.equal(reviewRoot.get("customer").get("id"), customer.getId())
+                    criteriaBuilder.equal(reviewRoot.get("customer").get("id"), customer.getId()),
+                    criteriaBuilder.equal(reviewRoot.get("orderItem"), root) // Giả định ProductReviewEntity có tham chiếu đến OrderItemEntity
             );
             predicates.add(criteriaBuilder.not(criteriaBuilder.exists(reviewSubquery)));
 
@@ -278,12 +279,11 @@ public class ProductReviewServiceImpl implements ProductReviewService {
                 .map(this::convertToProductOrderNoReview)
                 .collect(Collectors.toList());
 
-
         return new PaginationWrapper.Builder<List<ProductOrderNoReview>>()
                 .setData(productOrderNoReviews)
+                .setPaginationInfo(pageResult)
                 .build();
     }
-
     @Override
     public PaginationWrapper<List<ProductReviewResponse>> getAllProductReviewByCustomer(QueryWrapper queryWrapper) {
         var customer = getCustomer();
