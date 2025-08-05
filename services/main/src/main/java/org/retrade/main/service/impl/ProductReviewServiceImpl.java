@@ -67,6 +67,7 @@ public class ProductReviewServiceImpl implements ProductReviewService {
         }
         SellerEntity sellerEntity = productEntity.getSeller();
         ProductReviewEntity productReviewEntity = new ProductReviewEntity();
+        productReviewEntity.setOrderCombo(orderComboEntity);
         productReviewEntity.setCustomer(customer);
         productReviewEntity.setProduct(productEntity);
         productReviewEntity.setSeller(sellerEntity);
