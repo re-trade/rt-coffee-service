@@ -250,20 +250,7 @@ public class ProductServiceImpl implements ProductService {
         QueryFieldWrapper keyword = search.remove("keyword");
         return productRepository.query(queryWrapper, (param) -> (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
-            if (keyword != null) {
-                Set<String> searchHitIds = getElasticSearchIds(keyword, queryWrapper.pagination());
-                if (searchHitIds.isEmpty()) {
-                    predicates.add(criteriaBuilder.disjunction());
-                } else {
-                    predicates.add(root.get("id").in(searchHitIds));
-                }
-            }
-            if (param != null && !param.isEmpty()) {
-                Predicate[] advanceFilterPredicates = getAdvanceFilterPredicate(param, root, criteriaBuilder);
-                Predicate[] defaultPredicates = productRepository.createDefaultPredicate(criteriaBuilder, root, param);
-                predicates.addAll(Arrays.asList(defaultPredicates));
-                predicates.addAll(Arrays.asList(advanceFilterPredicates));
-            }
+            applyProductSearchFilters(predicates, keyword, queryWrapper.pagination(), criteriaBuilder, param, root);
             return predicates.isEmpty() ?
                     criteriaBuilder.conjunction() :
                     criteriaBuilder.and(predicates.toArray(new Predicate[0]));
@@ -832,10 +819,13 @@ public class ProductServiceImpl implements ProductService {
     }
 
     private PaginationWrapper<List<ProductResponse>> getProductsBySeller(SellerEntity seller, QueryWrapper queryWrapper) {
+        var search = queryWrapper.search();
+        QueryFieldWrapper keyword = search.remove("keyword");
         return productRepository.query(queryWrapper, (param) -> (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
+            applyProductSearchFilters(predicates, keyword, queryWrapper.pagination(), criteriaBuilder, param, root);
             predicates.add(criteriaBuilder.equal(root.get("seller"), seller));
-            return getPredicate(param, root, criteriaBuilder, predicates);
+            return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
         }, (items) -> {
             var list = items.map(this::mapToProductResponse).stream().toList();
             return new PaginationWrapper.Builder<List<ProductResponse>>()
@@ -843,6 +833,29 @@ public class ProductServiceImpl implements ProductService {
                     .setData(list)
                     .build();
         });
+    }
+
+    private void applyProductSearchFilters (
+            List<Predicate> predicates,
+            QueryFieldWrapper keyword,
+            Pageable pageable,
+            CriteriaBuilder criteriaBuilder,
+            Map<String, QueryFieldWrapper> param,
+            Root<ProductEntity> root) {
+        if (keyword != null) {
+            Set<String> searchHitIds = getElasticSearchIds(keyword, pageable);
+            if (searchHitIds.isEmpty()) {
+                predicates.add(criteriaBuilder.disjunction());
+            } else {
+                predicates.add(root.get("id").in(searchHitIds));
+            }
+        }
+        if (param != null && !param.isEmpty()) {
+            Predicate[] advanceFilterPredicates = getAdvanceFilterPredicate(param, root, criteriaBuilder);
+            Predicate[] defaultPredicates = productRepository.createDefaultPredicate(criteriaBuilder, root, param);
+            predicates.addAll(Arrays.asList(defaultPredicates));
+            predicates.addAll(Arrays.asList(advanceFilterPredicates));
+        }
     }
 
     private void saveProductDocument(ProductEntity productEntity, String id) {
