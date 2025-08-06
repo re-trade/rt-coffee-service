@@ -336,61 +336,28 @@ public class ProductServiceImpl implements ProductService {
     @Override
     public FieldAdvanceSearch filedAdvanceSearch(QueryWrapper queryWrapper) {
         QueryFieldWrapper keyword = queryWrapper.search().remove("keyword");
+        var keywordValue = keyword != null ? keyword.getValue().toString() : "";
+        var elasticQuery = elasticSearchKeywordQueryBuild(keywordValue);
+        AggregationsContainer<?> aggregations = aggregateFilterFields(elasticQuery);
+        return getFieldAdvanceSearch(aggregations);
+    }
 
-        if (keyword == null) {
-            return FieldAdvanceSearch.builder()
-                    .brands(Collections.emptySet())
-                    .states(Collections.emptySet())
-                    .sellers(Collections.emptySet())
-                    .minPrice(BigDecimal.ZERO)
-                    .maxPrice(BigDecimal.ZERO)
-                    .categoriesAdvanceSearch(Collections.emptyList())
-                    .build();
+    @Override
+    public FieldAdvanceSearch sellerFiledAdvanceSearch(QueryWrapper queryWrapper) {
+        var account = authUtils.getUserAccountFromAuthentication();
+        if (account.getSeller() == null) {
+            throw new ValidationException("Seller profile not found");
         }
 
-        AggregationsContainer<?> aggregations = aggregateFilterFields(keyword.getValue().toString());
+        var seller = account.getSeller();
 
-        Set<String> brandIds = extractBucketKeys(aggregations, "brandIds");
-        Set<String> sellerIds = extractBucketKeys(aggregations, "sellerIds");
-        Set<String> categoryIds = extractNestedBucketKeys(
-                aggregations,
-                "categoryIds",
-                "ids"
-        );
+        QueryFieldWrapper keyword = queryWrapper.search().remove("keyword");
 
-        Set<String> states = extractBucketKeys(aggregations, "states");
+        var elasticQuery = elasticSearchSellerIdAndKeywordQueryBuild(keyword != null ? keyword.getValue().toString() : "", seller.getId());
 
-        BigDecimal minPrice = extractMin(aggregations, "minPrice");
-        BigDecimal maxPrice = extractMax(aggregations, "maxPrice");
+        AggregationsContainer<?> aggregations = aggregateFilterFields(elasticQuery);
 
-        Set<BrandResponse> brands = brandRepository.findAllById(brandIds).stream()
-                .map(b -> BrandResponse.builder()
-                        .id(b.getId())
-                        .name(b.getName())
-                        .imgUrl(b.getImgUrl())
-                        .build())
-                .collect(Collectors.toSet());
-
-        Set<SellerFilterResponse> sellers = sellerRepository.findAllById(sellerIds).stream()
-                .map(s -> SellerFilterResponse.builder()
-                        .sellerId(s.getId())
-                        .sellerName(s.getShopName())
-                        .sellerAvatarUrl(s.getAvatarUrl())
-                        .build())
-                .collect(Collectors.toSet());
-
-        List<CategoriesAdvanceSearch> categories = categoryRepository.findAllById(categoryIds).stream()
-                .map(c -> new CategoriesAdvanceSearch(c.getId(), c.getName()))
-                .toList();
-
-        return FieldAdvanceSearch.builder()
-                .brands(brands)
-                .sellers(sellers)
-                .states(states)
-                .minPrice(minPrice)
-                .maxPrice(maxPrice)
-                .categoriesAdvanceSearch(categories)
-                .build();
+        return getFieldAdvanceSearch(aggregations);
     }
 
     @Override
@@ -524,8 +491,6 @@ public class ProductServiceImpl implements ProductService {
         return BigDecimal.ZERO;
     }
 
-
-
     private ProductEntity getProductEntityById(String id) {
         return productRepository.findById(id)
                 .orElseThrow(() -> new ValidationException("Product not found with id: " + id));
@@ -641,9 +606,9 @@ public class ProductServiceImpl implements ProductService {
         return elasticsearchOperations.search(nativeQuery, ProductDocument.class);
     }
 
-    private AggregationsContainer<?> aggregateFilterFields(String keyword) {
+    private AggregationsContainer<?> aggregateFilterFields(Query elasticQuery) {
         NativeQuery query = NativeQuery.builder()
-                .withQuery(elasticSearchKeywordQueryBuild(keyword))
+                .withQuery(elasticQuery)
 
                 .withAggregation("brandIds", Aggregation.of(a -> a
                         .terms(t -> t.field("brandId").size(50))))
@@ -669,10 +634,116 @@ public class ProductServiceImpl implements ProductService {
         return elasticsearchOperations.search(query, ProductDocument.class).getAggregations();
     }
 
+    private FieldAdvanceSearch getFieldAdvanceSearch(AggregationsContainer<?> aggregations) {
+        Set<String> brandIds = extractBucketKeys(aggregations, "brandIds");
+        Set<String> sellerIds = extractBucketKeys(aggregations, "sellerIds");
+        Set<String> categoryIds = extractNestedBucketKeys(
+                aggregations,
+                "categoryIds",
+                "ids"
+        );
+
+        Set<String> states = extractBucketKeys(aggregations, "states");
+
+        BigDecimal minPrice = extractMin(aggregations, "minPrice");
+        BigDecimal maxPrice = extractMax(aggregations, "maxPrice");
+
+        Set<BrandResponse> brands = brandRepository.findAllById(brandIds).stream()
+                .map(b -> BrandResponse.builder()
+                        .id(b.getId())
+                        .name(b.getName())
+                        .imgUrl(b.getImgUrl())
+                        .build())
+                .collect(Collectors.toSet());
+
+        Set<SellerFilterResponse> sellers = sellerRepository.findAllById(sellerIds).stream()
+                .map(s -> SellerFilterResponse.builder()
+                        .sellerId(s.getId())
+                        .sellerName(s.getShopName())
+                        .sellerAvatarUrl(s.getAvatarUrl())
+                        .build())
+                .collect(Collectors.toSet());
+
+        List<CategoriesAdvanceSearch> categories = categoryRepository.findAllById(categoryIds).stream()
+                .map(c -> new CategoriesAdvanceSearch(c.getId(), c.getName()))
+                .toList();
+
+        return FieldAdvanceSearch.builder()
+                .brands(brands)
+                .sellers(sellers)
+                .states(states)
+                .minPrice(minPrice)
+                .maxPrice(maxPrice)
+                .categoriesAdvanceSearch(categories)
+                .build();
+    }
+
     private Query elasticSearchKeywordQueryBuild(String keyword) {
+        if (keyword == null || keyword.isBlank()) {
+            return Query.of(q -> q.matchAll(ma -> ma));
+        }
+
         boolean isMultiWord = keyword.contains(" ");
 
         return Query.of(q -> q.bool(b -> b
+                .should(s -> s.matchPhrase(mp -> mp
+                        .field("name")
+                        .query(keyword)
+                        .boost(10.0f)
+                ))
+                .should(s -> s.matchPhrase(mp -> mp
+                        .field("shortDescription")
+                        .query(keyword)
+                        .boost(5.0f)
+                ))
+                .should(s -> s.matchPhrase(mp -> mp
+                        .field("description")
+                        .query(keyword)
+                        .boost(3.0f)
+                ))
+                .should(s -> s.multiMatch(m -> m
+                        .fields("name^5", "shortDescription^3", "description")
+                        .query(keyword)
+                        .type(TextQueryType.BestFields)
+                        .fuzziness(isMultiWord ? null : "1")
+                        .prefixLength(1)
+                ))
+                .should(s -> s.match(m -> m
+                        .field("brand")
+                        .query(keyword)
+                        .boost(3.0f)
+                ))
+                .should(s -> s.match(m -> m
+                        .field("model")
+                        .query(keyword)
+                        .boost(2.0f)
+                ))
+                .should(s -> s.nested(n -> n
+                        .path("categories")
+                        .query(nq -> nq
+                                .match(m -> m.field("categories.name").query(keyword))
+                        )
+                )).should(s -> s.multiMatch(m -> m
+                        .fields("name^4", "brand^2")
+                        .query(keyword)
+                        .type(TextQueryType.CrossFields)
+                        .operator(Operator.And)
+                ))
+                .minimumShouldMatch("2")
+        ));
+    }
+
+    private Query elasticSearchSellerIdAndKeywordQueryBuild(String keyword, String sellerId) {
+        if (keyword == null || keyword.trim().isBlank()) {
+            return Query.of(q -> q
+                    .bool(b -> b
+                            .filter(s -> s.term(t -> t.field("sellerId").value(sellerId)))
+                    )
+            );
+        }
+        boolean isMultiWord = keyword.contains(" ");
+        return Query.of(q -> q.bool(b -> b
+                .filter(s -> s.term(t -> t.field("sellerId").value(sellerId)))
                 .should(s -> s.matchPhrase(mp -> mp
                         .field("name")
                         .query(keyword)

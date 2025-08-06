@@ -15,4 +15,6 @@ public interface DashboardService {
     List<RecentOrderResponse> getRecentOrders(int limit);
 
     List<TopSellingProductResponse> getBestSellerProducts();
+
+    SellerProductBaseMetricResponse getSellerProductMetric();
 }

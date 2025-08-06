@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.retrade.common.model.exception.ValidationException;
 import org.retrade.main.model.constant.DashboardMetricCodes;
 import org.retrade.main.model.constant.OrderStatusCodes;
+import org.retrade.main.model.constant.ProductStatusEnum;
 import org.retrade.main.model.dto.response.*;
 import org.retrade.main.model.projection.RevenueMonthProjection;
 import org.retrade.main.repository.jpa.OrderComboRepository;
@@ -163,6 +164,25 @@ public class DashboardServiceImpl implements DashboardService {
                 .quantitySold(item.getQuantitySold())
                 .revenue(item.getRevenue())
                 .build()).toList();
+    }
+
+    @Override
+    public SellerProductBaseMetricResponse getSellerProductMetric() {
+        var account = authUtils.getUserAccountFromAuthentication();
+        if (account.getSeller() == null) {
+            throw new ValidationException("Seller is not found");
+        }
+        var seller = account.getSeller();
+        var totalPrice = productRepository.calculateTotalProductPriceBySeller(seller);
+        var productApprove = productRepository.countBySellerAndVerifiedTrue(seller);
+        var productActive = productRepository.countBySellerAndStatus(seller, ProductStatusEnum.ACTIVE);
+        var countProduct = productRepository.countBySeller(seller);
+        return SellerProductBaseMetricResponse.builder()
+                .productActivate(productActive)
+                .productApprove(productApprove)
+                .totalPrice(totalPrice)
+                .productQuantity(countProduct)
+                .build();
     }
 
 }

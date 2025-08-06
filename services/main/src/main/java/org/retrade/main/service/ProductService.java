@@ -41,6 +41,8 @@ public interface ProductService {
 
     FieldAdvanceSearch filedAdvanceSearch(QueryWrapper queryWrapper);
 
+    FieldAdvanceSearch sellerFiledAdvanceSearch(QueryWrapper queryWrapper);
+
     PaginationWrapper<List<ProductResponse>> searchProductBestSelling(QueryWrapper queryWrapper);
 
     ProductHomeStatsResponse getStatsHome();

@@ -79,4 +79,15 @@ public class DashboardController {
                 .build());
     }
 
+    @GetMapping("seller/product/metric")
+    public ResponseEntity<ResponseObject<SellerProductBaseMetricResponse>> getSellerProductMetric() {
+        var result = dashboardService.getSellerProductMetric();
+        return ResponseEntity.ok(new ResponseObject.Builder<SellerProductBaseMetricResponse>()
+                .success(true)
+                .code("SELLER_DASHBOARD_RETRIEVED")
+                .content(result)
+                .messages("Seller Dashboard retrieved successfully")
+                .build());
+    }
+
 }
