@@ -185,4 +185,24 @@ public class DashboardServiceImpl implements DashboardService {
                 .build();
     }
 
+    @Override
+    public SellerOrderBaseMetricResponse getSellerOrderMetric() {
+        var account = authUtils.getUserAccountFromAuthentication();
+        if (account.getSeller() == null) {
+            throw new ValidationException("Seller is not found");
+        }
+        var seller = account.getSeller();
+        var orderStatus = orderStatusRepository.findByCode(OrderStatusCodes.COMPLETED).orElseThrow(() -> new ValidationException("Order status not found"));
+        var totalOrder = orderComboRepository.countBySeller(seller);
+        var orderCompleted = orderComboRepository.countBySellerAndOrderStatus_Code(seller, OrderStatusCodes.COMPLETED);
+        var orderCancel = orderComboRepository.countBySellerAndOrderStatus_Code(seller, OrderStatusCodes.CANCELLED);
+        var totalReceive = orderComboRepository.getTotalGrandPriceBySellerAndStatus(seller, orderStatus);
+        return SellerOrderBaseMetricResponse.builder()
+                .orderCompleted(orderCompleted)
+                .orderCancelled(orderCancel)
+                .totalPaymentReceived(totalReceive)
+                .totalOrder(totalOrder)
+                .build();
+    }
+
 }

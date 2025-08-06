@@ -17,4 +17,6 @@ public interface DashboardService {
     List<TopSellingProductResponse> getBestSellerProducts();
 
     SellerProductBaseMetricResponse getSellerProductMetric();
+
+    SellerOrderBaseMetricResponse getSellerOrderMetric();
 }
