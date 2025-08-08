@@ -7,11 +7,13 @@ import org.retrade.main.model.entity.ProductEntity;
 import org.retrade.main.model.entity.SellerEntity;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
 
@@ -126,6 +128,23 @@ public interface ProductRepository extends BaseJpaRepository<ProductEntity, Stri
     long countBySeller(@NonNull SellerEntity seller);
 
     long countBySellerAndStatus(@NonNull SellerEntity seller, @NonNull ProductStatusEnum status);
+
+
+    @Modifying
+    @Query("""
+        UPDATE products p
+            SET p.avgVote = (
+                SELECT COALESCE(AVG(r.vote), 0)
+                FROM product_reviews r
+                WHERE r.product = p AND r.updatedDate > :lastSync
+            )
+        WHERE p.id IN (
+            SELECT DISTINCT r.product.id
+            FROM product_reviews r
+            WHERE r.updatedDate > :lastSync
+        )
+    """)
+    void updateProductAverageRatings(@Param("lastSync") LocalDateTime lastSync);
 
 }
 
