@@ -208,6 +208,7 @@ public class TokenGrpcServiceImpl extends GrpcTokenServiceGrpc.GrpcTokenServiceI
                     .setIsValid(false)
                     .addErrorMessages("Account does not exist")
                     .build());
+            responseObserver.onCompleted();
             return;
         }
         var account = accountOptional.get();
@@ -223,6 +224,7 @@ public class TokenGrpcServiceImpl extends GrpcTokenServiceGrpc.GrpcTokenServiceI
                         .setIsVerified(!account.isLocked())
                         .setChangedUsername(account.isChangedUsername())
                         .build()).build());
+        responseObserver.onCompleted();
     }
 
     private void wrapSellerProfileResponse(StreamObserver<GetSellerProfileResponse> responseObserver, SellerEntity seller, AccountEntity account, List<String> roles) {

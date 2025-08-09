@@ -38,9 +38,15 @@ public class UserDetailServiceImpl implements UserDetailsService {
                     .build();
             return accountRepository.save(accountSave);
         });
-        return User.builder()
-                .username(account.getUsername())
-                .authorities(AuthUtils.convertRoleToAuthority(account))
-                .build();
+        var authorities = AuthUtils.convertRoleToAuthority(account);
+        return new User(
+                account.getUsername(),
+                "",
+                true,
+                true,
+                true,
+                true,
+                authorities
+        );
     }
 }

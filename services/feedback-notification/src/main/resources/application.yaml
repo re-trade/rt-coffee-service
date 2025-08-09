@@ -59,11 +59,17 @@ logging:
     org.springframework.amqp.rabbit.listener: DEBUG
 
 security:
+  token:
+    jwt:
+      access-token:
+        key: ${JWT_ACCESS_KEY}
+        max-age: ${JWT_ACCESS_EX:3000}
   host:
     origin-allows: ${ORIGIN_ALLOWS:}
     base-host: ${BASE_HOST:}
     front-end: ${FRONTEND_URL}
     swagger-context-path: ${SWAGGER_CONTEXT_PATH:/api/v1}
+    develop-mode: ${DEVELOP_MODE:true}
 
 grpc:
   client:

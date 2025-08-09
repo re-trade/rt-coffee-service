@@ -1,6 +1,7 @@
 package org.retrade.feedback_notification.service.impl;
 
 import lombok.RequiredArgsConstructor;
+import org.retrade.feedback_notification.model.dto.NotificationResponse;
 import org.retrade.feedback_notification.service.WebSocketService;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
@@ -10,9 +11,13 @@ import org.springframework.stereotype.Service;
 public class WebSocketServiceImpl implements WebSocketService {
     private final SimpMessagingTemplate messagingTemplate;
 
-    public void sendMessage(String destination, Object payload) {
-        messagingTemplate.convertAndSendToUser(destination,
-                "/queue/notifications",
-                payload);
+    @Override
+    public void sentToUser(String userId, NotificationResponse notificationResponse) {
+        messagingTemplate.convertAndSendToUser(userId, "/queue/notifications", notificationResponse);
+    }
+
+    @Override
+    public void sentToAll(NotificationResponse notificationResponse) {
+        messagingTemplate.convertAndSend("/topic/notifications", notificationResponse) ;
     }
 }

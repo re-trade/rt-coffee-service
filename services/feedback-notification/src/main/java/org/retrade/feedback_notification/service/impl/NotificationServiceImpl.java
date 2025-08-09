@@ -9,14 +9,19 @@ import org.retrade.common.model.dto.request.QueryWrapper;
 import org.retrade.common.model.dto.response.PaginationWrapper;
 import org.retrade.common.model.exception.ActionFailedException;
 import org.retrade.common.model.exception.ValidationException;
+import org.retrade.feedback_notification.model.constant.NotificationTypeCode;
+import org.retrade.feedback_notification.model.dto.NotificationRequest;
 import org.retrade.feedback_notification.model.dto.NotificationResponse;
 import org.retrade.feedback_notification.model.entity.NotificationEntity;
+import org.retrade.feedback_notification.repository.AccountRepository;
 import org.retrade.feedback_notification.repository.NotificationRepository;
 import org.retrade.feedback_notification.service.NotificationService;
 import org.retrade.feedback_notification.service.WebSocketService;
 import org.retrade.feedback_notification.util.AuthUtils;
+import org.springframework.data.web.config.SortHandlerMethodArgumentResolverCustomizer;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -28,6 +33,8 @@ public class NotificationServiceImpl implements NotificationService {
     private final NotificationRepository notificationRepository;
     private final AuthUtils authUtils;
     private final WebSocketService webSocketService;
+    private final SortHandlerMethodArgumentResolverCustomizer sortCustomizer;
+    private final AccountRepository accountRepository;
 
     @Override
     public PaginationWrapper<List<NotificationResponse>> getNotifications(QueryWrapper queryWrapper) {
@@ -43,6 +50,42 @@ public class NotificationServiceImpl implements NotificationService {
                     .setData(response)
                     .build();
         });
+    }
+
+    @Override
+    public NotificationResponse makeNotification(NotificationRequest notificationRequest) {
+        var notification = NotificationEntity.builder()
+                .message(notificationRequest.getMessage())
+                .content(notificationRequest.getContent())
+                .title(notificationRequest.getTitle())
+                .read(false)
+                .type(NotificationTypeCode.SYSTEM)
+                .build();
+        try {
+            var result = notificationRepository.save(notification);
+            var response = wrapToNotificationResponse(result);
+            webSocketService.sentToAll(response);
+            return response;
+        } catch (Exception e) {
+            throw new ActionFailedException("Failed to create notification", e);
+        }
+    }
+
+    @Override
+    public void testGlobalNotification() {
+        try {
+            var response = NotificationResponse.builder()
+                    .id("test")
+                    .type(NotificationTypeCode.ALERT)
+                    .title("Testing")
+                    .content("Testing")
+                    .read(false)
+                    .createdDate(LocalDateTime.now())
+                    .build();
+            webSocketService.sentToAll(response);
+        } catch (Exception e) {
+            throw new ActionFailedException("Failed to create notification", e);
+        }
     }
 
     @Override

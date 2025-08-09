@@ -1,16 +1,14 @@
 package org.retrade.feedback_notification.model.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import org.retrade.common.model.entity.BaseSQLEntity;
 
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 @Entity(name = "notifications")
 public class NotificationEntity extends BaseSQLEntity {
     @ManyToOne(fetch = FetchType.LAZY, targetEntity = AccountEntity.class)
