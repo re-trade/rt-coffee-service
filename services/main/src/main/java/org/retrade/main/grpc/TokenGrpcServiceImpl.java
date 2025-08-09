@@ -11,6 +11,7 @@ import org.retrade.main.repository.jpa.AccountRepository;
 import org.retrade.main.repository.jpa.CustomerRepository;
 import org.retrade.main.repository.jpa.SellerRepository;
 import org.retrade.main.service.JwtService;
+import org.retrade.main.util.AuthUtils;
 import org.retrade.proto.authentication.*;
 import org.springframework.grpc.server.service.GrpcService;
 
@@ -197,6 +198,31 @@ public class TokenGrpcServiceImpl extends GrpcTokenServiceGrpc.GrpcTokenServiceI
                 .map(item -> item.getRole().getCode())
                 .toList();
         wrapCustomerProfileResponse(responseObserver, customer, account, roles);
+    }
+
+    @Override
+    public void getUserAccountByUserName(UsernameRequest request, StreamObserver<GetAccountResponse> responseObserver) {
+        var accountOptional = accountRepository.findByUsername(request.getUsername());
+        if (accountOptional.isEmpty()) {
+            responseObserver.onNext(GetAccountResponse.newBuilder()
+                    .setIsValid(false)
+                    .addErrorMessages("Account does not exist")
+                    .build());
+            return;
+        }
+        var account = accountOptional.get();
+        var roles = AuthUtils.convertAccountToRole(account);
+        responseObserver.onNext(GetAccountResponse.newBuilder()
+                .setIsValid(true)
+                .addErrorMessages("")
+                .setUserInfo(AccountInfo.newBuilder()
+                        .setAccountId(account.getId())
+                        .addAllRoles(Objects.requireNonNullElse(roles, Collections.emptyList()))
+                        .setUsername(account.getUsername())
+                        .setIsActive(account.isEnabled())
+                        .setIsVerified(!account.isLocked())
+                        .setChangedUsername(account.isChangedUsername())
+                        .build()).build());
     }
 
     private void wrapSellerProfileResponse(StreamObserver<GetSellerProfileResponse> responseObserver, SellerEntity seller, AccountEntity account, List<String> roles) {

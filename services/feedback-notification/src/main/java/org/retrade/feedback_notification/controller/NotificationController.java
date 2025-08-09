@@ -8,10 +8,7 @@ import org.retrade.feedback_notification.service.NotificationService;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -34,6 +31,18 @@ public class NotificationController {
                   .unwrapPaginationWrapper(notifications)
                   .messages("Notification retrieved successfully")
                   .build()
+        );
+    }
+
+    @PatchMapping("{id}/read")
+    public ResponseEntity<ResponseObject<Void>> markAsRead(@PathVariable String id) {
+        notificationService.markAsRead(id);
+        return ResponseEntity.ok(
+                new ResponseObject.Builder<Void>()
+                        .success(true)
+                        .code("SUCCESS")
+                        .messages("Notification mark successfully")
+                        .build()
         );
     }
 }

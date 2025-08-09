@@ -16,6 +16,10 @@ message TokenRequest {
     TokenType type = 2;
 }
 
+message UsernameRequest {
+    string username = 1;
+}
+
 message AccountIdRequest {
     string id = 1;
 }
@@ -27,6 +31,15 @@ message UserTokenInfo {
     bool is_active = 4;
     bool is_verified = 5;
     TokenType type = 6;
+}
+
+message AccountInfo {
+    string account_id = 1;
+    repeated string roles = 2;
+    string username = 3;
+    bool is_active = 4;
+    bool is_verified = 5;
+    bool changed_username = 6;
 }
 
 message CustomerDetailInfo {
@@ -62,6 +75,12 @@ message VerifyTokenResponse {
     repeated string error_messages = 3;
 }
 
+message GetAccountResponse {
+    bool is_valid = 1;
+    AccountInfo user_info = 2;
+    repeated string error_messages = 3;
+}
+
 message GetCustomerProfileResponse {
     bool is_valid = 1;
     CustomerDetailInfo user_info = 2;
@@ -81,4 +100,5 @@ service GrpcTokenService {
     rpc GetSellerProfileById (AccountIdRequest) returns (GetSellerProfileResponse);
     rpc GetSellerProfileBySellerId (AccountIdRequest) returns (GetSellerProfileResponse);
     rpc GetCustomerProfileByCustomerId (AccountIdRequest) returns (GetCustomerProfileResponse);
+    rpc GetUserAccountByUserName(UsernameRequest) returns (GetAccountResponse);
 }

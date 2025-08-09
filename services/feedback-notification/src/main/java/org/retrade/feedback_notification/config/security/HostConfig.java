@@ -1,4 +1,4 @@
-package org.retrade.feedback_notification.config.common;
+package org.retrade.feedback_notification.config.security;
 
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -12,4 +12,5 @@ public class HostConfig {
     private String baseHost;
     private String frontEnd;
     private String swaggerContextPath;
+    private Boolean developMode;
 }

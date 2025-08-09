@@ -32,15 +32,9 @@ public class TokenServiceClient {
                 .build());
     }
 
-    public GetSellerProfileResponse getSellerProfileByToken(String token, TokenType tokenType) {
-        return blockingStub.getSellerProfile(TokenRequest.newBuilder()
-                .setToken(token)
-                .setType(tokenType)
-                .build());
-    }
-
-    public GetSellerProfileResponse getSellerProfileBySellerId(String id) {
-        return blockingStub.getSellerProfileBySellerId(AccountIdRequest.newBuilder().setId(id)
+    public GetAccountResponse getAccountInfoByUsername(String username) {
+        return blockingStub.getUserAccountByUserName(UsernameRequest.newBuilder()
+                        .setUsername(username)
                 .build());
     }
 

@@ -7,11 +7,14 @@ import lombok.RequiredArgsConstructor;
 import org.retrade.common.model.dto.request.QueryFieldWrapper;
 import org.retrade.common.model.dto.request.QueryWrapper;
 import org.retrade.common.model.dto.response.PaginationWrapper;
+import org.retrade.common.model.exception.ActionFailedException;
+import org.retrade.common.model.exception.ValidationException;
 import org.retrade.feedback_notification.model.dto.NotificationResponse;
 import org.retrade.feedback_notification.model.entity.NotificationEntity;
 import org.retrade.feedback_notification.repository.NotificationRepository;
 import org.retrade.feedback_notification.service.NotificationService;
 import org.retrade.feedback_notification.service.WebSocketService;
+import org.retrade.feedback_notification.util.AuthUtils;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -23,12 +26,15 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class NotificationServiceImpl implements NotificationService {
     private final NotificationRepository notificationRepository;
+    private final AuthUtils authUtils;
     private final WebSocketService webSocketService;
 
     @Override
     public PaginationWrapper<List<NotificationResponse>> getNotifications(QueryWrapper queryWrapper) {
+        var account = authUtils.getUserAccountFromAuthentication();
         return notificationRepository.query(queryWrapper, (param) -> ((root, query, criteriaBuilder) -> {
             var predicates = new ArrayList<Predicate>();
+            predicates.add(criteriaBuilder.equal(root.get("account"), account));
             return getPredicate(param, root, criteriaBuilder, predicates);
         }), (items) -> {
             var response = items.stream().map(this::wrapToNotificationResponse).toList();
@@ -37,6 +43,18 @@ public class NotificationServiceImpl implements NotificationService {
                     .setData(response)
                     .build();
         });
+    }
+
+    @Override
+    public void markAsRead(String id) {
+        var account = authUtils.getUserAccountFromAuthentication();
+        var result = notificationRepository.findByIdAndAccount(id, account).orElseThrow(() -> new ValidationException("Notification not found"));
+        result.setRead(true);
+        try {
+            notificationRepository.save(result);
+        } catch (Exception e) {
+            throw new ActionFailedException("Failed to mark notification as read", e);
+        }
     }
 
     private Predicate getPredicate(Map<String, QueryFieldWrapper> param, Root<NotificationEntity> root, CriteriaBuilder criteriaBuilder, List<Predicate> predicates) {

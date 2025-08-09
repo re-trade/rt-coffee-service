@@ -8,4 +8,5 @@ import java.util.List;
 
 public interface NotificationService {
     PaginationWrapper<List<NotificationResponse>> getNotifications(QueryWrapper queryWrapper);
+    void markAsRead(String id);
 }

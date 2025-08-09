@@ -1,7 +1,6 @@
 package org.retrade.feedback_notification.config.security;
 
 import lombok.RequiredArgsConstructor;
-import org.retrade.feedback_notification.config.common.HostConfig;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.cors.CorsConfiguration;
