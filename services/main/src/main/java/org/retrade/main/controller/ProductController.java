@@ -208,6 +208,22 @@ public class ProductController {
                 .build());
     }
 
+    @GetMapping("seller/filter")
+    public ResponseEntity<ResponseObject<FieldAdvanceSearch>> getSellerProductFilter(
+            @RequestParam(required = false, name = "q") String search
+    ) {
+        var queryWrapper = QueryWrapper.builder()
+                .search(search)
+                .build();
+        var result = productService.sellerFiledAdvanceSearch(queryWrapper);
+        return ResponseEntity.ok(new ResponseObject.Builder<FieldAdvanceSearch>()
+                .success(true)
+                .code("SUCCESS")
+                .content(result)
+                .messages("Filter product found successfully")
+                .build());
+    }
+
     @GetMapping("category/{categoryName}")
     public ResponseEntity<ResponseObject<List<ProductResponse>>> getProductsByCategory(
             @PathVariable String categoryName,

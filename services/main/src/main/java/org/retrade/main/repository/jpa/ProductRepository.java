@@ -1,16 +1,19 @@
 package org.retrade.main.repository.jpa;
 
 import org.retrade.common.repository.BaseJpaRepository;
+import org.retrade.main.model.constant.ProductStatusEnum;
 import org.retrade.main.model.entity.OrderEntity;
 import org.retrade.main.model.entity.ProductEntity;
 import org.retrade.main.model.entity.SellerEntity;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
 
@@ -28,6 +31,14 @@ public interface ProductRepository extends BaseJpaRepository<ProductEntity, Stri
 
     @Query("SELECT oi.product FROM order_items oi WHERE oi.order = :order")
     List<ProductEntity> findProductsByOrder(@Param("order") OrderEntity order);
+
+    @Query("""
+        SELECT COALESCE(SUM(p.quantity * p.currentPrice), 0)
+        FROM products p
+        WHERE p.seller = :seller
+    """)
+    Long calculateTotalProductPriceBySeller(@Param("seller") SellerEntity seller);
+
 
     long countBySellerAndQuantityGreaterThan(SellerEntity seller, int quantity);
     long countBySellerAndVerifiedTrue(SellerEntity seller);
@@ -115,6 +126,26 @@ public interface ProductRepository extends BaseJpaRepository<ProductEntity, Stri
     long countDistinctSoldVerifiedProducts(@Param("statusCode") String statusCode);
 
     long countBySeller(@NonNull SellerEntity seller);
+
+    long countBySellerAndStatus(@NonNull SellerEntity seller, @NonNull ProductStatusEnum status);
+
+
+    @Modifying
+    @Query("""
+        UPDATE products p
+            SET p.avgVote = (
+                SELECT COALESCE(AVG(r.vote), 0)
+                FROM product_reviews r
+                WHERE r.product = p AND r.updatedDate > :lastSync
+            )
+        WHERE p.id IN (
+            SELECT DISTINCT r.product.id
+            FROM product_reviews r
+            WHERE r.updatedDate > :lastSync
+        )
+    """)
+    void updateProductAverageRatings(@Param("lastSync") LocalDateTime lastSync);
+
 }
 
 

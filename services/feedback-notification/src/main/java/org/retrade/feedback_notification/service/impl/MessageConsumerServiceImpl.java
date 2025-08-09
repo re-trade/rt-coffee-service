@@ -8,7 +8,7 @@ import com.rabbitmq.client.Channel;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.retrade.common.model.message.MessageObject;
-import org.retrade.feedback_notification.config.RabbitMQConfig;
+import org.retrade.feedback_notification.config.common.RabbitMQConfig;
 import org.retrade.feedback_notification.model.message.EmailNotificationMessage;
 import org.retrade.feedback_notification.model.message.UserRegistrationMessage;
 import org.retrade.feedback_notification.service.EmailService;

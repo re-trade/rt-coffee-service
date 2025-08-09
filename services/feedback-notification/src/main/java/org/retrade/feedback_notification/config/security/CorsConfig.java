@@ -1,4 +1,4 @@
-package org.retrade.feedback_notification.config;
+package org.retrade.feedback_notification.config.security;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;

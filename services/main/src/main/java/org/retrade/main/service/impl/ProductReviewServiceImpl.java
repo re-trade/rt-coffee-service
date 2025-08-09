@@ -17,7 +17,6 @@ import org.retrade.main.repository.jpa.*;
 import org.retrade.main.service.ProductReviewService;
 import org.retrade.main.util.AuthUtils;
 import org.springframework.data.domain.Page;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.sql.Timestamp;
@@ -30,15 +29,12 @@ import java.util.stream.IntStream;
 @Transactional
 @RequiredArgsConstructor
 public class ProductReviewServiceImpl implements ProductReviewService {
-
-
     private final ProductReviewRepository productReviewRepository;
     private final AuthUtils authUtils;
     private final ProductRepository productRepository;
     private final OrderComboRepository orderComboRepository;
     private final SellerRepository sellerRepository;
     private final OrderItemRepository orderItemRepository;
-    private LocalDateTime lastSyncTime = LocalDateTime.now().minusDays(1);
 
     @Override
     public ProductReviewResponse createProductReview(CreateProductReviewRequest request) {
@@ -539,30 +535,6 @@ public class ProductReviewServiceImpl implements ProductReviewService {
                 .ratingDistribution(distribution)
                 .build();
 
-    }
-
-    @Scheduled(cron = "0 0 2 * * *")
-    @Transactional
-    public void syncUpdatedRatings() {
-        try {
-            List<ProductEntity> updatedProducts = productReviewRepository.findProductsWithRecentReviews(lastSyncTime);
-            for (ProductEntity product : updatedProducts) {
-                Double avgRating = productReviewRepository.findAverageRatingByProduct(product);
-                product.setAvgVote(avgRating != null ? avgRating : 0.0);
-                productRepository.save(product);
-            }
-
-            List<SellerEntity> updatedSellers = productRepository.findSellersByProducts(updatedProducts);
-            for (SellerEntity seller : updatedSellers) {
-                Double avgShopRating = productRepository.findAverageRatingBySeller(seller);
-                seller.setAvgVote(avgShopRating != null ? avgShopRating : 0.0);
-                sellerRepository.save(seller);
-            }
-            lastSyncTime = LocalDateTime.now();
-            System.out.println("Rating synchronization completed at " + lastSyncTime);
-        } catch (Exception e) {
-            System.out.println("Error during rating synchronization: " + e.getMessage());
-        }
     }
 
 }

@@ -75,6 +75,7 @@ server:
   port: ${PORT:8080}
   servlet:
     context-path: ${CONTEXT_PATH:/api/v1}
+
 security:
   token:
       jwt:
