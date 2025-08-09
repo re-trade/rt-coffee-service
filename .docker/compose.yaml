@@ -95,6 +95,8 @@ services:
       ORIGIN_ALLOWS: ${ORIGIN_ALLOWS}
       BASE_HOST: ${BASE_HOST}
       FRONTEND_URL: ${FRONTEND_URL}
+      MAIN_SERVICE_GRPC_HOST: main-service
+      MAIN_SERVICE_GRPC_PORT: 9080
       SWAGGER_CONTEXT_PATH: /api/feedback-notification/v1
       PORT: 8080
       TZ: Asia/Ho_Chi_Minh
