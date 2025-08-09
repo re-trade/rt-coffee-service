@@ -101,4 +101,5 @@ service GrpcTokenService {
     rpc GetSellerProfileBySellerId (AccountIdRequest) returns (GetSellerProfileResponse);
     rpc GetCustomerProfileByCustomerId (AccountIdRequest) returns (GetCustomerProfileResponse);
     rpc GetUserAccountByUserName(UsernameRequest) returns (GetAccountResponse);
+    rpc GetUserAccountByAccountId(AccountIdRequest) returns (GetAccountResponse);
 }

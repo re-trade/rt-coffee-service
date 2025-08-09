@@ -203,6 +203,16 @@ public class TokenGrpcServiceImpl extends GrpcTokenServiceGrpc.GrpcTokenServiceI
     @Override
     public void getUserAccountByUserName(UsernameRequest request, StreamObserver<GetAccountResponse> responseObserver) {
         var accountOptional = accountRepository.findByUsername(request.getUsername());
+        getUserAccount(responseObserver, accountOptional);
+    }
+
+    @Override
+    public void getUserAccountByAccountId(AccountIdRequest request, StreamObserver<GetAccountResponse> responseObserver) {
+        var accountOptional = accountRepository.findById(request.getId());
+        getUserAccount(responseObserver, accountOptional);
+    }
+
+    private void getUserAccount(StreamObserver<GetAccountResponse> responseObserver, Optional<AccountEntity> accountOptional) {
         if (accountOptional.isEmpty()) {
             responseObserver.onNext(GetAccountResponse.newBuilder()
                     .setIsValid(false)
