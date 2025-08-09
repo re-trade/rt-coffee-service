@@ -1,4 +1,4 @@
-package org.retrade.feedback_notification.service.impl;
+package org.retrade.feedback_notification.event;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -12,17 +12,19 @@ import org.retrade.feedback_notification.config.common.RabbitMQConfig;
 import org.retrade.feedback_notification.model.message.EmailNotificationMessage;
 import org.retrade.feedback_notification.model.message.UserRegistrationMessage;
 import org.retrade.feedback_notification.service.EmailService;
+import org.retrade.feedback_notification.service.NotificationService;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-@Service
+@Component
 @RequiredArgsConstructor
 @Slf4j
-public class MessageConsumerServiceImpl {
+public class NotificationEventListener {
     private final EmailService emailService;
+    private final NotificationService notificationService;
 
     @RabbitListener(queues = RabbitMQConfig.USER_REGISTRATION_QUEUE)
     public void processUserRegistration(Message rawMessage, Channel channel) throws IOException {
