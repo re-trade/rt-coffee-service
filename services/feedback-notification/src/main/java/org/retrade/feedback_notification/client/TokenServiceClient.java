@@ -38,6 +38,12 @@ public class TokenServiceClient {
                 .build());
     }
 
+    public GetAccountResponse getAccountInfoById(String id) {
+        return blockingStub.getUserAccountByAccountId(AccountIdRequest.newBuilder()
+                        .setId(id)
+                .build());
+    }
+
     @PostConstruct
     public void init() {
         channel = ManagedChannelBuilder.forAddress(mainServiceHost, mainServicePort)
