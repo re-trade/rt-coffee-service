@@ -3,6 +3,8 @@ package org.retrade.main.controller;
 import lombok.RequiredArgsConstructor;
 import org.retrade.common.model.dto.request.QueryWrapper;
 import org.retrade.common.model.dto.response.ResponseObject;
+import org.retrade.main.model.dto.request.CreateRetradeRequest;
+import org.retrade.main.model.dto.response.CreateRetradeResponse;
 import org.retrade.main.model.dto.response.ProductHistoryResponse;
 import org.retrade.main.service.ProductHistoryService;
 import org.springframework.data.domain.Pageable;
@@ -36,12 +38,13 @@ public class ProductHistoryController {
                 .build());
     }
 
-    @PostMapping("retrade/{orderItemId}")
-    public ResponseEntity<ResponseObject<Void>> retradeProduct(@PathVariable String orderItemId) {
-        productHistoryService.retradeProduct(orderItemId);
-        return ResponseEntity.ok(new ResponseObject.Builder<Void>()
+    @PostMapping("retrade")
+    public ResponseEntity<ResponseObject<CreateRetradeResponse>> retradeProduct(@RequestBody CreateRetradeRequest request) {
+        var result = productHistoryService.createRetradeProduct(request);
+        return ResponseEntity.ok(new ResponseObject.Builder<CreateRetradeResponse>()
                         .success(true)
                         .code("SUCCESS")
+                        .content(result)
                         .messages("Retrade return successfully")
                 .build());
     }

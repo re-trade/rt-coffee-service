@@ -11,17 +11,19 @@ import org.retrade.common.model.exception.ActionFailedException;
 import org.retrade.common.model.exception.ValidationException;
 import org.retrade.main.model.constant.OrderStatusCodes;
 import org.retrade.main.model.constant.ProductStatusEnum;
+import org.retrade.main.model.dto.request.CreateRetradeRequest;
+import org.retrade.main.model.dto.response.CreateRetradeResponse;
 import org.retrade.main.model.dto.response.ProductHistoryResponse;
-import org.retrade.main.model.entity.AccountEntity;
-import org.retrade.main.model.entity.OrderItemEntity;
-import org.retrade.main.model.entity.ProductEntity;
-import org.retrade.main.model.entity.SellerEntity;
+import org.retrade.main.model.entity.*;
 import org.retrade.main.repository.jpa.OrderItemRepository;
 import org.retrade.main.repository.jpa.OrderStatusRepository;
 import org.retrade.main.repository.jpa.ProductRepository;
+import org.retrade.main.repository.jpa.ReTradeRecordRepository;
 import org.retrade.main.service.ProductHistoryService;
 import org.retrade.main.util.AuthUtils;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 
@@ -30,6 +32,7 @@ import java.util.*;
 public class ProductHistoryServiceImpl implements ProductHistoryService {
     private final ProductRepository productRepository;
     private final OrderItemRepository orderItemRepository;
+    private final ReTradeRecordRepository reTradeRecordRepository;
     private final AuthUtils authUtils;
     private final OrderStatusRepository orderStatusRepository;
 
@@ -52,18 +55,31 @@ public class ProductHistoryServiceImpl implements ProductHistoryService {
         });
     }
 
+    @Transactional(rollbackFor = {ValidationException.class, ActionFailedException.class, Exception.class}, isolation = Isolation.READ_UNCOMMITTED)
     @Override
-    public void retradeProduct(String orderItemId) {
-        var accountEntity = authUtils.getUserAccountFromAuthentication();
-        validateProductSeller(accountEntity);
-        var orderItemEntity = orderItemRepository.findById(orderItemId).orElseThrow(() -> new IllegalArgumentException("Order item not found"));
-        validateProductRetrade(orderItemEntity, accountEntity);
-        var productEntity = orderItemEntity.getProduct();
-        var productNewEntity = duplicateProduct(productEntity, accountEntity.getSeller());
+    public CreateRetradeResponse createRetradeProduct(CreateRetradeRequest request) {
+        var account = authUtils.getUserAccountFromAuthentication();
+        validateProductSeller(account);
+        var seller = account.getSeller();
+        var orderItem = orderItemRepository.findById(request.getOrderItemId()).orElseThrow(() -> new ValidationException("Order item not found"));
+        validateProductRetrade(orderItem, account, request);
+        var productEntity = orderItem.getProduct();
+        var retradeProduct = duplicateProduct(productEntity, seller, request);
         try {
-            productRepository.save(productNewEntity);
+            var result = productRepository.save(retradeProduct);
+            var recordEntity = ReTradeRecordEntity.builder()
+                    .orderItem(orderItem)
+                    .product(result)
+                    .quantity(request.getQuantity())
+                    .build();
+            var resultRecord = reTradeRecordRepository.save(recordEntity);
+            return CreateRetradeResponse.builder()
+                    .productId(productEntity.getId())
+                    .retradeProductId(retradeProduct.getId())
+                    .retradeRecordedId(resultRecord.getId())
+                    .build();
         } catch (Exception ex) {
-            throw new ActionFailedException("Failed to retrade product", ex);
+            throw new ActionFailedException("Failed to create retrade product", ex);
         }
     }
 
@@ -81,7 +97,7 @@ public class ProductHistoryServiceImpl implements ProductHistoryService {
         }
     }
 
-    private void validateProductRetrade(OrderItemEntity orderItemEntity, AccountEntity accountEntity) {
+    private void validateProductRetrade(OrderItemEntity orderItemEntity, AccountEntity accountEntity, CreateRetradeRequest request) {
         var customerEntity = accountEntity.getCustomer();
         var orderEntity = orderItemEntity.getOrder();
         var orderCombo = orderItemEntity.getOrderCombo();
@@ -93,21 +109,30 @@ public class ProductHistoryServiceImpl implements ProductHistoryService {
         if (!orderEntity.getCustomer().getId().equals(customerEntity.getId())) {
             throw new ValidationException("Order item does not belong to customer");
         }
-        var productEntity = orderItemEntity.getProduct();
-        if (productEntity.getStatus() != ProductStatusEnum.DRAFT) {
-            throw new ValidationException("Product is not in draft status");
-        }
-        if (productEntity.getQuantity() <= 0) {
-            throw new ValidationException("Product quantity must be greater than 0");
-        }
         var validStatusEntity = orderStatusRepository.findByCode(OrderStatusCodes.COMPLETED).orElseThrow(() -> new ValidationException("Order status not found"));
         if (!orderCombo.getOrderStatus().getId().equals(validStatusEntity.getId())) {
             throw new ValidationException("Order combo is not in completed status");
         }
+        var buyerId = orderItemEntity.getOrder().getCustomer().getId();
+        if (!buyerId.equals(accountEntity.getCustomer().getId())) {
+            throw new ValidationException("Order item does not belong to customer");
+        }
+        var totalBought = orderItemEntity.getQuantity();
+        Integer alreadyRetrade = reTradeRecordRepository.sumQuantityByOrderItemId(request.getOrderItemId());
+        if (alreadyRetrade == null) {
+            alreadyRetrade = 0;
+        }
+        int available = totalBought - alreadyRetrade;
+        if (available <= 0) {
+            throw new ValidationException("No more products available to retrade");
+        }
+        if (request.getQuantity() > available) {
+            throw new ValidationException("Requested quantity exceeds available quantity");
+        }
     }
 
-    private ProductEntity duplicateProduct(ProductEntity productEntity, SellerEntity seller) {
-        return ProductEntity.builder()
+    private ProductEntity duplicateProduct(ProductEntity productEntity, SellerEntity seller, CreateRetradeRequest request) {
+        var productBuilder =  ProductEntity.builder()
                 .name(productEntity.getName())
                 .thumbnail(productEntity.getThumbnail())
                 .description(productEntity.getDescription())
@@ -119,14 +144,28 @@ public class ProductHistoryServiceImpl implements ProductHistoryService {
                 .warrantyExpiryDate(productEntity.getWarrantyExpiryDate())
                 .condition(productEntity.getCondition())
                 .model(productEntity.getModel())
-                .currentPrice(productEntity.getCurrentPrice())
                 .categories(productEntity.getCategories())
                 .tags(productEntity.getTags())
                 .status(ProductStatusEnum.DRAFT)
-                .verified(true)
+                .verified(false)
                 .seller(seller)
-                .quantity(productEntity.getQuantity())
-                .build();
+                .quantity(productEntity.getQuantity());
+        if (request.getPrice() != null) {
+            if (request.getPrice().compareTo(productEntity.getCurrentPrice()) > 0) {
+                throw new ValidationException("Requested price is greater than current price");
+            }
+            if (request.getShortDescription() != null && !request.getShortDescription().isBlank()) {
+                productBuilder.shortDescription(request.getShortDescription());
+            }
+            if (request.getDescription() != null && !request.getDescription().isBlank()) {
+                productBuilder.description(request.getDescription());
+            }
+            if (request.getThumbnail() != null && !request.getThumbnail().isBlank()) {
+                productBuilder.thumbnail(request.getThumbnail());
+            }
+            productBuilder.currentPrice(request.getPrice());
+        }
+        return productBuilder.build();
     }
 
     private ProductHistoryResponse wrapProductHistoryResponse(ProductEntity productEntity) {
