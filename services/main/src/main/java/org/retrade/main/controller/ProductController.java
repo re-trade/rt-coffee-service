@@ -209,6 +209,7 @@ public class ProductController {
     }
 
     @GetMapping("seller/filter")
+    @PreAuthorize("hasRole('ROLE_SELLER')")
     public ResponseEntity<ResponseObject<FieldAdvanceSearch>> getSellerProductFilter(
             @RequestParam(required = false, name = "q") String search
     ) {
