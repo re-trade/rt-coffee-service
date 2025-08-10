@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.retrade.common.model.dto.request.QueryWrapper;
 import org.retrade.common.model.dto.response.ResponseObject;
 import org.retrade.main.model.dto.request.CreateProductReviewRequest;
+import org.retrade.main.model.dto.request.ProductReviewReplyRequest;
 import org.retrade.main.model.dto.request.UpdateProductReviewRequest;
 import org.retrade.main.model.dto.response.ProductOrderNoReview;
 import org.retrade.main.model.dto.response.ProductReviewResponse;
@@ -119,8 +120,8 @@ public class ProductReviewController {
                 .build());
     }
     @PatchMapping("{id}/create-reply")
-    public ResponseEntity<ResponseObject<ProductReviewResponse>> createReplyProductReview(@PathVariable String id, @RequestParam String content){
-        var result = productReviewService.createReplyProductReview(id,content);
+    public ResponseEntity<ResponseObject<ProductReviewResponse>> createReplyProductReview(@PathVariable String id, @RequestBody ProductReviewReplyRequest request){
+        var result = productReviewService.createReplyProductReview(id,request.content());
         return ResponseEntity.ok(new ResponseObject.Builder<ProductReviewResponse>()
                 .success(true)
                 .code("SUCCESS")
@@ -130,8 +131,8 @@ public class ProductReviewController {
     }
 
     @PatchMapping("{id}/update-reply")
-    public ResponseEntity<ResponseObject<ProductReviewResponse>> updateReplyProductReview(@PathVariable String id, @RequestParam String content){
-        var result = productReviewService.updateReplyProductReview(id,content);
+    public ResponseEntity<ResponseObject<ProductReviewResponse>> updateReplyProductReview(@PathVariable String id, @RequestBody ProductReviewReplyRequest request){
+        var result = productReviewService.updateReplyProductReview(id, request.content());
         return ResponseEntity.ok(new ResponseObject.Builder<ProductReviewResponse>()
                 .success(true)
                 .code("SUCCESS")
