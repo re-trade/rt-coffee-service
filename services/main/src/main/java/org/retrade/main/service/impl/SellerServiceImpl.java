@@ -11,12 +11,14 @@ import org.retrade.common.model.dto.response.PaginationWrapper;
 import org.retrade.common.model.exception.ActionFailedException;
 import org.retrade.common.model.exception.ValidationException;
 import org.retrade.main.model.constant.IdentityVerifiedStatusEnum;
+import org.retrade.main.model.constant.OrderStatusCodes;
 import org.retrade.main.model.dto.request.ApproveSellerRequest;
 import org.retrade.main.model.dto.request.SellerRegisterRequest;
 import org.retrade.main.model.dto.request.SellerUpdateRequest;
 import org.retrade.main.model.dto.response.SellerBaseMetricResponse;
 import org.retrade.main.model.dto.response.SellerBaseResponse;
 import org.retrade.main.model.dto.response.SellerRegisterResponse;
+import org.retrade.main.model.dto.response.SellerStatusResponse;
 import org.retrade.main.model.entity.AccountRoleEntity;
 import org.retrade.main.model.entity.RoleEntity;
 import org.retrade.main.model.entity.SellerEntity;
@@ -114,7 +116,7 @@ public class SellerServiceImpl implements SellerService {
         var seller = sellerRepository.findById(sellerId).orElseThrow(() -> new ValidationException("No such seller existed seller"));
         var products = productRepository.countBySeller(seller);
         var avgVote = productRepository.getAverageVote(seller);
-        var totalOrderSold = orderComboRepository.countBySellerAndOrderStatus_Code(seller, "COMPLETED");
+        var totalOrderSold = orderComboRepository.countBySellerAndOrderStatus_Code(seller, OrderStatusCodes.COMPLETED);
         var totalOrder = orderComboRepository.countBySeller(seller);
         return SellerBaseMetricResponse.builder()
                 .productQuantity(products)
@@ -229,6 +231,23 @@ public class SellerServiceImpl implements SellerService {
                 () -> new ValidationException("No such seller existed seller")
         );
         return wrapSellerBaseResponse(seller);
+    }
+
+    @Override
+    public SellerStatusResponse checkSellerStatus() {
+        var account = authUtils.getUserAccountFromAuthentication();
+        var seller = account.getSeller();
+        var roles = authUtils.getRolesFromAuthUser();
+        boolean registered = seller != null;
+        boolean canLogin = registered && seller.getVerified() && roles.contains("ROLE_SELLER");
+        boolean banned = registered && seller.getVerified() && !roles.contains("ROLE_SELLER");
+        boolean registerFailed = registered && !seller.getVerified();
+        return SellerStatusResponse.builder()
+                .banned(banned)
+                .registered(registered)
+                .canLogin(canLogin)
+                .registerFailed(registerFailed)
+                .build();
     }
 
     @Override

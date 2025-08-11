@@ -11,6 +11,7 @@ import org.retrade.main.model.dto.request.SellerUpdateRequest;
 import org.retrade.main.model.dto.response.SellerBaseMetricResponse;
 import org.retrade.main.model.dto.response.SellerBaseResponse;
 import org.retrade.main.model.dto.response.SellerRegisterResponse;
+import org.retrade.main.model.dto.response.SellerStatusResponse;
 import org.retrade.main.service.FileService;
 import org.retrade.main.service.OrderService;
 import org.retrade.main.service.SellerService;
@@ -103,6 +104,7 @@ public class SellerController {
     }
 
     @PatchMapping(path = "approve")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     public ResponseEntity<ResponseObject<Void>> approveSeller(
             @Valid @RequestBody ApproveSellerRequest request) {
         sellerService.approveSeller(request);
@@ -166,5 +168,16 @@ public class SellerController {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.parseMediaType(result.mimeType()));
         return new ResponseEntity<>(result.bytes(), headers, HttpStatus.OK);
+    }
+
+    @GetMapping("status")
+    public ResponseEntity<ResponseObject<SellerStatusResponse>> getSellerStatus () {
+        var result = sellerService.checkSellerStatus();
+        return ResponseEntity.ok(new ResponseObject.Builder<SellerStatusResponse>()
+                .success(true)
+                .code("SUCCESS")
+                .content(result)
+                .messages("Get Seller Status Successfully")
+                .build());
     }
 }

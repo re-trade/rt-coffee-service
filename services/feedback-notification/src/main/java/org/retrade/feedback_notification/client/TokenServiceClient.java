@@ -6,7 +6,10 @@ import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.retrade.proto.authentication.*;
+import org.retrade.proto.authentication.AccountIdRequest;
+import org.retrade.proto.authentication.GetAccountResponse;
+import org.retrade.proto.authentication.GrpcTokenServiceGrpc;
+import org.retrade.proto.authentication.UsernameRequest;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -24,13 +27,6 @@ public class TokenServiceClient {
 
     private ManagedChannel channel;
     private GrpcTokenServiceGrpc.GrpcTokenServiceBlockingStub blockingStub;
-
-    public VerifyTokenResponse verifyToken(String token, TokenType tokenType) {
-        return blockingStub.verifyToken(TokenRequest.newBuilder()
-                .setToken(token)
-                .setType(tokenType)
-                .build());
-    }
 
     public GetAccountResponse getAccountInfoByUsername(String username) {
         return blockingStub.getUserAccountByUserName(UsernameRequest.newBuilder()

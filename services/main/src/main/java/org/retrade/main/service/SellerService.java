@@ -5,10 +5,7 @@ import org.retrade.common.model.dto.response.PaginationWrapper;
 import org.retrade.main.model.dto.request.ApproveSellerRequest;
 import org.retrade.main.model.dto.request.SellerRegisterRequest;
 import org.retrade.main.model.dto.request.SellerUpdateRequest;
-import org.retrade.main.model.dto.response.SellerBaseMetricResponse;
-import org.retrade.main.model.dto.response.SellerBaseResponse;
-import org.retrade.main.model.dto.response.SellerRegisterResponse;
-import org.retrade.main.model.dto.response.TopSellersResponse;
+import org.retrade.main.model.dto.response.*;
 import org.retrade.main.model.message.CCCDVerificationResultMessage;
 import org.retrade.main.model.other.SellerWrapperBase;
 
@@ -33,6 +30,8 @@ public interface SellerService {
     Optional<SellerWrapperBase> getSellerBaseInfoById(String sellerId);
 
     SellerBaseResponse getSellerDetails(String id);
+
+    SellerStatusResponse checkSellerStatus();
 
     SellerBaseResponse getMySellers();
 
