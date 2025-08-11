@@ -22,6 +22,7 @@ import org.retrade.main.model.document.ProductDocument;
 import org.retrade.main.model.dto.request.CreateProductRequest;
 import org.retrade.main.model.dto.request.UpdateProductQuantityRequest;
 import org.retrade.main.model.dto.request.UpdateProductRequest;
+import org.retrade.main.model.dto.request.UpdateProductStatusRequest;
 import org.retrade.main.model.dto.response.*;
 import org.retrade.main.model.entity.BrandEntity;
 import org.retrade.main.model.entity.CategoryEntity;
@@ -142,7 +143,7 @@ public class ProductServiceImpl implements ProductService {
 
         if (!isOnlyQuantityChanged(product, request, newCategories)) {
             product.setVerified(false);
-            product.setStatus(ProductStatusEnum.INIT);
+            product.setStatus(ProductStatusEnum.DRAFT);
         }
 
         try {
@@ -172,6 +173,40 @@ public class ProductServiceImpl implements ProductService {
             return mapToProductResponse(result);
         } catch (Exception ex) {
             throw new ActionFailedException("Failed to update product quantity", ex);
+        }
+    }
+
+    @Override
+    public void updateSellerProductStatus(UpdateProductStatusRequest request) {
+        Map<ProductStatusEnum, Set<ProductStatusEnum>> SELLER_ALLOWED_TRANSITIONS = Map.of(
+                ProductStatusEnum.DRAFT, Set.of(ProductStatusEnum.INACTIVE, ProductStatusEnum.INIT),
+                ProductStatusEnum.INACTIVE, Set.of(ProductStatusEnum.DRAFT, ProductStatusEnum.INIT),
+                ProductStatusEnum.ACTIVE, Set.of(ProductStatusEnum.INACTIVE, ProductStatusEnum.DRAFT),
+                ProductStatusEnum.INIT, Set.of(ProductStatusEnum.DRAFT, ProductStatusEnum.INACTIVE)
+        );
+
+        var account = authUtils.getUserAccountFromAuthentication();
+        if (account.getSeller() == null) {
+            throw new ValidationException("Seller profile not found");
+        }
+        var seller = account.getSeller();
+        var product = productRepository.findByIdAndSeller(request.productId(), seller).orElseThrow(() -> new ValidationException("Product not found"));
+        var allowedNextStates = SELLER_ALLOWED_TRANSITIONS.getOrDefault(product.getStatus(), Set.of());
+        if (!allowedNextStates.contains(request.status())) {
+            throw new ValidationException(String.format(
+                    "Invalid status change from %s to %s for seller",
+                    product.getStatus(), request.status()
+            ));
+        }
+        if (product.getStatus() == ProductStatusEnum.ACTIVE && request.status() == ProductStatusEnum.DRAFT) {
+            product.setVerified(false);
+        }
+        product.setStatus(request.status());
+        try {
+            var result = productRepository.save(product);
+            saveProductDocument(result, result.getId());
+        } catch (Exception ex) {
+            throw new ActionFailedException("Failed to update product status", ex);
         }
     }
 
