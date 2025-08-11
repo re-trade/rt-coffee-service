@@ -573,6 +573,7 @@ public class ProductServiceImpl implements ProductService {
                 .createdAt(product.getCreatedDate() != null ? product.getCreatedDate().toLocalDateTime() : null)
                 .updatedAt(product.getUpdatedDate() != null ? product.getUpdatedDate().toLocalDateTime() : null)
                 .avgVote(Optional.ofNullable(product.getAvgVote()).orElse(0.0))
+                .retraded(product.getParentProduct() != null)
                 .build();
     }
 
@@ -851,10 +852,6 @@ public class ProductServiceImpl implements ProductService {
         if (categoryCount != categoryIds.size()) {
             throw new ValidationException("Invalid categories");
         }
-    }
-
-    private boolean isProductReTrade(String id) {
-        return productRepository.existsByIdAndParentProductNotNull(id);
     }
 
     private List<CategoryBaseResponse> covertCategoryEntitiesToCategories(Set<CategoryEntity> categoryEntities) {
