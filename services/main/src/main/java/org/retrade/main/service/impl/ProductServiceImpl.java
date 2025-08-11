@@ -357,7 +357,11 @@ public class ProductServiceImpl implements ProductService {
     @Transactional(rollbackFor = {ActionFailedException.class, Exception.class})
     public void verifyProduct(String id) {
         var product = getProductEntityById(id);
+        if (product.getStatus() != ProductStatusEnum.INIT) {
+            throw new ValidationException("Product is not in INIT status");
+        }
         product.setVerified(true);
+        product.setStatus(ProductStatusEnum.ACTIVE);
         try {
             var result = productRepository.save(product);
             saveProductDocument(result, result.getId());
@@ -370,6 +374,10 @@ public class ProductServiceImpl implements ProductService {
     @Transactional(rollbackFor = {ActionFailedException.class, Exception.class})
     public void unverifyProduct(String id) {
         var product = getProductEntityById(id);
+        if (product.getStatus() != ProductStatusEnum.INIT) {
+            throw new ValidationException("Product is not in INIT status");
+        }
+        product.setStatus(ProductStatusEnum.INACTIVE);
         product.setVerified(false);
         try {
             productRepository.save(product);
@@ -377,7 +385,6 @@ public class ProductServiceImpl implements ProductService {
             throw new ActionFailedException("Failed to unverify product", ex);
         }
     }
-
 
     @Override
     public FieldAdvanceSearch filedAdvanceSearch(QueryWrapper queryWrapper) {
