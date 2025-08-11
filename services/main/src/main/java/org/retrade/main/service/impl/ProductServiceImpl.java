@@ -636,6 +636,7 @@ public class ProductServiceImpl implements ProductService {
         addBrandPredicate(param.remove("brand"), root, criteriaBuilder, predicates);
         addSellerPredicate(param.remove("seller"), root, criteriaBuilder, predicates);
         addStatePredicate(param.remove("state"), root, criteriaBuilder, predicates);
+        addStatusPredicate(param.remove("status"), root, criteriaBuilder, predicates);
         return predicates.toArray(new Predicate[0]);
     }
 
@@ -670,6 +671,24 @@ public class ProductServiceImpl implements ProductService {
         Set<String> states = extractStringValues(state);
         if (!states.isEmpty()) {
             predicates.add(root.get("seller").get("state").in(states));
+        }
+    }
+
+    private void addStatusPredicate(QueryFieldWrapper state, Root<ProductEntity> root, CriteriaBuilder criteriaBuilder, Set<Predicate> predicates) {
+        if (state == null) return;
+        Set<String> states = extractStringValues(state);
+        Set<ProductStatusEnum> stateEnums = states.stream()
+                .map(s -> {
+                    try {
+                        return ProductStatusEnum.valueOf(s.trim().toUpperCase());
+                    } catch (IllegalArgumentException e) {
+                        return null;
+                    }
+                })
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        if (!states.isEmpty()) {
+            predicates.add(root.get("status").in(stateEnums));
         }
     }
 
