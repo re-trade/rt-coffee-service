@@ -13,7 +13,9 @@ public enum RoutingKeyEnum {
     IDENTITY_VERIFIED_ROUTING_KEY("identity.verified"),
     IDENTITY_RETRY_ROUTING_KEY("identity.retry"),
     ACHIEVEMENT_ROUTING_KEY("achievement.seller.event.routing-key"),
-    ACHIEVEMENT_RETRY_ROUTING_KEY("achievement.seller.event.retry.routing-key");
+    ACHIEVEMENT_RETRY_ROUTING_KEY("achievement.seller.event.retry.routing-key"),
+    SOCKET_NOTIFICATION_ROUTING_KEY("socket.notification"),
+    SOCKET_RETRY_ROUTING_KEY("socket.retry");
     private final String name;
     RoutingKeyEnum(String name) {
         this.name = name;

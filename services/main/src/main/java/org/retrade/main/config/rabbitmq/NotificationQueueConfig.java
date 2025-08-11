@@ -25,6 +25,17 @@ public class NotificationQueueConfig {
                 .withArgument("x-dead-letter-routing-key", RoutingKeyEnum.EMAIL_NOTIFICATION_ROUTING_KEY.getName())
                 .build();
 
+        Queue socketNotificationQueue = QueueBuilder.durable(QueueNameEnum.SOCKET_NOTIFICATION_QUEUE.getName())
+                .withArgument("x-dead-letter-exchange", notificationRetryExchange.getName())
+                .withArgument("x-dead-letter-routing-key", RoutingKeyEnum.SOCKET_RETRY_ROUTING_KEY.getName())
+                .build();
+
+        Queue socketRetryQueue = QueueBuilder.durable(QueueNameEnum.SOCKET_RETRY_QUEUE.getName())
+                .withArgument("x-message-ttl", 30000)
+                .withArgument("x-dead-letter-exchange", notificationExchange.getName())
+                .withArgument("x-dead-letter-routing-key", RoutingKeyEnum.SOCKET_NOTIFICATION_ROUTING_KEY.getName())
+                .build();
+
         Queue deadLetterQueue = QueueBuilder.durable(QueueNameEnum.DEAD_LETTER_QUEUE.getName()).build();
 
         return new Declarables(
@@ -32,11 +43,17 @@ public class NotificationQueueConfig {
                 notificationRetryExchange,
                 emailNotificationQueue,
                 emailRetryQueue,
+                socketNotificationQueue,
+                socketRetryQueue,
                 deadLetterQueue,
                 BindingBuilder.bind(emailNotificationQueue).to(notificationExchange)
                         .with(RoutingKeyEnum.EMAIL_NOTIFICATION_ROUTING_KEY.getName()),
                 BindingBuilder.bind(emailRetryQueue).to(notificationRetryExchange)
                         .with(RoutingKeyEnum.EMAIL_RETRY_ROUTING_KEY.getName()),
+                BindingBuilder.bind(socketNotificationQueue).to(notificationExchange)
+                        .with(RoutingKeyEnum.SOCKET_NOTIFICATION_ROUTING_KEY.getName()),
+                BindingBuilder.bind(socketRetryQueue).to(notificationRetryExchange)
+                        .with(RoutingKeyEnum.SOCKET_RETRY_ROUTING_KEY.getName()),
                 BindingBuilder.bind(deadLetterQueue).to(notificationRetryExchange)
                         .with(RoutingKeyEnum.DEAD_LETTER_ROUTING_KEY.getName())
         );

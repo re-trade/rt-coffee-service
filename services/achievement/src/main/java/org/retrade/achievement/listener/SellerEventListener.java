@@ -29,7 +29,7 @@ public class SellerEventListener {
     private final MessageProducerService messageProducerService;
     private final ObjectMapper objectMapper;
 
-    @RabbitListener(queues = "identity.seller.event.queue")
+    @RabbitListener(queues = "achievement.seller.event.queue")
     public void handleSellerEvent(Message rawMessage, Channel channel) throws IOException {
         long deliveryTag = rawMessage.getMessageProperties().getDeliveryTag();
         try {
