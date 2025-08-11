@@ -3,6 +3,7 @@ package org.retrade.main.service;
 import org.retrade.common.model.dto.request.QueryWrapper;
 import org.retrade.common.model.dto.response.PaginationWrapper;
 import org.retrade.main.model.dto.request.CreateProductRequest;
+import org.retrade.main.model.dto.request.UpdateProductQuantityRequest;
 import org.retrade.main.model.dto.request.UpdateProductRequest;
 import org.retrade.main.model.dto.response.FieldAdvanceSearch;
 import org.retrade.main.model.dto.response.ProductHomeStatsResponse;
@@ -14,6 +15,8 @@ public interface ProductService {
     ProductResponse createProduct(CreateProductRequest request);
 
     ProductResponse updateProduct(String id, UpdateProductRequest request);
+
+    ProductResponse updateProductQuantity(UpdateProductQuantityRequest request);
 
     void deleteProduct(String id);
 

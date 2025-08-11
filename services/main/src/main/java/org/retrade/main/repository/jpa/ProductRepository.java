@@ -15,6 +15,7 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 @Repository
@@ -145,6 +146,10 @@ public interface ProductRepository extends BaseJpaRepository<ProductEntity, Stri
         )
     """)
     void updateProductAverageRatings(@Param("lastSync") LocalDateTime lastSync);
+
+    boolean existsByIdAndParentProductNotNull(String id);
+
+    Optional<ProductEntity> findByIdAndSeller(String id, SellerEntity seller);
 
 }
 
