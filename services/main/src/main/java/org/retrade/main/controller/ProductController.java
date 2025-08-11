@@ -308,7 +308,7 @@ public class ProductController {
 
     }
 
-    @GetMapping("home-stats")
+    @PatchMapping("status")
     public ResponseEntity<ResponseObject<Void>> updateProductStatus(@RequestBody UpdateProductStatusRequest request){
         productService.updateSellerProductStatus(request);
         return ResponseEntity.ok(new ResponseObject.Builder<Void>()
