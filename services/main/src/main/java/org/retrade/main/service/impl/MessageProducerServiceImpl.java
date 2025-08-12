@@ -7,6 +7,7 @@ import org.retrade.main.model.constant.ExchangeNameEnum;
 import org.retrade.main.model.constant.RoutingKeyEnum;
 import org.retrade.main.model.message.CCCDVerificationMessage;
 import org.retrade.main.model.message.EmailNotificationMessage;
+import org.retrade.main.model.message.SocketNotificationMessage;
 import org.retrade.main.model.message.UserRegistrationMessage;
 import org.retrade.main.service.MessageProducerService;
 import org.springframework.amqp.core.Message;
@@ -84,6 +85,26 @@ public class MessageProducerServiceImpl implements MessageProducerService {
                 messageWrapper
         );
         log.info("Seller verified message sent: {}", message.getMessageId());
+    }
+
+    @Override
+    public void sendSocketNotification(SocketNotificationMessage message) {
+        if (message.getMessageId() == null) {
+            message.setMessageId(UUID.randomUUID().toString());
+        }
+        var messageWrapper = new MessageObject.Builder<SocketNotificationMessage>()
+                .withPayload(message)
+                .withMessageId(message.getMessageId())
+                .withSource("main-service")
+                .withType("socket-notification")
+                .withTimestamp(LocalDateTime.now())
+                .build();
+        log.info("Sending socket notification message: {}", message.getMessageId());
+        rabbitTemplate.convertAndSend(
+                ExchangeNameEnum.NOTIFICATION_EXCHANGE.getName(),
+                RoutingKeyEnum.SOCKET_NOTIFICATION_ROUTING_KEY.getName(),
+                messageWrapper
+        );
     }
 
     @Override
