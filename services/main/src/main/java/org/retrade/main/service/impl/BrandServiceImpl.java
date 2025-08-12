@@ -131,6 +131,9 @@ public class BrandServiceImpl implements BrandService {
                 .name(brandEntity.getName())
                 .id(brandEntity.getId())
                 .imgUrl(brandEntity.getImgUrl())
+                .createdAt(brandEntity.getCreatedDate().toLocalDateTime())
+                .description(brandEntity.getDescription())
+                .updatedAt(brandEntity.getUpdatedDate().toLocalDateTime())
                 .build();
     }
 }
