@@ -10,6 +10,7 @@ import org.retrade.common.model.dto.response.PaginationWrapper;
 import org.retrade.common.model.exception.ActionFailedException;
 import org.retrade.common.model.exception.ValidationException;
 import org.retrade.main.model.constant.OrderStatusCodes;
+import org.retrade.main.model.dto.request.CancelOrderRequest;
 import org.retrade.main.model.dto.request.CreateOrderRequest;
 import org.retrade.main.model.dto.request.OrderItemRequest;
 import org.retrade.main.model.dto.response.*;
@@ -20,7 +21,6 @@ import org.retrade.main.service.OrderService;
 import org.retrade.main.util.AuthUtils;
 import org.retrade.main.validator.OrderStatusValidator;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -229,58 +229,78 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     @Transactional(rollbackFor = {ActionFailedException.class, Exception.class})
-    public void cancelOrderCustomer(String orderId, String reason) {
+    public void cancelOrderCustomer(CancelOrderRequest request) {
         var account = authUtils.getUserAccountFromAuthentication();
+        if (account.getCustomer() == null) {
+            throw new ValidationException("User is not a customer");
+        }
         var customerEntity = account.getCustomer();
-
-        if (customerEntity == null) {
-            throw new ValidationException("Account is not a customer");
+        var validStatus = Set.of(OrderStatusCodes.PENDING, OrderStatusCodes.PAYMENT_CONFIRMATION);
+        var orderComboEntity = orderComboRepository.findById(request.orderComboId()).orElseThrow(() -> new ValidationException("Order combo not found with ID: " + request.orderComboId() + " for customer: " + customerEntity.getId()));
+        if (!validStatus.contains(orderComboEntity.getOrderStatus().getCode())) {
+            throw new ValidationException("Order combo status not valid for cancellation: " + orderComboEntity.getOrderStatus().getCode());
         }
-        Optional<OrderEntity> order = orderRepository.findByIdAndCustomer(orderId, customerEntity);
-        if (order.isEmpty()) {
-            throw new ValidationException("This order does not belong to you");
+        if (orderComboEntity.getOrderDestination().getOrder().getCustomer().getId().equals(customerEntity.getId())) {
+            throw new ValidationException("You are not the owner");
         }
-        OrderStatusEntity cancelledStatus = orderStatusRepository.findByCode("CANCELLED")
+        OrderStatusEntity cancelledStatus = orderStatusRepository.findByCode(OrderStatusCodes.CANCELLED)
                 .orElseThrow(() -> new ValidationException("Cancelled order status not found"));
-
-        List<OrderComboEntity> orderCombos = orderComboRepository.findByOrderDestination(order.get().getOrderDestination());
+        orderComboEntity.setCancelledReason(request.reason());
+        orderComboEntity.setOrderStatus(cancelledStatus);
+        orderComboEntity.setReasonCreatedDate(Timestamp.valueOf(LocalDateTime.now()));
         try {
-            for (OrderComboEntity combo : orderCombos) {
-                combo.setCancelledReason(reason);
-                combo.setReasonCreatedDate(Timestamp.valueOf(LocalDateTime.now()));
-                combo.setOrderStatus(cancelledStatus);
-                orderComboRepository.save(combo);
-            }
+            orderComboRepository.save(orderComboEntity);
         } catch (Exception e) {
             throw new ValidationException(e.getMessage());
         }
-
     }
 
     @Transactional(rollbackFor = {ActionFailedException.class, Exception.class})
-    public void cancelOrderSeller(String orderComboId, String reason) {
+    @Override
+    public void cancelOrderSeller(CancelOrderRequest request) {
         var account = authUtils.getUserAccountFromAuthentication();
         var seller = account.getSeller();
         if (seller == null) {
-            throw new ValidationException("the account not role seller");
+            throw new ValidationException("Account is not seller");
         }
-        Optional<OrderComboEntity> optionalOrderCombo = orderComboRepository.findByIdAndSeller(orderComboId, seller);
-        if (optionalOrderCombo.isEmpty()) {
-            throw new ValidationException(" There is not your order combo");
-        }
-        OrderStatusEntity cancelledStatus = orderStatusRepository.findByCode("CANCELLED")
+        var orderCombo = orderComboRepository.findByIdAndSeller(request.orderComboId(), seller).orElseThrow(() -> new ValidationException("There is not your order combo"));
+        OrderStatusEntity cancelledStatus = orderStatusRepository.findByCode(OrderStatusCodes.CANCELLED)
                 .orElseThrow(() -> new ValidationException("Cancelled order status not found"));
 
-        optionalOrderCombo.get().setCancelledReason(reason);
-        optionalOrderCombo.get().setOrderStatus(cancelledStatus);
-        optionalOrderCombo.get().setReasonCreatedDate(Timestamp.valueOf(LocalDateTime.now()));
+        orderCombo.setCancelledReason(request.reason());
+        orderCombo.setOrderStatus(cancelledStatus);
+        orderCombo.setReasonCreatedDate(Timestamp.valueOf(LocalDateTime.now()));
         try {
-            orderComboRepository.save(optionalOrderCombo.get());
+            orderComboRepository.save(orderCombo);
         } catch (Exception e) {
-            throw new ValidationException(e.getMessage());
+            throw new ActionFailedException(e.getMessage());
         }
     }
 
+    @Transactional(rollbackFor = {ActionFailedException.class, Exception.class})
+    @Override
+    public void completedOrder(String id) {
+        var account = authUtils.getUserAccountFromAuthentication();
+        if (account.getCustomer() == null) {
+            throw new ValidationException("User is not a customer");
+        }
+        var customerEntity = account.getCustomer();
+        var orderComboEntity = orderComboRepository.findById(id).orElseThrow(() -> new ValidationException("Order combo not found with ID: " + id + " for customer: " + customerEntity.getId()));
+        if (!orderComboEntity.getOrderStatus().getCode().equals(OrderStatusCodes.DELIVERED)) {
+            throw new ValidationException("Order combo status not valid for completed: " + orderComboEntity.getOrderStatus().getCode());
+        }
+        if (orderComboEntity.getOrderDestination().getOrder().getCustomer().getId().equals(customerEntity.getId())) {
+            throw new ValidationException("You are not the owner");
+        }
+        OrderStatusEntity deliveredStatus = orderStatusRepository.findByCode(OrderStatusCodes.DELIVERED)
+                .orElseThrow(() -> new ValidationException("Cancelled order status not found"));
+        orderComboEntity.setOrderStatus(deliveredStatus);
+        try {
+            orderComboRepository.save(orderComboEntity);
+        } catch (Exception e) {
+            throw new ActionFailedException(e.getMessage());
+        }
+    }
 
     @Override
     @Transactional(readOnly = true)
@@ -493,6 +513,44 @@ public class OrderServiceImpl implements OrderService {
         });
     }
 
+    @Override
+    public OrderStatsResponse getStatsOrderCustomer() {
+        var account = authUtils.getUserAccountFromAuthentication();
+        var customerEntity = account.getCustomer();
+        if (customerEntity == null) {
+            throw new ValidationException("User is not a customer");
+        }
+
+        List<OrderComboEntity> orderComboEntities = orderComboRepository.findAll((root, query, criteriaBuilder) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            var destinationJoin = root.join("orderDestination", JoinType.INNER);
+            var orderJoin = destinationJoin.join("order", JoinType.INNER);
+            var customerJoin = orderJoin.join("customer", JoinType.INNER);
+
+            predicates.add(criteriaBuilder.equal(customerJoin.get("id"), customerEntity.getId()));
+            return getOrderComboPredicate(new HashMap<>(), root, criteriaBuilder, predicates);
+        });
+
+        long totalOrders = orderComboEntities.size();
+        long totalOrdersCompleted = orderComboEntities.stream()
+                .filter(cb -> OrderStatusCodes.COMPLETED.equalsIgnoreCase(cb.getOrderStatus().getCode()))
+                .count();
+        long totalOrdersBeingDelivered = orderComboEntities.stream()
+                .filter(cb -> OrderStatusCodes.DELIVERING.equalsIgnoreCase(cb.getOrderStatus().getCode()))
+                .count();
+        BigDecimal totalCost = orderComboEntities.stream()
+                .filter(combo -> OrderStatusCodes.COMPLETED.equalsIgnoreCase(combo.getOrderStatus().getCode()))
+                .map(OrderComboEntity::getGrandPrice)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        return OrderStatsResponse.builder()
+                .totalOrdersBeingDelivered(totalOrdersBeingDelivered)
+                .totalOrders(totalOrders)
+                .totalOrdersCompleted(totalOrdersCompleted)
+                .totalPaymentCost(totalCost)
+                .build();
+    }
+
     private OrderStatusResponse wrapOrderStatusResponse(OrderStatusEntity orderStatus) {
         return OrderStatusResponse.builder()
                 .id(orderStatus.getId())
@@ -552,44 +610,6 @@ public class OrderServiceImpl implements OrderService {
 
         return products;
     }
-    @Override
-    public OrderStatsResponse getStatsOrderCustomer() {
-        var account = authUtils.getUserAccountFromAuthentication();
-        var customerEntity = account.getCustomer();
-        if (customerEntity == null) {
-            throw new ValidationException("User is not a customer");
-        }
-
-        List<OrderComboEntity> orderComboEntities = orderComboRepository.findAll((root, query, criteriaBuilder) -> {
-            List<Predicate> predicates = new ArrayList<>();
-            var destinationJoin = root.join("orderDestination", JoinType.INNER);
-            var orderJoin = destinationJoin.join("order", JoinType.INNER);
-            var customerJoin = orderJoin.join("customer", JoinType.INNER);
-
-            predicates.add(criteriaBuilder.equal(customerJoin.get("id"), customerEntity.getId()));
-            return getOrderComboPredicate(new HashMap<>(), root, criteriaBuilder, predicates);
-        });
-
-        long totalOrders = orderComboEntities.size();
-        long totalOrdersCompleted = orderComboEntities.stream()
-                .filter(cb -> OrderStatusCodes.COMPLETED.equalsIgnoreCase(cb.getOrderStatus().getCode()))
-                .count();
-        long totalOrdersBeingDelivered = orderComboEntities.stream()
-                .filter(cb -> OrderStatusCodes.DELIVERING.equalsIgnoreCase(cb.getOrderStatus().getCode()))
-                .count();
-        BigDecimal totalCost = orderComboEntities.stream()
-                .filter(combo -> OrderStatusCodes.COMPLETED.equalsIgnoreCase(combo.getOrderStatus().getCode()))
-                .map(OrderComboEntity::getGrandPrice)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        return OrderStatsResponse.builder()
-                .totalOrdersBeingDelivered(totalOrdersBeingDelivered)
-                .totalOrders(totalOrders)
-                .totalOrdersCompleted(totalOrdersCompleted)
-                .totalPaymentCost(totalCost)
-                .build();
-    }
-
 
     private Map<SellerEntity, List<ProductEntity>> groupProductsBySeller(List<ProductEntity> products) {
         return products.stream()

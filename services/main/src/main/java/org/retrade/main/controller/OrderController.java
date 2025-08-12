@@ -9,9 +9,9 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.retrade.common.model.dto.request.QueryWrapper;
 import org.retrade.common.model.dto.response.ResponseObject;
+import org.retrade.main.model.dto.request.CancelOrderRequest;
 import org.retrade.main.model.dto.request.CreateOrderRequest;
 import org.retrade.main.model.dto.response.*;
-import org.retrade.main.model.dto.response.SellerOrderComboResponse;
 import org.retrade.main.service.OrderService;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
@@ -311,22 +311,53 @@ public class OrderController {
                 .build());
     }
 
-    @PutMapping("cancel/{orderId}")
-    @Operation(summary = "Cancel order", description = "Cancels an order")
+    @PutMapping("combo/customer/cancel")
+    @Operation(summary = "Cancel customer order", description = "Cancels an order")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Order cancelled successfully"),
             @ApiResponse(responseCode = "401", description = "Unauthorized"),
             @ApiResponse(responseCode = "404", description = "Order not found"),
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    @PreAuthorize("hasRole('ROLE_CUSTOMER') or hasRole('ROLE_SELLER')")
-    public ResponseEntity<ResponseObject<Void>> cancelOrderCustomer(
-            @Parameter(description = "Order ID", required = true)
-            @PathVariable String orderId,
-            @Parameter(description = "Cancellation reason")
-            @RequestParam(required = false) String reason) {
+    @PreAuthorize("hasRole('ROLE_CUSTOMER')")
+    public ResponseEntity<ResponseObject<Void>> cancelOrderCustomer(@RequestBody CancelOrderRequest request) {
+        orderService.cancelOrderCustomer(request);
+        return ResponseEntity.ok(new ResponseObject.Builder<Void>()
+                .success(true)
+                .code("SUCCESS")
+                .messages("Order cancelled successfully")
+                .build());
+    }
 
-        orderService.cancelOrderCustomer(orderId, reason);
+    @PutMapping("combo/{id}/customer/completed")
+    @Operation(summary = "Completed customer order", description = "Cancels an order")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Order cancelled successfully"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized"),
+            @ApiResponse(responseCode = "404", description = "Order not found"),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    @PreAuthorize("hasRole('ROLE_CUSTOMER')")
+    public ResponseEntity<ResponseObject<Void>> completedOrder(@PathVariable String id) {
+        orderService.completedOrder(id);
+        return ResponseEntity.ok(new ResponseObject.Builder<Void>()
+                .success(true)
+                .code("SUCCESS")
+                .messages("Order completed successfully")
+                .build());
+    }
+
+    @PutMapping("combo/seller/cancel")
+    @Operation(summary = "Cancel seller order", description = "Cancels an order")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Order cancelled successfully"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized"),
+            @ApiResponse(responseCode = "404", description = "Order not found"),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
+    })
+    @PreAuthorize("hasRole('ROLE_SELLER')")
+    public ResponseEntity<ResponseObject<Void>> cancelOrderSeller(@RequestBody CancelOrderRequest request) {
+        orderService.cancelOrderCustomer(request);
 
         return ResponseEntity.ok(new ResponseObject.Builder<Void>()
                 .success(true)
@@ -334,6 +365,7 @@ public class OrderController {
                 .messages("Order cancelled successfully")
                 .build());
     }
+
     @PreAuthorize("hasRole('ROLE_CUSTOMER')")
     @GetMapping("customer-stats")
     public ResponseEntity<ResponseObject<OrderStatsResponse>> statsOrderCustomer() {

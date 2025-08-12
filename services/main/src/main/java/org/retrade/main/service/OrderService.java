@@ -2,6 +2,7 @@ package org.retrade.main.service;
 
 import org.retrade.common.model.dto.request.QueryWrapper;
 import org.retrade.common.model.dto.response.PaginationWrapper;
+import org.retrade.main.model.dto.request.CancelOrderRequest;
 import org.retrade.main.model.dto.request.CreateOrderRequest;
 import org.retrade.main.model.dto.response.*;
 
@@ -23,6 +24,10 @@ public interface OrderService {
 
     void cancelOrder(String orderId, String reason);
 
+    void cancelOrderSeller(CancelOrderRequest request);
+
+    void completedOrder(String id);
+
     PaginationWrapper<List<CustomerOrderComboResponse>> getSellerOrderCombos(QueryWrapper queryFieldWrapper);
 
     CustomerOrderComboResponse getSellerOrderComboById(String comboId);
@@ -39,7 +44,7 @@ public interface OrderService {
 
     PaginationWrapper<List<OrderStatusResponse>> getOrderStatusesTemplate(QueryWrapper queryWrapper);
 
-    void cancelOrderCustomer(String orderId, String reason);
+    void cancelOrderCustomer(CancelOrderRequest request);
 
     OrderStatsResponse getStatsOrderCustomer();
 }
