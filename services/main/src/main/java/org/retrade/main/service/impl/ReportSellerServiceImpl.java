@@ -113,6 +113,46 @@ public class ReportSellerServiceImpl implements ReportSellerService {
     }
 
     @Override
+    public PaginationWrapper<List<ReportSellerResponse>> getAllReportBySellerAuth(QueryWrapper queryWrapper) {
+        var account = authUtils.getUserAccountFromAuthentication();
+        if (account.getSeller() == null) {
+            throw new ValidationException("User is not a seller, please register seller or contact with Admin");
+        }
+        var seller = account.getSeller();
+        return reportSellerRepository.query(queryWrapper, (param) -> (root, query, criteriaBuilder) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            predicates.add(criteriaBuilder.equal(root.get("seller"), seller));
+            return getPredicate(param, root, criteriaBuilder, predicates);
+        }, (items) -> {
+            var list = items.map(this::mapToReportSellerResponse).stream().toList();
+            return new PaginationWrapper.Builder<List<ReportSellerResponse>>()
+                    .setPaginationInfo(items)
+                    .setData(list)
+                    .build();
+        });
+    }
+
+    @Override
+    public PaginationWrapper<List<ReportSellerResponse>> getAllReportByCustomerAuth(QueryWrapper queryWrapper) {
+        var account = authUtils.getUserAccountFromAuthentication();
+        if (account.getCustomer() == null) {
+            throw new ValidationException("User is not a customer, please register customer or contact with Admin");
+        }
+        var customer = account.getCustomer();
+        return reportSellerRepository.query(queryWrapper, (param) -> (root, query, criteriaBuilder) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            predicates.add(criteriaBuilder.equal(root.get("customer"), customer));
+            return getPredicate(param, root, criteriaBuilder, predicates);
+        }, (items) -> {
+            var list = items.map(this::mapToReportSellerResponse).stream().toList();
+            return new PaginationWrapper.Builder<List<ReportSellerResponse>>()
+                    .setPaginationInfo(items)
+                    .setData(list)
+                    .build();
+        });
+    }
+
+    @Override
     public ReportSellerResponse getReportDetail(String id) {
         ReportSellerEntity reportSellerEntity = reportSellerRepository.findById(id).orElseThrow(
                 () -> new ValidationException("Report not found with id: " + id)
@@ -327,6 +367,7 @@ public class ReportSellerServiceImpl implements ReportSellerService {
     private ReportSellerEvidenceResponse mapToReportSellerEvidenceResponse(ReportSellerEvidenceEntity reportSellerEvidenceEntity, SenderRoleEnum typeMapping) {
         var response =  ReportSellerEvidenceResponse.builder()
                 .id(reportSellerEvidenceEntity.getId())
+                .createdAt(reportSellerEvidenceEntity.getCreatedDate().toLocalDateTime())
                 .senderRole(reportSellerEvidenceEntity.getSenderRole())
                 .senderId(reportSellerEvidenceEntity.getSender() != null ? reportSellerEvidenceEntity.getSender().getId() : null)
                 .notes(reportSellerEvidenceEntity.getNote())

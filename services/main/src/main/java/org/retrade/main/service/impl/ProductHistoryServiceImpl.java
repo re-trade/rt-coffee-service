@@ -144,7 +144,7 @@ public class ProductHistoryServiceImpl implements ProductHistoryService {
                 .warrantyExpiryDate(productEntity.getWarrantyExpiryDate())
                 .condition(productEntity.getCondition())
                 .model(productEntity.getModel())
-                .categories(productEntity.getCategories())
+                .categories(new HashSet<>(productEntity.getCategories()))
                 .tags(productEntity.getTags())
                 .status(ProductStatusEnum.DRAFT)
                 .verified(false)

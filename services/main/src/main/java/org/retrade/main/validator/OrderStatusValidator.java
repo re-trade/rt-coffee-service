@@ -228,7 +228,6 @@ public class OrderStatusValidator {
             return false;
         }
 
-        // Các trạng thái cho thấy đã thanh toán thành công
         return Set.of(
                 OrderStatusCodes.PAYMENT_CONFIRMATION,
                 OrderStatusCodes.PREPARING,
@@ -239,7 +238,8 @@ public class OrderStatusValidator {
                 OrderStatusCodes.RETURN_APPROVED,
                 OrderStatusCodes.RETURNING,
                 OrderStatusCodes.RETURNED,
-                OrderStatusCodes.REFUNDED
+                OrderStatusCodes.REFUNDED,
+                OrderStatusCodes.CANCELLED
         ).contains(status);
     }
     /**
@@ -257,12 +257,10 @@ public class OrderStatusValidator {
             throw new IllegalArgumentException("Invalid order status: " + status);
         }
 
-        // Nếu đang ở trạng thái PENDING → chưa thanh toán
         if (OrderStatusCodes.PENDING.equals(status)) {
             return OrderStatusCodes.UNPAID;
         }
 
-        // Các trạng thái thanh toán trực tiếp
         if (Set.of(
                 OrderStatusCodes.PAYMENT_FAILED,
                 OrderStatusCodes.PAYMENT_CANCELLED,
@@ -271,7 +269,6 @@ public class OrderStatusValidator {
             return status;
         }
 
-        // Các trạng thái sau PAID ngụ ý đã thanh toán thành công
         if (isPaymentSuccessful(status)) {
             return OrderStatusCodes.PAYMENT_CONFIRMATION;
         }

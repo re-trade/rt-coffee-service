@@ -44,4 +44,5 @@ public class ProductResponse {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime updatedAt;
     private Double avgVote;
+    private boolean retraded;
 }

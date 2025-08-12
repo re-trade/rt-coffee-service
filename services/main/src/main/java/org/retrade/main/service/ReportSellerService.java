@@ -18,6 +18,10 @@ public interface ReportSellerService {
 
     PaginationWrapper<List<ReportSellerResponse>> getAllReportBySellerId(String sellerId, QueryWrapper queryWrapper);
 
+    PaginationWrapper<List<ReportSellerResponse>> getAllReportBySellerAuth(QueryWrapper queryWrapper);
+
+    PaginationWrapper<List<ReportSellerResponse>> getAllReportByCustomerAuth(QueryWrapper queryWrapper);
+
     ReportSellerResponse getReportDetail(String id);
 
     ReportSellerResponse acceptReport(String reportId);

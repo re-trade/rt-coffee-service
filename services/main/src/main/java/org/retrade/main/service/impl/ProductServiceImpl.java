@@ -20,7 +20,9 @@ import org.retrade.main.model.constant.ProductStatusEnum;
 import org.retrade.main.model.document.CategoryInfoDocument;
 import org.retrade.main.model.document.ProductDocument;
 import org.retrade.main.model.dto.request.CreateProductRequest;
+import org.retrade.main.model.dto.request.UpdateProductQuantityRequest;
 import org.retrade.main.model.dto.request.UpdateProductRequest;
+import org.retrade.main.model.dto.request.UpdateProductStatusRequest;
 import org.retrade.main.model.dto.response.*;
 import org.retrade.main.model.entity.BrandEntity;
 import org.retrade.main.model.entity.CategoryEntity;
@@ -120,6 +122,10 @@ public class ProductServiceImpl implements ProductService {
         if (!product.getSeller().getId().equals(seller.getId())) {
             throw new ValidationException("You can only update your own products");
         }
+
+        var newCategories = convertCategoryIdsToEntities(request.getCategoryIds());
+        validateReTradeUpdate(product, request, newCategories);
+
         product.setName(request.getName());
         product.setShortDescription(request.getShortDescription());
         product.setDescription(request.getDescription());
@@ -129,17 +135,78 @@ public class ProductServiceImpl implements ProductService {
         product.setModel(request.getModel());
         product.setCurrentPrice(request.getCurrentPrice());
         validateCategories(request.getCategoryIds());
-        product.setCategories(convertCategoryIdsToEntities(request.getCategoryIds()));
+        product.setCategories(newCategories);
         product.setTags(request.getTags());
         product.setQuantity(request.getQuantity() != null ? request.getQuantity() : 1);
         product.setWarrantyExpiryDate(request.getWarrantyExpiryDate());
         product.setCondition(request.getCondition());
+
+        if (!isOnlyQuantityChanged(product, request, newCategories)) {
+            product.setVerified(false);
+            product.setStatus(ProductStatusEnum.DRAFT);
+        }
+
         try {
             var updatedProduct = productRepository.save(product);
             saveProductDocument(updatedProduct, id);
             return mapToProductResponse(updatedProduct);
         } catch (Exception ex) {
             throw new ActionFailedException("Failed to update product", ex);
+        }
+    }
+
+    @Override
+    public ProductResponse updateProductQuantity(UpdateProductQuantityRequest request) {
+        var account = authUtils.getUserAccountFromAuthentication();
+        if (account.getSeller() == null) {
+            throw new ValidationException("Seller profile not found");
+        }
+        var seller = account.getSeller();
+        var product = productRepository.findByIdAndSeller(request.productId(), seller).orElseThrow(() -> new ValidationException("Product not found"));
+        if (product.getParentProduct() == null) {
+            throw new ValidationException("Can't update quantity for retrade product");
+        }
+        product.setQuantity(request.quantity());
+        try {
+            var result = productRepository.save(product);
+            saveProductDocument(result, result.getId());
+            return mapToProductResponse(result);
+        } catch (Exception ex) {
+            throw new ActionFailedException("Failed to update product quantity", ex);
+        }
+    }
+
+    @Override
+    public void updateSellerProductStatus(UpdateProductStatusRequest request) {
+        Map<ProductStatusEnum, Set<ProductStatusEnum>> SELLER_ALLOWED_TRANSITIONS = Map.of(
+                ProductStatusEnum.DRAFT, Set.of(ProductStatusEnum.INACTIVE, ProductStatusEnum.INIT),
+                ProductStatusEnum.INACTIVE, Set.of(ProductStatusEnum.DRAFT, ProductStatusEnum.INIT),
+                ProductStatusEnum.ACTIVE, Set.of(ProductStatusEnum.INACTIVE, ProductStatusEnum.DRAFT),
+                ProductStatusEnum.INIT, Set.of(ProductStatusEnum.DRAFT, ProductStatusEnum.INACTIVE)
+        );
+
+        var account = authUtils.getUserAccountFromAuthentication();
+        if (account.getSeller() == null) {
+            throw new ValidationException("Seller profile not found");
+        }
+        var seller = account.getSeller();
+        var product = productRepository.findByIdAndSeller(request.productId(), seller).orElseThrow(() -> new ValidationException("Product not found"));
+        var allowedNextStates = SELLER_ALLOWED_TRANSITIONS.getOrDefault(product.getStatus(), Set.of());
+        if (!allowedNextStates.contains(request.status())) {
+            throw new ValidationException(String.format(
+                    "Invalid status change from %s to %s for seller",
+                    product.getStatus(), request.status()
+            ));
+        }
+        if (product.getStatus() == ProductStatusEnum.ACTIVE && request.status() == ProductStatusEnum.DRAFT) {
+            product.setVerified(false);
+        }
+        product.setStatus(request.status());
+        try {
+            var result = productRepository.save(product);
+            saveProductDocument(result, result.getId());
+        } catch (Exception ex) {
+            throw new ActionFailedException("Failed to update product status", ex);
         }
     }
 
@@ -263,14 +330,6 @@ public class ProductServiceImpl implements ProductService {
         });
     }
 
-    private Set<String> getElasticSearchIds(QueryFieldWrapper keyword, Pageable pagination) {
-        var searchHits = queryElasticSearchByKeyword(keyword, pagination);
-        return searchHits.getSearchHits()
-                .stream()
-                .map(SearchHit::getId)
-                .collect(Collectors.toSet());
-    }
-
     @Override
     public List<ProductResponse> getProductsByCategory(String categoryName) {
         List<ProductEntity> products = productRepository.findByCategoryName(categoryName);
@@ -298,7 +357,11 @@ public class ProductServiceImpl implements ProductService {
     @Transactional(rollbackFor = {ActionFailedException.class, Exception.class})
     public void verifyProduct(String id) {
         var product = getProductEntityById(id);
+        if (product.getStatus() != ProductStatusEnum.INIT) {
+            throw new ValidationException("Product is not in INIT status");
+        }
         product.setVerified(true);
+        product.setStatus(ProductStatusEnum.ACTIVE);
         try {
             var result = productRepository.save(product);
             saveProductDocument(result, result.getId());
@@ -311,6 +374,10 @@ public class ProductServiceImpl implements ProductService {
     @Transactional(rollbackFor = {ActionFailedException.class, Exception.class})
     public void unverifyProduct(String id) {
         var product = getProductEntityById(id);
+        if (product.getStatus() != ProductStatusEnum.INIT) {
+            throw new ValidationException("Product is not in INIT status");
+        }
+        product.setStatus(ProductStatusEnum.INACTIVE);
         product.setVerified(false);
         try {
             productRepository.save(product);
@@ -318,7 +385,6 @@ public class ProductServiceImpl implements ProductService {
             throw new ActionFailedException("Failed to unverify product", ex);
         }
     }
-
 
     @Override
     public FieldAdvanceSearch filedAdvanceSearch(QueryWrapper queryWrapper) {
@@ -390,6 +456,50 @@ public class ProductServiceImpl implements ProductService {
                 .build();
     }
 
+    private boolean isOnlyQuantityChanged(ProductEntity oldProduct, UpdateProductRequest request, Set<CategoryEntity> newCategories) {
+        return !Objects.equals(oldProduct.getQuantity(), request.getQuantity()) &&
+                Objects.equals(oldProduct.getName(), request.getName()) &&
+                Objects.equals(oldProduct.getShortDescription(), request.getShortDescription()) &&
+                Objects.equals(oldProduct.getDescription(), request.getDescription()) &&
+                Objects.equals(oldProduct.getThumbnail(), request.getThumbnail()) &&
+                Objects.equals(oldProduct.getProductImages(), request.getProductImages()) &&
+                Objects.equals(oldProduct.getBrand().getId(), request.getBrandId()) &&
+                Objects.equals(oldProduct.getModel(), request.getModel()) &&
+                Objects.equals(oldProduct.getCurrentPrice(), request.getCurrentPrice()) &&
+                Objects.equals(oldProduct.getCategories(), newCategories) &&
+                Objects.equals(oldProduct.getTags(), request.getTags()) &&
+                Objects.equals(oldProduct.getWarrantyExpiryDate(), request.getWarrantyExpiryDate()) &&
+                Objects.equals(oldProduct.getCondition(), request.getCondition());
+    }
+
+    private void validateReTradeUpdate(ProductEntity oldProduct, UpdateProductRequest request, Set<CategoryEntity> newCategories) {
+        if (oldProduct.getParentProduct() != null) {
+            if (!Objects.equals(oldProduct.getName(), request.getName())) {
+                throw new ValidationException("Cannot change name for resale product");
+            }
+            if (!Objects.equals(oldProduct.getBrand().getId(), request.getBrandId())) {
+                throw new ValidationException("Cannot change brand for resale product");
+            }
+            if (!Objects.equals(oldProduct.getModel(), request.getModel())) {
+                throw new ValidationException("Cannot change model for resale product");
+            }
+            if (!Objects.equals(oldProduct.getCategories(), newCategories)) {
+                throw new ValidationException("Cannot change categories for resale product");
+            }
+            if (!Objects.equals(oldProduct.getQuantity(), request.getQuantity())) {
+                throw new ValidationException("Cannot change quantity for resale product");
+            }
+        }
+    }
+
+    private Set<String> getElasticSearchIds(QueryFieldWrapper keyword, Pageable pagination) {
+        var searchHits = queryElasticSearchByKeyword(keyword, pagination);
+        return searchHits.getSearchHits()
+                .stream()
+                .map(SearchHit::getId)
+                .collect(Collectors.toSet());
+    }
+
     private Set<String> extractBucketKeys(AggregationsContainer<?> aggregations, String aggName) {
         Set<String> keys = new HashSet<>();
         if (aggregations == null) return keys;
@@ -409,7 +519,6 @@ public class ProductServiceImpl implements ProductService {
         }
         return keys;
     }
-
 
     private Set<String> extractNestedBucketKeys(AggregationsContainer<?> aggregations, String nestedAggName, String termsAggName) {
         Set<String> keys = new HashSet<>();
@@ -433,8 +542,6 @@ public class ProductServiceImpl implements ProductService {
         }
         return keys;
     }
-
-
 
     private BigDecimal extractMin(AggregationsContainer<?> aggregations, String aggName) {
         if (aggregations != null) {
@@ -508,6 +615,7 @@ public class ProductServiceImpl implements ProductService {
                 .createdAt(product.getCreatedDate() != null ? product.getCreatedDate().toLocalDateTime() : null)
                 .updatedAt(product.getUpdatedDate() != null ? product.getUpdatedDate().toLocalDateTime() : null)
                 .avgVote(Optional.ofNullable(product.getAvgVote()).orElse(0.0))
+                .retraded(product.getParentProduct() != null)
                 .build();
     }
 
@@ -528,6 +636,7 @@ public class ProductServiceImpl implements ProductService {
         addBrandPredicate(param.remove("brand"), root, criteriaBuilder, predicates);
         addSellerPredicate(param.remove("seller"), root, criteriaBuilder, predicates);
         addStatePredicate(param.remove("state"), root, criteriaBuilder, predicates);
+        addStatusPredicate(param.remove("status"), root, criteriaBuilder, predicates);
         return predicates.toArray(new Predicate[0]);
     }
 
@@ -565,6 +674,23 @@ public class ProductServiceImpl implements ProductService {
         }
     }
 
+    private void addStatusPredicate(QueryFieldWrapper state, Root<ProductEntity> root, CriteriaBuilder criteriaBuilder, Set<Predicate> predicates) {
+        if (state == null) return;
+        Set<String> states = extractStringValues(state);
+        Set<ProductStatusEnum> stateEnums = states.stream()
+                .map(s -> {
+                    try {
+                        return ProductStatusEnum.valueOf(s.trim().toUpperCase());
+                    } catch (IllegalArgumentException e) {
+                        return null;
+                    }
+                })
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        if (!states.isEmpty()) {
+            predicates.add(root.get("status").in(stateEnums));
+        }
+    }
 
     private Set<String> extractStringValues(QueryFieldWrapper wrapper) {
         if (wrapper == null) return Set.of();
@@ -789,14 +915,6 @@ public class ProductServiceImpl implements ProductService {
         }
     }
 
-    private Set<String> convertCategoryEntitiesToNames(Set<CategoryEntity> categoryEntities) {
-        if (categoryEntities == null || categoryEntities.isEmpty()) {
-            return Set.of();
-        }
-        return categoryEntities.stream()
-                .map(CategoryEntity::getName)
-                .collect(Collectors.toSet());
-    }
     private List<CategoryBaseResponse> covertCategoryEntitiesToCategories(Set<CategoryEntity> categoryEntities) {
         if (categoryEntities == null || categoryEntities.isEmpty()) {
             return Collections.emptyList();
