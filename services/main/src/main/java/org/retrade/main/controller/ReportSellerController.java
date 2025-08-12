@@ -105,6 +105,50 @@ public class ReportSellerController {
         );
     }
 
+    @GetMapping("seller/me")
+    @PreAuthorize("hasRole('ROLE_SELLER')")
+    public ResponseEntity<ResponseObject<List<ReportSellerResponse>>> getAllReportBySellerMe(
+            @Parameter(description = "Search query to filter reports")
+            @RequestParam(required = false, name = "q") String search,
+            @Parameter(description = "Pagination parameters")
+            @PageableDefault(size = 10) Pageable pageable) {
+        var queryWrapper = new QueryWrapper.QueryWrapperBuilder()
+                .search(search)
+                .wrapSort(pageable)
+                .build();
+        var result = reportSellerService.getAllReportBySellerAuth(queryWrapper);
+        return ResponseEntity.ok(
+                new ResponseObject.Builder<List<ReportSellerResponse>>()
+                        .success(true)
+                        .code("SUCCESS")
+                        .unwrapPaginationWrapper(result)
+                        .messages("Get all report by seller me successfully")
+                        .build()
+        );
+    }
+
+    @GetMapping("customer/me")
+    @PreAuthorize("hasRole('ROLE_CUSTOMER')")
+    public ResponseEntity<ResponseObject<List<ReportSellerResponse>>> getAllReportByCustomerMe(
+            @Parameter(description = "Search query to filter reports")
+            @RequestParam(required = false, name = "q") String search,
+            @Parameter(description = "Pagination parameters")
+            @PageableDefault(size = 10) Pageable pageable) {
+        var queryWrapper = new QueryWrapper.QueryWrapperBuilder()
+                .search(search)
+                .wrapSort(pageable)
+                .build();
+        var result = reportSellerService.getAllReportByCustomerAuth(queryWrapper);
+        return ResponseEntity.ok(
+                new ResponseObject.Builder<List<ReportSellerResponse>>()
+                        .success(true)
+                        .code("SUCCESS")
+                        .unwrapPaginationWrapper(result)
+                        .messages("Get all report by seller me successfully")
+                        .build()
+        );
+    }
+
 
     @GetMapping("{id}")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
