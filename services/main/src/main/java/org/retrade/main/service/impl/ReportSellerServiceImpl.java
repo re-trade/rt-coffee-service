@@ -367,6 +367,7 @@ public class ReportSellerServiceImpl implements ReportSellerService {
     private ReportSellerEvidenceResponse mapToReportSellerEvidenceResponse(ReportSellerEvidenceEntity reportSellerEvidenceEntity, SenderRoleEnum typeMapping) {
         var response =  ReportSellerEvidenceResponse.builder()
                 .id(reportSellerEvidenceEntity.getId())
+                .createdAt(reportSellerEvidenceEntity.getCreatedDate().toLocalDateTime())
                 .senderRole(reportSellerEvidenceEntity.getSenderRole())
                 .senderId(reportSellerEvidenceEntity.getSender() != null ? reportSellerEvidenceEntity.getSender().getId() : null)
                 .notes(reportSellerEvidenceEntity.getNote())
