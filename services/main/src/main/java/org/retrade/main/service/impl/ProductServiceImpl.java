@@ -177,6 +177,7 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+@Transactional(rollbackFor = {ActionFailedException.class, Exception.class, ValidationException.class})
     public void updateSellerProductStatus(UpdateProductStatusRequest request) {
         Map<ProductStatusEnum, Set<ProductStatusEnum>> SELLER_ALLOWED_TRANSITIONS = Map.of(
                 ProductStatusEnum.DRAFT, Set.of(ProductStatusEnum.INACTIVE, ProductStatusEnum.INIT),
@@ -238,6 +239,10 @@ public class ProductServiceImpl implements ProductService {
     public PaginationWrapper<List<ProductResponse>> getAllProducts(QueryWrapper queryWrapper) {
         return productRepository.query(queryWrapper, (param) -> (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
+            if (query != null) {
+                query.orderBy(criteriaBuilder.desc(root.get("createdDate")));
+                query.orderBy(criteriaBuilder.desc(root.get("updatedDate")));
+            }
             return getPredicate(param, root, criteriaBuilder, predicates);
         }, (items) -> {
             var list = items.map(this::mapToProductResponse).stream().toList();
@@ -318,6 +323,10 @@ public class ProductServiceImpl implements ProductService {
         return productRepository.query(queryWrapper, (param) -> (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
             applyProductSearchFilters(predicates, keyword, queryWrapper.pagination(), criteriaBuilder, param, root);
+            if (query != null) {
+                query.orderBy(criteriaBuilder.desc(root.get("createdDate")));
+                query.orderBy(criteriaBuilder.desc(root.get("updatedDate")));
+            }
             return predicates.isEmpty() ?
                     criteriaBuilder.conjunction() :
                     criteriaBuilder.and(predicates.toArray(new Predicate[0]));
@@ -943,6 +952,10 @@ public class ProductServiceImpl implements ProductService {
             List<Predicate> predicates = new ArrayList<>();
             applyProductSearchFilters(predicates, keyword, queryWrapper.pagination(), criteriaBuilder, param, root);
             predicates.add(criteriaBuilder.equal(root.get("seller"), seller));
+            if (query != null) {
+                query.orderBy(criteriaBuilder.desc(root.get("createdDate")));
+                query.orderBy(criteriaBuilder.desc(root.get("updatedDate")));
+            }
             return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
         }, (items) -> {
             var list = items.map(this::mapToProductResponse).stream().toList();
