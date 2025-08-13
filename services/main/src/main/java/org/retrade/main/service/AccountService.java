@@ -36,6 +36,11 @@ public interface AccountService {
     @Transactional(rollbackFor = {ActionFailedException.class, Exception.class})
     AccountResponse updateUsername(UpdateUsernameRequest updateRequest, HttpServletRequest request, HttpServletResponse response);
 
+    @Transactional(rollbackFor = {ActionFailedException.class, Exception.class})
+    void banAccount(String accountId);
+
+    void unbanAccount(String accountId);
+
     AccountResponse disableCustomerAccount(String customerId);
 
     AccountResponse enableCustomerAccount(String customerId);

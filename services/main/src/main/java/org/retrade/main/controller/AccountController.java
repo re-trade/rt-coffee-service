@@ -264,4 +264,25 @@ public class AccountController {
                 .build());
     }
 
+    @PatchMapping("{id}/ban")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    public ResponseEntity<ResponseObject<Void>> banAccount(@PathVariable String id) {
+        accountService.banAccount(id);
+        return ResponseEntity.ok(new ResponseObject.Builder<Void>()
+                .success(true)
+                .code("SUCCESS")
+                .messages("Account deleted successfully")
+                .build());
+    }
+
+    @PatchMapping("{id}/unban")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    public ResponseEntity<ResponseObject<Void>> unbanAccount(@PathVariable String id) {
+        accountService.unbanAccount(id);
+        return ResponseEntity.ok(new ResponseObject.Builder<Void>()
+                .success(true)
+                .code("SUCCESS")
+                .messages("Account deleted successfully")
+                .build());
+    }
 }

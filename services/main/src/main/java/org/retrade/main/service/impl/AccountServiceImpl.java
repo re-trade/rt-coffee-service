@@ -196,6 +196,42 @@ public class AccountServiceImpl implements AccountService {
         }
     }
 
+    @Transactional(rollbackFor = {ActionFailedException.class, Exception.class})
+    @Override
+    public void banAccount(String accountId) {
+        var account = accountRepository.findById(accountId)
+                .orElseThrow(() -> new ValidationException("Account not found with ID: " + accountId));
+        account.setLocked(true);
+        var accountRoles = account.getAccountRoles();
+        accountRoles.forEach(accountRole -> {
+            accountRole.setEnabled(false);
+        });
+        try {
+            accountRepository.save(account);
+            accountRoleRepository.saveAll(accountRoles);
+        } catch (Exception e) {
+            throw new ActionFailedException("Error while banning account", e);
+        }
+    }
+
+    @Override
+    @Transactional(rollbackFor = {ActionFailedException.class, Exception.class})
+    public void unbanAccount(String accountId) {
+        var account = accountRepository.findById(accountId)
+                .orElseThrow(() -> new ValidationException("Account not found with ID: " + accountId));
+        account.setLocked(false);
+        var accountRoles = account.getAccountRoles();
+        accountRoles.forEach(accountRole -> {
+            accountRole.setEnabled(true);
+        });
+        try {
+            accountRepository.save(account);
+            accountRoleRepository.saveAll(accountRoles);
+        } catch (Exception e) {
+            throw new ActionFailedException("Error while unbanning account", e);
+        }
+    }
+
     @Override
     @Transactional(rollbackFor = {ActionFailedException.class, Exception.class})
     public AccountResponse disableCustomerAccount(String customerId) {
