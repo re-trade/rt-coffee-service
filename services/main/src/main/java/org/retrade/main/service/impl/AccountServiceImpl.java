@@ -15,12 +15,10 @@ import org.retrade.main.model.dto.response.AccountResponse;
 import org.retrade.main.model.entity.AccountEntity;
 import org.retrade.main.model.entity.AccountRoleEntity;
 import org.retrade.main.model.entity.CustomerEntity;
-import org.retrade.main.model.entity.RoleEntity;
 import org.retrade.main.model.message.EmailNotificationMessage;
 import org.retrade.main.repository.jpa.AccountRepository;
 import org.retrade.main.repository.jpa.AccountRoleRepository;
 import org.retrade.main.repository.jpa.CustomerRepository;
-import org.retrade.main.repository.jpa.RoleRepository;
 import org.retrade.main.service.AccountService;
 import org.retrade.main.service.JwtService;
 import org.retrade.main.service.MessageProducerService;
@@ -44,7 +42,6 @@ public class AccountServiceImpl implements AccountService {
     private final AuthUtils authUtils;
     private final CustomerRepository customerRepository;
     private final AccountRoleRepository accountRoleRepository;
-    private final RoleRepository roleRepository;
 
     @Override
     public AccountResponse getMe() {
@@ -107,8 +104,6 @@ public class AccountServiceImpl implements AccountService {
 
     @Override
     public void resetPassword(String id) {
-        AccountEntity currentAccount = authUtils.getUserAccountFromAuthentication();
-
         var account = accountRepository.findById(id).orElseThrow(() -> new ValidationException("Account not found with id: " + id));
         var passwordGen = TokenUtils.generatePassword(12);
         account.setHashPassword(passwordEncoder.encode(passwordGen));
@@ -199,7 +194,9 @@ public class AccountServiceImpl implements AccountService {
     }
 
     @Override
+    @Transactional(rollbackFor = {ActionFailedException.class, Exception.class})
     public AccountResponse disableCustomerAccount(String customerId) {
+
         var roles = authUtils.getRolesFromAuthUser();
         if (!roles.contains("ROLE_ADMIN")) {
             throw new ValidationException("User does not have permission to approve seller");
@@ -209,23 +206,31 @@ public class AccountServiceImpl implements AccountService {
                 .orElseThrow(() -> new ValidationException("Customer not found with ID: " + customerId));
 
         AccountEntity account = customer.getAccount();
-        Optional<RoleEntity> customerRole = roleRepository.findByCode("ROLE_CUSTOMER");
+        Set<AccountRoleEntity> accountRoles = account.getAccountRoles();
 
+        Optional<AccountRoleEntity> customerRole = accountRoles.stream()
+                .filter(accountRole -> "ROLE_CUSTOMER".equals(accountRole.getRole().getCode()))
+                .findFirst();
 
-
-        Optional<AccountRoleEntity> roleToUpdate = accountRoleRepository.findByAccountIdAndRoleId(account.getId(), customerRole.get().getId());
-
-        AccountRoleEntity accountRole = roleToUpdate.orElseThrow(() ->
-                new ValidationException("AccountRole not found for accountId: " + account.getId() + " and roleId: " + customerRole.get().getId()));
-
-        accountRole.setEnabled(false);
-        accountRoleRepository.save(accountRole);
-        return mapToAccountResponse(account);
+        if (customerRole.isEmpty()) {
+            throw new ValidationException("Customer role not found for account ID: " + account.getId());
+        }
+        account.setEnabled(false);
+        AccountRoleEntity roleToUpdate = customerRole.get();
+        roleToUpdate.setEnabled(false);
+        try {
+            accountRoleRepository.save(roleToUpdate);
+            accountRepository.save(account);
+            return mapToAccountResponse(account);
+        } catch (Exception e) {
+            throw new ActionFailedException("Error while disabling account", e);
+        }
 
     }
 
 
     @Override
+    @Transactional(rollbackFor = {ActionFailedException.class, Exception.class})
     public AccountResponse enableCustomerAccount(String customerId) {
         var roles = authUtils.getRolesFromAuthUser();
         if (!roles.contains("ROLE_ADMIN")) {
@@ -236,28 +241,25 @@ public class AccountServiceImpl implements AccountService {
                 .orElseThrow(() -> new ValidationException("Customer not found with ID: " + customerId));
 
         AccountEntity account = customer.getAccount();
-        Optional<RoleEntity> customerRole = roleRepository.findByCode("ROLE_CUSTOMER");
+        Set<AccountRoleEntity> accountRoles = account.getAccountRoles();
 
+        Optional<AccountRoleEntity> customerRole = accountRoles.stream()
+                .filter(accountRole -> "ROLE_CUSTOMER".equals(accountRole.getRole().getCode()))
+                .findFirst();
 
-
-        Optional<AccountRoleEntity> roleToUpdate = accountRoleRepository.findByAccountIdAndRoleId(account.getId(), customerRole.get().getId());
-
-        AccountRoleEntity accountRole = roleToUpdate.orElseThrow(() ->
-                new ValidationException("AccountRole not found for accountId: " + account.getId() + " and roleId: " + customerRole.get().getId()));
-
-        accountRole.setEnabled(true);
-        accountRoleRepository.save(accountRole);
-        return mapToAccountResponse(account);
-
-    }
-
-    private CustomerEntity getCurrentCustomerAccount() {
-        var account = authUtils.getUserAccountFromAuthentication();
-        var customerEntity = account.getCustomer();
-        if (customerEntity == null) {
-            throw new ValidationException("User is not a customer");
+        if (customerRole.isEmpty()) {
+            throw new ValidationException("Customer role not found for account ID: " + account.getId());
         }
-        return customerEntity;
+        account.setEnabled(false);
+        AccountRoleEntity roleToUpdate = customerRole.get();
+        roleToUpdate.setEnabled(true);
+        try {
+            accountRoleRepository.save(roleToUpdate);
+            accountRepository.save(account);
+            return mapToAccountResponse(account);
+        } catch (Exception e) {
+            throw new ActionFailedException("Error while enabling account", e);
+        }
     }
 
     private AccountResponse mapToAccountResponse(AccountEntity account) {
