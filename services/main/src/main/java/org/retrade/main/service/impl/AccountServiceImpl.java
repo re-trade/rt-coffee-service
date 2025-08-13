@@ -11,7 +11,10 @@ import org.retrade.common.model.exception.ValidationException;
 import org.retrade.main.model.dto.request.UpdateEmailRequest;
 import org.retrade.main.model.dto.request.UpdatePasswordRequest;
 import org.retrade.main.model.dto.request.UpdateUsernameRequest;
+import org.retrade.main.model.dto.response.AccountDetailResponse;
 import org.retrade.main.model.dto.response.AccountResponse;
+import org.retrade.main.model.dto.response.CustomerBaseResponse;
+import org.retrade.main.model.dto.response.SellerBaseResponse;
 import org.retrade.main.model.entity.AccountEntity;
 import org.retrade.main.model.entity.AccountRoleEntity;
 import org.retrade.main.model.entity.CustomerEntity;
@@ -60,14 +63,14 @@ public class AccountServiceImpl implements AccountService {
     }
 
     @Override
-    public AccountResponse getAccountById(String id) {
+    public AccountDetailResponse getAccountById(String id) {
         AccountEntity currentAccount = authUtils.getUserAccountFromAuthentication();
         AccountEntity account = accountRepository.findById(id)
                 .orElseThrow(() -> new ValidationException("Account not found with id: " + id));
         if (!currentAccount.getId().equals(id) && !AuthUtils.convertAccountToRole(currentAccount).contains("ROLE_ADMIN")) {
             throw new ValidationException("Access denied: You can only access your own account");
         }
-        return mapToAccountResponse(account);
+        return mapToAccountDetailResponse(account);
     }
 
     @Override
@@ -225,9 +228,7 @@ public class AccountServiceImpl implements AccountService {
         } catch (Exception e) {
             throw new ActionFailedException("Error while disabling account", e);
         }
-
     }
-
 
     @Override
     @Transactional(rollbackFor = {ActionFailedException.class, Exception.class})
@@ -275,5 +276,59 @@ public class AccountServiceImpl implements AccountService {
                 .lastLogin(account.getLastLogin())
                 .roles(AuthUtils.convertAccountToRole(account));
         return builder.build();
+    }
+
+    private AccountDetailResponse mapToAccountDetailResponse(AccountEntity account) {
+        var customer = account.getCustomer();
+        var seller = account.getSeller();
+        CustomerBaseResponse customerProfile = null;
+        SellerBaseResponse sellerProfile = null;
+        if (customer != null) {
+            customerProfile = CustomerBaseResponse.builder()
+                    .id(customer.getId())
+                    .firstName(customer.getFirstName())
+                    .lastName(customer.getLastName())
+                    .phone(customer.getPhone())
+                    .address(customer.getAddress())
+                    .avatarUrl(customer.getAvatarUrl())
+                    .username(customer.getAccount().getUsername())
+                    .email(customer.getAccount().getEmail())
+                    .gender(customer.getGender())
+                    .lastUpdate(customer.getUpdatedDate().toLocalDateTime())
+                    .build();
+        }
+        if (seller != null) {
+            sellerProfile = SellerBaseResponse.builder()
+                    .id(seller.getId())
+                    .shopName(seller.getShopName())
+                    .description(seller.getDescription())
+                    .avatarUrl(seller.getAvatarUrl())
+                    .email(seller.getEmail())
+                    .background(seller.getBackground())
+                    .phoneNumber(seller.getPhoneNumber())
+                    .verified(seller.getVerified())
+                    .identityVerifiedStatus(seller.getIdentityVerified())
+                    .createdAt(seller.getCreatedDate().toLocalDateTime())
+                    .updatedAt(seller.getUpdatedDate().toLocalDateTime())
+                    .addressLine(seller.getAddressLine())
+                    .district(seller.getDistrict())
+                    .ward(seller.getWard())
+                    .state(seller.getState())
+                    .build();
+        }
+        return AccountDetailResponse.builder()
+                .id(account.getId())
+                .username(account.getUsername())
+                .email(account.getEmail())
+                .enabled(account.isEnabled())
+                .locked(account.isLocked())
+                .using2FA(account.isUsing2FA())
+                .joinInDate(account.getJoinInDate())
+                .changedUsername(account.isChangedUsername())
+                .lastLogin(account.getLastLogin())
+                .roles(AuthUtils.convertAccountToRole(account))
+                .customerProfile(customerProfile)
+                .sellerProfile(sellerProfile)
+                .build();
     }
 }

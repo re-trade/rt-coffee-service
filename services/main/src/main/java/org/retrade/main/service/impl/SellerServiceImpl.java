@@ -16,8 +16,8 @@ import org.retrade.main.model.dto.request.ApproveSellerRequest;
 import org.retrade.main.model.dto.request.SellerRegisterRequest;
 import org.retrade.main.model.dto.request.SellerUpdateRequest;
 import org.retrade.main.model.dto.response.SellerBaseMetricResponse;
-import org.retrade.main.model.dto.response.SellerBaseResponse;
 import org.retrade.main.model.dto.response.SellerRegisterResponse;
+import org.retrade.main.model.dto.response.SellerResponse;
 import org.retrade.main.model.dto.response.SellerStatusResponse;
 import org.retrade.main.model.entity.AccountRoleEntity;
 import org.retrade.main.model.entity.RoleEntity;
@@ -127,13 +127,13 @@ public class SellerServiceImpl implements SellerService {
     }
 
     @Override
-    public PaginationWrapper<List<SellerBaseResponse>> getSellers(QueryWrapper wrapper) {
+    public PaginationWrapper<List<SellerResponse>> getSellers(QueryWrapper wrapper) {
         return sellerRepository.query(wrapper, (param) -> (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
             return getSellerPredicate(param, root, criteriaBuilder, predicates);
         }, (items) -> {
-            var list = items.map(this::wrapSellerBaseResponse).stream().toList();
-            return new PaginationWrapper.Builder<List<SellerBaseResponse>>()
+            var list = items.map(this::wrapSellerResponse).stream().toList();
+            return new PaginationWrapper.Builder<List<SellerResponse>>()
                     .setPaginationInfo(items)
                     .setData(list)
                     .build();
@@ -178,7 +178,7 @@ public class SellerServiceImpl implements SellerService {
     }
 
     @Override
-    public SellerBaseResponse updateSellerProfile(SellerUpdateRequest request) {
+    public SellerResponse updateSellerProfile(SellerUpdateRequest request) {
         var accountEntity = authUtils.getUserAccountFromAuthentication();
         var sellerEntity = accountEntity.getSeller();
         if (sellerEntity == null) {
@@ -196,7 +196,7 @@ public class SellerServiceImpl implements SellerService {
         sellerEntity.setPhoneNumber(request.getPhoneNumber());
         try {
             var result = sellerRepository.save(sellerEntity);
-            return wrapSellerBaseResponse(result);
+            return wrapSellerResponse(result);
         } catch (Exception ex) {
             throw new ActionFailedException("Failed to create seller", ex);
         }
@@ -226,11 +226,11 @@ public class SellerServiceImpl implements SellerService {
     }
 
     @Override
-    public SellerBaseResponse getSellerDetails(String id) {
+    public SellerResponse getSellerDetails(String id) {
         SellerEntity  seller = sellerRepository.findById(id).orElseThrow(
                 () -> new ValidationException("No such seller existed seller")
         );
-        return wrapSellerBaseResponse(seller);
+        return wrapSellerResponse(seller);
     }
 
     @Override
@@ -251,16 +251,16 @@ public class SellerServiceImpl implements SellerService {
     }
 
     @Override
-    public SellerBaseResponse getMySellers() {
+    public SellerResponse getMySellers() {
         var accountEntity = authUtils.getUserAccountFromAuthentication();
         if (accountEntity.getSeller() == null) {
             throw new ValidationException("Seller is not exist");
         }
-        return wrapSellerBaseResponse(accountEntity.getSeller());
+        return wrapSellerResponse(accountEntity.getSeller());
     }
 
     @Override
-    public SellerBaseResponse banSeller(String sellerId) {
+    public SellerResponse banSeller(String sellerId) {
         var roles = authUtils.getRolesFromAuthUser();
         if (!roles.contains("ROLE_ADMIN")) {
             throw new ValidationException("User does not have permission to approve seller");
@@ -269,11 +269,11 @@ public class SellerServiceImpl implements SellerService {
                 .orElseThrow(() -> new ValidationException("Seller not found with ID: " + sellerId));
         seller.setVerified(false);
         sellerRepository.save(seller);
-        return wrapSellerBaseResponse(seller);
+        return wrapSellerResponse(seller);
     }
 
     @Override
-    public SellerBaseResponse unbanSeller(String sellerId) {
+    public SellerResponse unbanSeller(String sellerId) {
         var roles = authUtils.getRolesFromAuthUser();
         if (!roles.contains("ROLE_ADMIN")) {
             throw new ValidationException("User does not have permission to approve seller");
@@ -282,12 +282,12 @@ public class SellerServiceImpl implements SellerService {
                 .orElseThrow(() -> new ValidationException("Seller not found with ID: " + sellerId));
         seller.setVerified(true);
         sellerRepository.save(seller);
-        return wrapSellerBaseResponse(seller);
+        return wrapSellerResponse(seller);
     }
 
-    private SellerBaseResponse wrapSellerBaseResponse(SellerEntity sellerEntity) {
+    private SellerResponse wrapSellerResponse(SellerEntity sellerEntity) {
         var account = sellerEntity.getAccount();
-        return SellerBaseResponse.builder()
+        return SellerResponse.builder()
                 .id(sellerEntity.getId())
                 .accountId(account.getId())
                 .shopName(sellerEntity.getShopName())

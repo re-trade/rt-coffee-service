@@ -8,6 +8,7 @@ import org.retrade.common.model.exception.ActionFailedException;
 import org.retrade.main.model.dto.request.UpdateEmailRequest;
 import org.retrade.main.model.dto.request.UpdatePasswordRequest;
 import org.retrade.main.model.dto.request.UpdateUsernameRequest;
+import org.retrade.main.model.dto.response.AccountDetailResponse;
 import org.retrade.main.model.dto.response.AccountResponse;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,7 +21,7 @@ public interface AccountService {
 
     boolean checkEmailExisted(String email);
 
-    AccountResponse getAccountById(String id);
+    AccountDetailResponse getAccountById(String id);
 
     void updatePassword(UpdatePasswordRequest request);
 

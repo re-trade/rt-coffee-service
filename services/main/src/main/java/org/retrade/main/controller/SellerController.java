@@ -8,10 +8,7 @@ import org.retrade.main.model.constant.IdentityCardTypeEnum;
 import org.retrade.main.model.dto.request.ApproveSellerRequest;
 import org.retrade.main.model.dto.request.SellerRegisterRequest;
 import org.retrade.main.model.dto.request.SellerUpdateRequest;
-import org.retrade.main.model.dto.response.SellerBaseMetricResponse;
-import org.retrade.main.model.dto.response.SellerBaseResponse;
-import org.retrade.main.model.dto.response.SellerRegisterResponse;
-import org.retrade.main.model.dto.response.SellerStatusResponse;
+import org.retrade.main.model.dto.response.*;
 import org.retrade.main.service.FileService;
 import org.retrade.main.service.OrderService;
 import org.retrade.main.service.SellerService;
@@ -65,9 +62,9 @@ public class SellerController {
     }
 
     @GetMapping("profile")
-    public ResponseEntity<ResponseObject<SellerBaseResponse>> getMySellers() {
+    public ResponseEntity<ResponseObject<SellerResponse>> getMySellers() {
         var result = sellerService.getMySellers();
-        return  ResponseEntity.ok(new ResponseObject.Builder<SellerBaseResponse>()
+        return  ResponseEntity.ok(new ResponseObject.Builder<SellerResponse>()
                 .success(true)
                 .code("SUCCESS")
                 .messages("Profile Seller get Successfully")
@@ -76,7 +73,7 @@ public class SellerController {
     }
 
     @GetMapping()
-    public ResponseEntity<ResponseObject<List<SellerBaseResponse>>> getSellers(
+    public ResponseEntity<ResponseObject<List<SellerResponse>>> getSellers(
             @RequestParam(required = false, name = "q") String search,
             @PageableDefault(size = 10) Pageable pageable
     ) {
@@ -84,7 +81,7 @@ public class SellerController {
                         .wrapSort(pageable)
                         .search(search)
                 .build());
-        return ResponseEntity.ok(new ResponseObject.Builder<List<SellerBaseResponse>>()
+        return ResponseEntity.ok(new ResponseObject.Builder<List<SellerResponse>>()
                         .unwrapPaginationWrapper(result)
                         .success(true)
                         .code("SUCCESS")
@@ -93,9 +90,9 @@ public class SellerController {
     }
 
     @PutMapping(path = "profile")
-    public ResponseEntity<ResponseObject<SellerBaseResponse>> updateSellerProfile(@RequestBody @Valid SellerUpdateRequest request) {
+    public ResponseEntity<ResponseObject<SellerResponse>> updateSellerProfile(@RequestBody @Valid SellerUpdateRequest request) {
         var result = sellerService.updateSellerProfile(request);
-        return ResponseEntity.ok(new ResponseObject.Builder<SellerBaseResponse>()
+        return ResponseEntity.ok(new ResponseObject.Builder<SellerResponse>()
                 .success(true)
                 .code("SUCCESS")
                 .messages("Profile Seller Save Successfully")
@@ -115,10 +112,10 @@ public class SellerController {
                 .build());
     }
     @GetMapping("{id}")
-    public ResponseEntity<ResponseObject<SellerBaseResponse>> getSellerById(@PathVariable String id) {
+    public ResponseEntity<ResponseObject<SellerResponse>> getSellerById(@PathVariable String id) {
 
         var result = sellerService.getSellerDetails(id);
-        return  ResponseEntity.ok(new ResponseObject.Builder<SellerBaseResponse>()
+        return  ResponseEntity.ok(new ResponseObject.Builder<SellerResponse>()
                 .success(true)
                 .code("SUCCESS")
                 .messages("Profile Seller get Successfully")
@@ -130,9 +127,9 @@ public class SellerController {
 
     @PutMapping("{id}/ban-seller")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
-    public ResponseEntity<ResponseObject<SellerBaseResponse>> banSeller(@PathVariable String id) {
+    public ResponseEntity<ResponseObject<SellerResponse>> banSeller(@PathVariable String id) {
         sellerService.banSeller(id);
-        return ResponseEntity.ok(new ResponseObject.Builder<SellerBaseResponse>()
+        return ResponseEntity.ok(new ResponseObject.Builder<SellerResponse>()
                 .success(true)
                 .code("SUCCESS")
                 .messages("ban seller with" + id + "successfully")
@@ -141,9 +138,9 @@ public class SellerController {
 
     @PutMapping("{id}/unban-seller")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
-    public ResponseEntity<ResponseObject<SellerBaseResponse>> unbanSeller(@PathVariable String id) {
+    public ResponseEntity<ResponseObject<SellerResponse>> unbanSeller(@PathVariable String id) {
         sellerService.unbanSeller(id);
-        return ResponseEntity.ok(new ResponseObject.Builder<SellerBaseResponse>()
+        return ResponseEntity.ok(new ResponseObject.Builder<SellerResponse>()
                 .success(true)
                 .code("SUCCESS")
                 .messages("ban seller with" + id + " successfully")

@@ -18,6 +18,7 @@ import org.retrade.common.model.dto.response.ResponseObject;
 import org.retrade.main.model.dto.request.UpdateEmailRequest;
 import org.retrade.main.model.dto.request.UpdatePasswordRequest;
 import org.retrade.main.model.dto.request.UpdateUsernameRequest;
+import org.retrade.main.model.dto.response.AccountDetailResponse;
 import org.retrade.main.model.dto.response.AccountResponse;
 import org.retrade.main.service.AccountService;
 import org.springframework.data.domain.Pageable;
@@ -53,9 +54,10 @@ public class AccountController {
     }
 
     @GetMapping("{id}")
-    public ResponseEntity<ResponseObject<AccountResponse>> getAccountById(@PathVariable String id) {
-        AccountResponse response = accountService.getAccountById(id);
-        return ResponseEntity.ok(new ResponseObject.Builder<AccountResponse>()
+    @PreAuthorize(value = "hasRole('ROLE_ADMIN')")
+    public ResponseEntity<ResponseObject<AccountDetailResponse>> getAccountById(@PathVariable String id) {
+        var response = accountService.getAccountById(id);
+        return ResponseEntity.ok(new ResponseObject.Builder<AccountDetailResponse>()
                 .success(true)
                 .code("SUCCESS")
                 .content(response)

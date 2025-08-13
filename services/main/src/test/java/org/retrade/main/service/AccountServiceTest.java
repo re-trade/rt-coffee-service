@@ -12,6 +12,7 @@ import org.retrade.common.model.exception.ValidationException;
 import org.retrade.main.model.dto.request.UpdateEmailRequest;
 import org.retrade.main.model.dto.request.UpdatePasswordRequest;
 import org.retrade.main.model.dto.request.UpdateUsernameRequest;
+import org.retrade.main.model.dto.response.AccountDetailResponse;
 import org.retrade.main.model.dto.response.AccountResponse;
 import org.retrade.main.model.entity.AccountEntity;
 import org.retrade.main.model.entity.AccountRoleEntity;
@@ -23,7 +24,9 @@ import org.retrade.main.util.AuthUtils;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.HashSet;
+import java.util.Optional;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -156,7 +159,7 @@ class AccountServiceTest {
         when(authUtils.getUserAccountFromAuthentication()).thenReturn(account);
         when(accountRepository.findById("1")).thenReturn(Optional.of(account));
 
-        AccountResponse response = accountService.getAccountById("1");
+        AccountDetailResponse response = accountService.getAccountById("1");
 
         assertNotNull(response);
         assertEquals("1", response.getId());
