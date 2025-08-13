@@ -53,7 +53,7 @@ public class OrderHistoryServiceImpl implements OrderHistoryService {
         return mapEntityToResponse(orderHistoryEntity);
     }
 
-    @Transactional
+    @Transactional(rollbackOn = {ValidationException.class, ActionFailedException.class})
     @Override
     public OrderHistoryResponse createOrderHistory(CreateOrderHistoryRequest request) {
         var seller = getSellerEntity();
