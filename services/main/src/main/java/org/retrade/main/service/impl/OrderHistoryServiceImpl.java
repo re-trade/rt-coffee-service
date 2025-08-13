@@ -4,13 +4,14 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.retrade.common.model.exception.ActionFailedException;
 import org.retrade.common.model.exception.ValidationException;
+import org.retrade.main.model.constant.OrderStatusCodes;
 import org.retrade.main.model.dto.request.CreateOrderHistoryRequest;
 import org.retrade.main.model.dto.response.OrderHistoryResponse;
 import org.retrade.main.model.dto.response.OrderStatusResponse;
-import org.retrade.main.model.entity.OrderComboEntity;
 import org.retrade.main.model.entity.OrderHistoryEntity;
 import org.retrade.main.model.entity.OrderStatusEntity;
 import org.retrade.main.model.entity.SellerEntity;
+import org.retrade.main.repository.jpa.AccountRepository;
 import org.retrade.main.repository.jpa.OrderComboRepository;
 import org.retrade.main.repository.jpa.OrderHistoryRepository;
 import org.retrade.main.repository.jpa.OrderStatusRepository;
@@ -19,10 +20,10 @@ import org.retrade.main.util.AuthUtils;
 import org.retrade.main.validator.OrderStatusValidator;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -34,6 +35,8 @@ public class OrderHistoryServiceImpl implements OrderHistoryService {
     private final OrderStatusRepository orderStatusRepository;
     private final OrderStatusValidator orderStatusValidator;
     private final AuthUtils authUtils;
+    private final AccountRepository accountRepository;
+
     @Override
     public List<OrderHistoryResponse> getAllNotesByOrderComboId(String id) {
         List<OrderHistoryEntity> orderHistoryEntityList = orderHistoryRepository.findByOrderCombo_Id(id);
@@ -58,23 +61,20 @@ public class OrderHistoryServiceImpl implements OrderHistoryService {
             throw new ValidationException("Seller not found");
         }
 
-        Optional<OrderComboEntity> orderCombo = orderComboRepository.findByIdAndSeller(request.getOrderComboId(), seller);
-        if (orderCombo.isEmpty()) {
-            throw new ValidationException("This order does not belong to you");
-        }
-
+        var orderCombo = orderComboRepository.findByIdAndSeller(request.getOrderComboId(), seller).orElseThrow(
+                () -> new ValidationException("This order does not belong to you")
+        );
         OrderStatusEntity orderNewStatus = orderStatusRepository.findById(request.getNewStatusId()).orElseThrow(
                 () -> new ValidationException("Order status not found")
         );
 
-        if (orderNewStatus.equals(orderCombo.get().getOrderStatus())) {
+        if (orderNewStatus.equals(orderCombo.getOrderStatus())) {
             throw new ValidationException("Order status is already in use");
         }
 
-        String currentStatusCode = orderCombo.get().getOrderStatus().getCode();
+        String currentStatusCode = orderCombo.getOrderStatus().getCode();
         String newStatusCode = orderNewStatus.getCode();
 
-        // Validate chuyển đổi status có hợp lệ không
         if (!orderStatusValidator.isValidStatusTransition(currentStatusCode, newStatusCode)) {
             Set<String> validNextStatuses = orderStatusValidator.getValidNextStatuses(currentStatusCode);
             String validStatusesStr = String.join(", ", validNextStatuses);
@@ -86,19 +86,24 @@ public class OrderHistoryServiceImpl implements OrderHistoryService {
         }
 
         OrderHistoryEntity orderHistoryEntity = new OrderHistoryEntity();
-        orderHistoryEntity.setOrderCombo(orderCombo.get());
+        orderHistoryEntity.setOrderCombo(orderCombo);
         orderHistoryEntity.setSeller(seller);
         orderHistoryEntity.setNotes(request.getNotes());
         orderHistoryEntity.setNewOrderStatus(orderNewStatus);
-        orderHistoryEntity.setOldOrderStatus(orderCombo.get().getOrderStatus());
+        orderHistoryEntity.setOldOrderStatus(orderCombo.getOrderStatus());
         orderHistoryEntity.setStatus(true);
 
-        orderCombo.get().setOrderStatus(orderNewStatus);
-
+        orderCombo.setOrderStatus(orderNewStatus);
         try {
-            orderComboRepository.save(orderCombo.get());
+            orderComboRepository.save(orderCombo);
             orderHistoryRepository.save(orderHistoryEntity);
-
+            if (newStatusCode.equals(OrderStatusCodes.CANCELLED)) {
+                var accountCombo = orderCombo.getOrderDestination().getOrder().getCustomer().getAccount();
+                BigDecimal rollbackPrice = orderCombo.getGrandPrice();
+                BigDecimal currentBalance = accountCombo.getBalance() != null ? accountCombo.getBalance() : BigDecimal.ZERO;
+                accountCombo.setBalance(currentBalance.add(rollbackPrice));
+                accountRepository.save(accountCombo);
+            }
             return mapEntityToResponse(orderHistoryEntity);
         } catch (Exception e) {
             throw new ActionFailedException(e.getMessage());
