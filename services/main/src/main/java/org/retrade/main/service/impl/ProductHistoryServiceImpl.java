@@ -11,10 +11,12 @@ import org.retrade.common.model.exception.ActionFailedException;
 import org.retrade.common.model.exception.ValidationException;
 import org.retrade.main.model.constant.OrderStatusCodes;
 import org.retrade.main.model.constant.ProductStatusEnum;
+import org.retrade.main.model.document.ProductDocument;
 import org.retrade.main.model.dto.request.CreateRetradeRequest;
 import org.retrade.main.model.dto.response.CreateRetradeResponse;
 import org.retrade.main.model.dto.response.ProductHistoryResponse;
 import org.retrade.main.model.entity.*;
+import org.retrade.main.repository.elasticsearch.ProductElasticsearchRepository;
 import org.retrade.main.repository.jpa.OrderItemRepository;
 import org.retrade.main.repository.jpa.OrderStatusRepository;
 import org.retrade.main.repository.jpa.ProductRepository;
@@ -35,6 +37,7 @@ public class ProductHistoryServiceImpl implements ProductHistoryService {
     private final ReTradeRecordRepository reTradeRecordRepository;
     private final AuthUtils authUtils;
     private final OrderStatusRepository orderStatusRepository;
+    private final ProductElasticsearchRepository productElasticsearchRepository;
 
     @Override
     public PaginationWrapper<List<ProductHistoryResponse>> getProductHistoryByProductId(String productId, QueryWrapper queryWrapper) {
@@ -73,6 +76,7 @@ public class ProductHistoryServiceImpl implements ProductHistoryService {
                     .quantity(request.getQuantity())
                     .build();
             var resultRecord = reTradeRecordRepository.save(recordEntity);
+            saveProductToElasticSearch(result);
             return CreateRetradeResponse.builder()
                     .productId(productEntity.getId())
                     .retradeProductId(retradeProduct.getId())
@@ -181,6 +185,10 @@ public class ProductHistoryServiceImpl implements ProductHistoryService {
                 .build();
     }
 
+    private void saveProductToElasticSearch(ProductEntity productEntity) {
+        var productDoc = ProductDocument.wrapEntityToDocument(productEntity);
+        productElasticsearchRepository.save(productDoc);
+    }
 
     private Predicate getPredicate(Map<String, QueryFieldWrapper> param, Root<ProductEntity> root, CriteriaBuilder criteriaBuilder, List<Predicate> predicates) {
         if (param != null && !param.isEmpty()) {
