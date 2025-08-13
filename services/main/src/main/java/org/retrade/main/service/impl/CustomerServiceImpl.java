@@ -268,6 +268,7 @@ public class CustomerServiceImpl implements CustomerService {
                 .username(customer.getAccount().getUsername())
                 .email(customer.getAccount().getEmail())
                 .gender(customer.getGender())
+                .locked(account.isLocked())
                 .lastUpdate(customer.getUpdatedDate().toLocalDateTime())
                 .enabled(account.isEnabled())
                 .build();
