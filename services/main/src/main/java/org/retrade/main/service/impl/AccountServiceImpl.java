@@ -245,9 +245,18 @@ public class AccountServiceImpl implements AccountService {
         if (customerRole.isEmpty()) {
             throw new ValidationException("Customer role not found for account ID: " + account.getId());
         }
+        String roleCode = "ROLE_CUSTOMER";
+
+        AccountRoleEntity accountRole = account.getAccountRoles().stream()
+                .filter(ar -> ar.getRole() != null
+                        && roleCode.equals(ar.getRole().getCode()))
+                .findFirst()
+                .orElseThrow(() -> new ValidationException(
+                        "Role " + roleCode + " not found for account ID: " + account.getId()
+                ));
 
         AccountRoleEntity roleToUpdate = customerRole.get();
-        roleToUpdate.setEnabled(true);
+        accountRole.setEnabled(true);
         accountRoleRepository.save(roleToUpdate);
         return mapToAccountResponse(account);
 
