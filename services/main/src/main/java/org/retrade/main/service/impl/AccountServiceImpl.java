@@ -299,6 +299,38 @@ public class AccountServiceImpl implements AccountService {
         }
     }
 
+    @Transactional(rollbackFor = {ActionFailedException.class, Exception.class})
+    @Override
+    public void banSellerAccount(String accountId) {
+        var account = accountRepository.findById(accountId)
+                .orElseThrow(() -> new ValidationException("Account not found with ID: " + accountId));
+        var accountRoles = account.getAccountRoles();
+        accountRoles.stream().filter(accountRole -> "ROLE_SELLER".equals(accountRole.getRole().getCode())).forEach(accountRole -> {
+            accountRole.setEnabled(false);
+        });
+        try {
+            accountRoleRepository.saveAll(accountRoles);
+        } catch (Exception e) {
+            throw new ActionFailedException("Error while banning seller", e);
+        }
+    }
+
+    @Transactional(rollbackFor = {ActionFailedException.class, Exception.class})
+    @Override
+    public void unbanSellerAccount(String accountId) {
+        var account = accountRepository.findById(accountId)
+                .orElseThrow(() -> new ValidationException("Account not found with ID: " + accountId));
+        var accountRoles = account.getAccountRoles();
+        accountRoles.stream().filter(accountRole -> "ROLE_SELLER".equals(accountRole.getRole().getCode())).forEach(accountRole -> {
+            accountRole.setEnabled(true);
+        });
+        try {
+            accountRoleRepository.saveAll(accountRoles);
+        } catch (Exception e) {
+            throw new ActionFailedException("Error while unbanning seller", e);
+        }
+    }
+
     private AccountResponse mapToAccountResponse(AccountEntity account) {
         var builder = AccountResponse.builder()
                 .id(account.getId())

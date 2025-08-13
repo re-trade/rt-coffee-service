@@ -44,4 +44,10 @@ public interface AccountService {
     AccountResponse disableCustomerAccount(String customerId);
 
     AccountResponse enableCustomerAccount(String customerId);
+
+    @Transactional(rollbackFor = {ActionFailedException.class, Exception.class})
+    void banSellerAccount(String accountId);
+
+    @Transactional(rollbackFor = {ActionFailedException.class, Exception.class})
+    void unbanSellerAccount(String accountId);
 }

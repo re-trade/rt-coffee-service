@@ -271,7 +271,7 @@ public class AccountController {
         return ResponseEntity.ok(new ResponseObject.Builder<Void>()
                 .success(true)
                 .code("SUCCESS")
-                .messages("Account deleted successfully")
+                .messages("Account ban successfully")
                 .build());
     }
 
@@ -282,7 +282,29 @@ public class AccountController {
         return ResponseEntity.ok(new ResponseObject.Builder<Void>()
                 .success(true)
                 .code("SUCCESS")
-                .messages("Account deleted successfully")
+                .messages("Account unban successfully")
+                .build());
+    }
+
+    @PatchMapping("{id}/seller/ban")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    public ResponseEntity<ResponseObject<Void>> banSeller(@PathVariable String id) {
+        accountService.banSellerAccount(id);
+        return ResponseEntity.ok(new ResponseObject.Builder<Void>()
+                .success(true)
+                .code("SUCCESS")
+                .messages("Account seller unban successfully")
+                .build());
+    }
+
+    @PatchMapping("{id}/seller/unban")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    public ResponseEntity<ResponseObject<Void>> unbanSeller(@PathVariable String id) {
+        accountService.unbanSellerAccount(id);
+        return ResponseEntity.ok(new ResponseObject.Builder<Void>()
+                .success(true)
+                .code("SUCCESS")
+                .messages("Account seller unban successfully")
                 .build());
     }
 }
