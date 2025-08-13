@@ -104,8 +104,6 @@ public class AccountServiceImpl implements AccountService {
 
     @Override
     public void resetPassword(String id) {
-        AccountEntity currentAccount = authUtils.getUserAccountFromAuthentication();
-
         var account = accountRepository.findById(id).orElseThrow(() -> new ValidationException("Account not found with id: " + id));
         var passwordGen = TokenUtils.generatePassword(12);
         account.setHashPassword(passwordEncoder.encode(passwordGen));
@@ -196,6 +194,7 @@ public class AccountServiceImpl implements AccountService {
     }
 
     @Override
+    @Transactional(rollbackFor = {ActionFailedException.class, Exception.class})
     public AccountResponse disableCustomerAccount(String customerId) {
 
         var roles = authUtils.getRolesFromAuthUser();
@@ -209,7 +208,6 @@ public class AccountServiceImpl implements AccountService {
         AccountEntity account = customer.getAccount();
         Set<AccountRoleEntity> accountRoles = account.getAccountRoles();
 
-        // Find and disable ROLE_CUSTOMER
         Optional<AccountRoleEntity> customerRole = accountRoles.stream()
                 .filter(accountRole -> "ROLE_CUSTOMER".equals(accountRole.getRole().getCode()))
                 .findFirst();
@@ -217,15 +215,22 @@ public class AccountServiceImpl implements AccountService {
         if (customerRole.isEmpty()) {
             throw new ValidationException("Customer role not found for account ID: " + account.getId());
         }
-
+        account.setLocked(true);
         AccountRoleEntity roleToUpdate = customerRole.get();
         roleToUpdate.setEnabled(false);
-        accountRoleRepository.save(roleToUpdate);
-        return mapToAccountResponse(account);
+        try {
+            accountRoleRepository.save(roleToUpdate);
+            accountRepository.save(account);
+            return mapToAccountResponse(account);
+        } catch (Exception e) {
+            throw new ActionFailedException("Error while disabling account", e);
+        }
+
     }
 
 
     @Override
+    @Transactional(rollbackFor = {ActionFailedException.class, Exception.class})
     public AccountResponse enableCustomerAccount(String customerId) {
         var roles = authUtils.getRolesFromAuthUser();
         if (!roles.contains("ROLE_ADMIN")) {
@@ -245,21 +250,16 @@ public class AccountServiceImpl implements AccountService {
         if (customerRole.isEmpty()) {
             throw new ValidationException("Customer role not found for account ID: " + account.getId());
         }
-
+        account.setLocked(true);
         AccountRoleEntity roleToUpdate = customerRole.get();
         roleToUpdate.setEnabled(true);
-        accountRoleRepository.save(roleToUpdate);
-        return mapToAccountResponse(account);
-
-    }
-
-    private CustomerEntity getCurrentCustomerAccount() {
-        var account = authUtils.getUserAccountFromAuthentication();
-        var customerEntity = account.getCustomer();
-        if (customerEntity == null) {
-            throw new ValidationException("User is not a customer");
+        try {
+            accountRoleRepository.save(roleToUpdate);
+            accountRepository.save(account);
+            return mapToAccountResponse(account);
+        } catch (Exception e) {
+            throw new ActionFailedException("Error while enabling account", e);
         }
-        return customerEntity;
     }
 
     private AccountResponse mapToAccountResponse(AccountEntity account) {
