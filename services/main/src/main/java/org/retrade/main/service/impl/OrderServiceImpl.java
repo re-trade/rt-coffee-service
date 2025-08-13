@@ -299,7 +299,7 @@ public class OrderServiceImpl implements OrderService {
         if (!orderComboEntity.getOrderStatus().getCode().equals(OrderStatusCodes.DELIVERED)) {
             throw new ValidationException("Order combo status not valid for completed: " + orderComboEntity.getOrderStatus().getCode());
         }
-        if (orderComboEntity.getOrderDestination().getOrder().getCustomer().getId().equals(customerEntity.getId())) {
+        if (!orderComboEntity.getOrderDestination().getOrder().getCustomer().getId().equals(customerEntity.getId())) {
             throw new ValidationException("You are not the owner");
         }
         OrderStatusEntity deliveredStatus = orderStatusRepository.findByCode(OrderStatusCodes.DELIVERED)
