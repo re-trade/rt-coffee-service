@@ -302,8 +302,8 @@ public class OrderServiceImpl implements OrderService {
         if (!orderComboEntity.getOrderDestination().getOrder().getCustomer().getId().equals(customerEntity.getId())) {
             throw new ValidationException("You are not the owner");
         }
-        OrderStatusEntity deliveredStatus = orderStatusRepository.findByCode(OrderStatusCodes.DELIVERED)
-                .orElseThrow(() -> new ValidationException("Cancelled order status not found"));
+        OrderStatusEntity deliveredStatus = orderStatusRepository.findByCode(OrderStatusCodes.COMPLETED)
+                .orElseThrow(() -> new ValidationException("Completed order status not found"));
         orderComboEntity.setOrderStatus(deliveredStatus);
         var comboAccount = orderComboEntity.getSeller().getAccount();
         BigDecimal rollbackPrice = orderComboEntity.getGrandPrice();
