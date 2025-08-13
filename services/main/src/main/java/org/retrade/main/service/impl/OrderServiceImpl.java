@@ -49,6 +49,7 @@ public class OrderServiceImpl implements OrderService {
     private final AuthUtils authUtils;
     private final OrderStatusValidator  orderStatusValidator;
     private static final BigDecimal TAX_RATE = new BigDecimal("0.10");
+    private final AccountRepository accountRepository;
 
     @Override
     @Transactional(rollbackFor = {ActionFailedException.class, Exception.class})
@@ -248,8 +249,12 @@ public class OrderServiceImpl implements OrderService {
         orderComboEntity.setCancelledReason(request.reason());
         orderComboEntity.setOrderStatus(cancelledStatus);
         orderComboEntity.setReasonCreatedDate(Timestamp.valueOf(LocalDateTime.now()));
+        BigDecimal rollbackPrice = orderComboEntity.getGrandPrice();
+        BigDecimal currentBalance = account.getBalance() != null ? account.getBalance() : BigDecimal.ZERO;
+        account.setBalance(currentBalance.add(rollbackPrice));
         try {
             orderComboRepository.save(orderComboEntity);
+            accountRepository.save(account);
         } catch (Exception e) {
             throw new ValidationException(e.getMessage());
         }
@@ -270,8 +275,13 @@ public class OrderServiceImpl implements OrderService {
         orderCombo.setCancelledReason(request.reason());
         orderCombo.setOrderStatus(cancelledStatus);
         orderCombo.setReasonCreatedDate(Timestamp.valueOf(LocalDateTime.now()));
+        var accountCombo = orderCombo.getOrderDestination().getOrder().getCustomer().getAccount();
+        BigDecimal rollbackPrice = orderCombo.getGrandPrice();
+        BigDecimal currentBalance = accountCombo.getBalance() != null ? accountCombo.getBalance() : BigDecimal.ZERO;
+        accountCombo.setBalance(currentBalance.add(rollbackPrice));
         try {
             orderComboRepository.save(orderCombo);
+            accountRepository.save(accountCombo);
         } catch (Exception e) {
             throw new ActionFailedException(e.getMessage());
         }
@@ -295,8 +305,13 @@ public class OrderServiceImpl implements OrderService {
         OrderStatusEntity deliveredStatus = orderStatusRepository.findByCode(OrderStatusCodes.DELIVERED)
                 .orElseThrow(() -> new ValidationException("Cancelled order status not found"));
         orderComboEntity.setOrderStatus(deliveredStatus);
+        var comboAccount = orderComboEntity.getSeller().getAccount();
+        BigDecimal rollbackPrice = orderComboEntity.getGrandPrice();
+        BigDecimal currentBalance = comboAccount.getBalance() != null ? comboAccount.getBalance() : BigDecimal.ZERO;
+        comboAccount.setBalance(currentBalance.add(rollbackPrice));
         try {
             orderComboRepository.save(orderComboEntity);
+            accountRepository.save(comboAccount);
         } catch (Exception e) {
             throw new ActionFailedException(e.getMessage());
         }
