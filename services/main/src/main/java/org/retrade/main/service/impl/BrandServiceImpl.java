@@ -13,7 +13,10 @@ import org.retrade.common.model.exception.ActionFailedException;
 import org.retrade.common.model.exception.ValidationException;
 import org.retrade.main.model.dto.request.BrandRequest;
 import org.retrade.main.model.dto.response.BrandResponse;
+import org.retrade.main.model.dto.response.CategoryBaseResponse;
+import org.retrade.main.model.dto.response.CategoryResponse;
 import org.retrade.main.model.entity.BrandEntity;
+import org.retrade.main.model.entity.CategoryEntity;
 import org.retrade.main.repository.jpa.BrandRepository;
 import org.retrade.main.repository.jpa.CategoryRepository;
 import org.retrade.main.service.BrandService;
@@ -112,6 +115,13 @@ public class BrandServiceImpl implements BrandService {
         });
     }
 
+    private CategoryBaseResponse mapToCategoryResponse(CategoryEntity categoryEntity) {
+        return CategoryBaseResponse.builder()
+                .id(categoryEntity.getId())
+                .name(categoryEntity.getName())
+                .build();
+    }
+
     @Override
     public List<BrandResponse> getAllBrandNoPaging() {
         List<BrandEntity> brandEntities = brandRepository.findAll();
@@ -134,6 +144,7 @@ public class BrandServiceImpl implements BrandService {
                 .createdAt(brandEntity.getCreatedDate().toLocalDateTime())
                 .description(brandEntity.getDescription())
                 .updatedAt(brandEntity.getUpdatedDate().toLocalDateTime())
+                .categories(brandEntity.getCategories().stream().map(this::mapToCategoryResponse).collect(Collectors.toList()))
                 .build();
     }
 }
