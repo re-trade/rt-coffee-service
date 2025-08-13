@@ -215,7 +215,7 @@ public class AccountServiceImpl implements AccountService {
         if (customerRole.isEmpty()) {
             throw new ValidationException("Customer role not found for account ID: " + account.getId());
         }
-        account.setLocked(true);
+        account.setEnabled(false);
         AccountRoleEntity roleToUpdate = customerRole.get();
         roleToUpdate.setEnabled(false);
         try {
@@ -250,7 +250,7 @@ public class AccountServiceImpl implements AccountService {
         if (customerRole.isEmpty()) {
             throw new ValidationException("Customer role not found for account ID: " + account.getId());
         }
-        account.setLocked(true);
+        account.setEnabled(false);
         AccountRoleEntity roleToUpdate = customerRole.get();
         roleToUpdate.setEnabled(true);
         try {
