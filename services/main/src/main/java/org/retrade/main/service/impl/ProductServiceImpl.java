@@ -1,6 +1,5 @@
 package org.retrade.main.service.impl;
 
-import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch._types.aggregations.Aggregate;
 import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
 import co.elastic.clients.elasticsearch._types.aggregations.StringTermsBucket;
@@ -501,8 +500,8 @@ public class ProductServiceImpl implements ProductService {
         }
     }
 
-    private Set<String> getElasticSearchIds(QueryFieldWrapper keyword, Pageable pagination) {
-        var searchHits = queryElasticSearchByKeyword(keyword, pagination);
+    private Set<String> getElasticSearchIds(QueryFieldWrapper keyword) {
+        var searchHits = queryElasticSearchByKeyword(keyword);
         return searchHits.getSearchHits()
                 .stream()
                 .map(SearchHit::getId)
@@ -719,11 +718,10 @@ public class ProductServiceImpl implements ProductService {
         };
     }
 
-    private SearchHits<ProductDocument> queryElasticSearchByKeyword(QueryFieldWrapper keyword, Pageable pageable) {
+    private SearchHits<ProductDocument> queryElasticSearchByKeyword(QueryFieldWrapper keyword) {
         var nativeQuery = NativeQuery.builder()
                 .withQuery(elasticSearchKeywordQueryBuild(keyword.getValue().toString()))
-                .withPageable(pageable)
-                .withSort(s -> s.field(f -> f.field("createdAt").order(SortOrder.Desc)))
+                .withSourceFilter(new FetchSourceFilter(new String[]{"id"}, new String[]{}))
                 .build();
         return elasticsearchOperations.search(nativeQuery, ProductDocument.class);
     }
@@ -974,7 +972,7 @@ public class ProductServiceImpl implements ProductService {
             Map<String, QueryFieldWrapper> param,
             Root<ProductEntity> root) {
         if (keyword != null) {
-            Set<String> searchHitIds = getElasticSearchIds(keyword, pageable);
+            Set<String> searchHitIds = getElasticSearchIds(keyword);
             if (searchHitIds.isEmpty()) {
                 predicates.add(criteriaBuilder.disjunction());
             } else {
