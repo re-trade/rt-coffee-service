@@ -18,6 +18,7 @@ import org.retrade.common.model.dto.response.ResponseObject;
 import org.retrade.main.model.dto.request.UpdateEmailRequest;
 import org.retrade.main.model.dto.request.UpdatePasswordRequest;
 import org.retrade.main.model.dto.request.UpdateUsernameRequest;
+import org.retrade.main.model.dto.response.AccountBaseResponse;
 import org.retrade.main.model.dto.response.AccountDetailResponse;
 import org.retrade.main.model.dto.response.AccountResponse;
 import org.retrade.main.service.AccountService;
@@ -233,9 +234,9 @@ public class AccountController {
 
     @GetMapping
     @PreAuthorize(value = "hasRole('ROLE_ADMIN')")
-    public ResponseEntity<ResponseObject<List<AccountResponse>>> getAllAccounts(@PageableDefault(size = 10, page = 0) Pageable page, @RequestParam(required = false) String q) {
-        PaginationWrapper<List<AccountResponse>> response = accountService.getAllAccounts(QueryWrapper.builder().search(q).pageable(page).build());
-        return ResponseEntity.ok(new ResponseObject.Builder<List<AccountResponse>>()
+    public ResponseEntity<ResponseObject<List<AccountBaseResponse>>> getAllAccounts(@PageableDefault(size = 10, page = 0) Pageable page, @RequestParam(required = false) String q) {
+        PaginationWrapper<List<AccountBaseResponse>> response = accountService.getAllAccounts(QueryWrapper.builder().search(q).pageable(page).build());
+        return ResponseEntity.ok(new ResponseObject.Builder<List<AccountBaseResponse>>()
                 .success(true)
                 .code("SUCCESS")
                 .unwrapPaginationWrapper(response)

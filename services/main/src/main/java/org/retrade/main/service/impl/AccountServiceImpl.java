@@ -11,10 +11,7 @@ import org.retrade.common.model.exception.ValidationException;
 import org.retrade.main.model.dto.request.UpdateEmailRequest;
 import org.retrade.main.model.dto.request.UpdatePasswordRequest;
 import org.retrade.main.model.dto.request.UpdateUsernameRequest;
-import org.retrade.main.model.dto.response.AccountDetailResponse;
-import org.retrade.main.model.dto.response.AccountResponse;
-import org.retrade.main.model.dto.response.CustomerBaseResponse;
-import org.retrade.main.model.dto.response.SellerBaseResponse;
+import org.retrade.main.model.dto.response.*;
 import org.retrade.main.model.entity.AccountEntity;
 import org.retrade.main.model.entity.AccountRoleEntity;
 import org.retrade.main.model.entity.CustomerEntity;
@@ -128,18 +125,17 @@ public class AccountServiceImpl implements AccountService {
     }
 
     @Override
-    public PaginationWrapper<List<AccountResponse>> getAllAccounts(QueryWrapper queryWrapper) {
+    public PaginationWrapper<List<AccountBaseResponse>> getAllAccounts(QueryWrapper queryWrapper) {
         AccountEntity currentAccount = authUtils.getUserAccountFromAuthentication();
 
         if (!AuthUtils.convertAccountToRole(currentAccount).contains("ROLE_ADMIN")) {
             throw new ValidationException("Access denied: Admin role required");
         }
         Page<AccountEntity> accountPage = accountRepository.queryAny(queryWrapper, queryWrapper.pagination());
-        List<AccountResponse> accountResponses = accountPage.getContent().stream()
-                .map(this::mapToAccountResponse)
+        List<AccountBaseResponse> accountResponses = accountPage.getContent().stream()
+                .map(this::mapToAccountBaseResponse)
                 .collect(Collectors.toList());
-
-        return new PaginationWrapper.Builder<List<AccountResponse>>()
+        return new PaginationWrapper.Builder<List<AccountBaseResponse>>()
                 .setData(accountResponses)
                 .setPage(accountPage.getNumber())
                 .setSize(accountPage.getSize())
@@ -346,6 +342,21 @@ public class AccountServiceImpl implements AccountService {
         return builder.build();
     }
 
+    private AccountBaseResponse mapToAccountBaseResponse(AccountEntity account) {
+        var builder = AccountBaseResponse.builder()
+                .id(account.getId())
+                .username(account.getUsername())
+                .email(account.getEmail())
+                .enabled(account.isEnabled())
+                .locked(account.isLocked())
+                .using2FA(account.isUsing2FA())
+                .joinInDate(account.getJoinInDate())
+                .changedUsername(account.isChangedUsername())
+                .lastLogin(account.getLastLogin())
+                .roles(AuthUtils.convertAccountToRoleResponse(account));
+        return builder.build();
+    }
+
     private AccountDetailResponse mapToAccountDetailResponse(AccountEntity account) {
         var customer = account.getCustomer();
         var seller = account.getSeller();
@@ -394,7 +405,7 @@ public class AccountServiceImpl implements AccountService {
                 .joinInDate(account.getJoinInDate())
                 .changedUsername(account.isChangedUsername())
                 .lastLogin(account.getLastLogin())
-                .roles(AuthUtils.convertAccountToRole(account))
+                .roles(AuthUtils.convertAccountToRoleResponse(account))
                 .customerProfile(customerProfile)
                 .sellerProfile(sellerProfile)
                 .build();

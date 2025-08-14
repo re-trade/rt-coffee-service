@@ -9,11 +9,11 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 import java.util.List;
 
+@Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Data
-public class AccountDetailResponse {
+public class AccountBaseResponse {
     private String id;
     private String username;
     private String email;
@@ -26,6 +26,4 @@ public class AccountDetailResponse {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime joinInDate;
     private List<AccountRoleStatusResponse> roles;
-    private CustomerBaseResponse customerProfile;
-    private SellerBaseResponse sellerProfile;
 }
