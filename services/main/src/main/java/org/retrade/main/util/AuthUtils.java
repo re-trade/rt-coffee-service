@@ -1,6 +1,7 @@
 package org.retrade.main.util;
 
 import lombok.RequiredArgsConstructor;
+import org.retrade.main.model.dto.response.AccountRoleStatusResponse;
 import org.retrade.main.model.entity.AccountEntity;
 import org.retrade.main.repository.jpa.AccountRepository;
 import org.springframework.security.core.AuthenticationException;
@@ -54,5 +55,14 @@ public class AuthUtils {
 
     public static List<String> convertAccountToRole (AccountEntity account) {
         return convertRoleToAuthority(account).stream().map(GrantedAuthority::getAuthority).collect(Collectors.toList());
+    }
+
+    public static List<AccountRoleStatusResponse> convertAccountToRoleResponse(AccountEntity account) {
+        var authorities = new ArrayList<AccountRoleStatusResponse>();
+        account.getAccountRoles().forEach(accountRole -> {
+            var role = accountRole.getRole();
+            authorities.add(new AccountRoleStatusResponse(role.getCode(), accountRole.getEnabled()));
+        });
+        return authorities;
     }
 }

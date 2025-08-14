@@ -18,6 +18,8 @@ import org.retrade.common.model.dto.response.ResponseObject;
 import org.retrade.main.model.dto.request.UpdateEmailRequest;
 import org.retrade.main.model.dto.request.UpdatePasswordRequest;
 import org.retrade.main.model.dto.request.UpdateUsernameRequest;
+import org.retrade.main.model.dto.response.AccountBaseResponse;
+import org.retrade.main.model.dto.response.AccountDetailResponse;
 import org.retrade.main.model.dto.response.AccountResponse;
 import org.retrade.main.service.AccountService;
 import org.springframework.data.domain.Pageable;
@@ -53,9 +55,10 @@ public class AccountController {
     }
 
     @GetMapping("{id}")
-    public ResponseEntity<ResponseObject<AccountResponse>> getAccountById(@PathVariable String id) {
-        AccountResponse response = accountService.getAccountById(id);
-        return ResponseEntity.ok(new ResponseObject.Builder<AccountResponse>()
+    @PreAuthorize(value = "hasRole('ROLE_ADMIN')")
+    public ResponseEntity<ResponseObject<AccountDetailResponse>> getAccountById(@PathVariable String id) {
+        var response = accountService.getAccountById(id);
+        return ResponseEntity.ok(new ResponseObject.Builder<AccountDetailResponse>()
                 .success(true)
                 .code("SUCCESS")
                 .content(response)
@@ -231,9 +234,9 @@ public class AccountController {
 
     @GetMapping
     @PreAuthorize(value = "hasRole('ROLE_ADMIN')")
-    public ResponseEntity<ResponseObject<List<AccountResponse>>> getAllAccounts(@PageableDefault(size = 10, page = 0) Pageable page, @RequestParam(required = false) String q) {
-        PaginationWrapper<List<AccountResponse>> response = accountService.getAllAccounts(QueryWrapper.builder().search(q).pageable(page).build());
-        return ResponseEntity.ok(new ResponseObject.Builder<List<AccountResponse>>()
+    public ResponseEntity<ResponseObject<List<AccountBaseResponse>>> getAllAccounts(@PageableDefault(size = 10, page = 0) Pageable page, @RequestParam(required = false) String q) {
+        PaginationWrapper<List<AccountBaseResponse>> response = accountService.getAllAccounts(QueryWrapper.builder().search(q).pageable(page).build());
+        return ResponseEntity.ok(new ResponseObject.Builder<List<AccountBaseResponse>>()
                 .success(true)
                 .code("SUCCESS")
                 .unwrapPaginationWrapper(response)
@@ -262,4 +265,47 @@ public class AccountController {
                 .build());
     }
 
+    @PatchMapping("{id}/ban")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    public ResponseEntity<ResponseObject<Void>> banAccount(@PathVariable String id) {
+        accountService.banAccount(id);
+        return ResponseEntity.ok(new ResponseObject.Builder<Void>()
+                .success(true)
+                .code("SUCCESS")
+                .messages("Account ban successfully")
+                .build());
+    }
+
+    @PatchMapping("{id}/unban")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    public ResponseEntity<ResponseObject<Void>> unbanAccount(@PathVariable String id) {
+        accountService.unbanAccount(id);
+        return ResponseEntity.ok(new ResponseObject.Builder<Void>()
+                .success(true)
+                .code("SUCCESS")
+                .messages("Account unban successfully")
+                .build());
+    }
+
+    @PatchMapping("{id}/seller/ban")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    public ResponseEntity<ResponseObject<Void>> banSeller(@PathVariable String id) {
+        accountService.banSellerAccount(id);
+        return ResponseEntity.ok(new ResponseObject.Builder<Void>()
+                .success(true)
+                .code("SUCCESS")
+                .messages("Account seller unban successfully")
+                .build());
+    }
+
+    @PatchMapping("{id}/seller/unban")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    public ResponseEntity<ResponseObject<Void>> unbanSeller(@PathVariable String id) {
+        accountService.unbanSellerAccount(id);
+        return ResponseEntity.ok(new ResponseObject.Builder<Void>()
+                .success(true)
+                .code("SUCCESS")
+                .messages("Account seller unban successfully")
+                .build());
+    }
 }

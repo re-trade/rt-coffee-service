@@ -1,9 +1,13 @@
 package org.retrade.main.service.impl;
 
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Root;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.validator.routines.EmailValidator;
+import org.retrade.common.model.dto.request.QueryFieldWrapper;
 import org.retrade.common.model.dto.request.QueryWrapper;
 import org.retrade.common.model.dto.response.PaginationWrapper;
 import org.retrade.common.model.exception.ActionFailedException;
@@ -11,7 +15,7 @@ import org.retrade.common.model.exception.ValidationException;
 import org.retrade.main.model.dto.request.UpdateEmailRequest;
 import org.retrade.main.model.dto.request.UpdatePasswordRequest;
 import org.retrade.main.model.dto.request.UpdateUsernameRequest;
-import org.retrade.main.model.dto.response.AccountResponse;
+import org.retrade.main.model.dto.response.*;
 import org.retrade.main.model.entity.AccountEntity;
 import org.retrade.main.model.entity.AccountRoleEntity;
 import org.retrade.main.model.entity.CustomerEntity;
@@ -24,13 +28,11 @@ import org.retrade.main.service.JwtService;
 import org.retrade.main.service.MessageProducerService;
 import org.retrade.main.util.AuthUtils;
 import org.retrade.main.util.TokenUtils;
-import org.springframework.data.domain.Page;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -60,14 +62,14 @@ public class AccountServiceImpl implements AccountService {
     }
 
     @Override
-    public AccountResponse getAccountById(String id) {
+    public AccountDetailResponse getAccountById(String id) {
         AccountEntity currentAccount = authUtils.getUserAccountFromAuthentication();
         AccountEntity account = accountRepository.findById(id)
                 .orElseThrow(() -> new ValidationException("Account not found with id: " + id));
         if (!currentAccount.getId().equals(id) && !AuthUtils.convertAccountToRole(currentAccount).contains("ROLE_ADMIN")) {
             throw new ValidationException("Access denied: You can only access your own account");
         }
-        return mapToAccountResponse(account);
+        return mapToAccountDetailResponse(account);
     }
 
     @Override
@@ -125,24 +127,27 @@ public class AccountServiceImpl implements AccountService {
     }
 
     @Override
-    public PaginationWrapper<List<AccountResponse>> getAllAccounts(QueryWrapper queryWrapper) {
+    public PaginationWrapper<List<AccountBaseResponse>> getAllAccounts(QueryWrapper queryWrapper) {
         AccountEntity currentAccount = authUtils.getUserAccountFromAuthentication();
 
         if (!AuthUtils.convertAccountToRole(currentAccount).contains("ROLE_ADMIN")) {
             throw new ValidationException("Access denied: Admin role required");
         }
-        Page<AccountEntity> accountPage = accountRepository.queryAny(queryWrapper, queryWrapper.pagination());
-        List<AccountResponse> accountResponses = accountPage.getContent().stream()
-                .map(this::mapToAccountResponse)
-                .collect(Collectors.toList());
-
-        return new PaginationWrapper.Builder<List<AccountResponse>>()
-                .setData(accountResponses)
-                .setPage(accountPage.getNumber())
-                .setSize(accountPage.getSize())
-                .setTotalPages(accountPage.getTotalPages())
-                .setTotalElements((int) accountPage.getTotalElements())
-                .build();
+        return accountRepository.query(queryWrapper, (param) -> ((root, query, criteriaBuilder) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            predicates.add(criteriaBuilder.notEqual(root.get("id"), currentAccount.getId()));
+            if (query != null) {
+                query.orderBy(criteriaBuilder.desc(root.get("createdDate")));
+                query.orderBy(criteriaBuilder.desc(root.get("updatedDate")));
+            }
+            return getPredicate(param, root, criteriaBuilder, predicates);
+        }), (items) -> {
+            var list = items.map(this::mapToAccountBaseResponse).toList();
+            return new PaginationWrapper.Builder<List<AccountBaseResponse>>()
+                    .setData(list)
+                    .setPaginationInfo(items)
+                    .build();
+        });
     }
 
     @Override
@@ -193,6 +198,42 @@ public class AccountServiceImpl implements AccountService {
         }
     }
 
+    @Transactional(rollbackFor = {ActionFailedException.class, Exception.class})
+    @Override
+    public void banAccount(String accountId) {
+        var account = accountRepository.findById(accountId)
+                .orElseThrow(() -> new ValidationException("Account not found with ID: " + accountId));
+        account.setLocked(true);
+        var accountRoles = account.getAccountRoles();
+        accountRoles.forEach(accountRole -> {
+            accountRole.setEnabled(false);
+        });
+        try {
+            accountRepository.save(account);
+            accountRoleRepository.saveAll(accountRoles);
+        } catch (Exception e) {
+            throw new ActionFailedException("Error while banning account", e);
+        }
+    }
+
+    @Override
+    @Transactional(rollbackFor = {ActionFailedException.class, Exception.class})
+    public void unbanAccount(String accountId) {
+        var account = accountRepository.findById(accountId)
+                .orElseThrow(() -> new ValidationException("Account not found with ID: " + accountId));
+        account.setLocked(false);
+        var accountRoles = account.getAccountRoles();
+        accountRoles.forEach(accountRole -> {
+            accountRole.setEnabled(true);
+        });
+        try {
+            accountRepository.save(account);
+            accountRoleRepository.saveAll(accountRoles);
+        } catch (Exception e) {
+            throw new ActionFailedException("Error while unbanning account", e);
+        }
+    }
+
     @Override
     @Transactional(rollbackFor = {ActionFailedException.class, Exception.class})
     public AccountResponse disableCustomerAccount(String customerId) {
@@ -225,9 +266,7 @@ public class AccountServiceImpl implements AccountService {
         } catch (Exception e) {
             throw new ActionFailedException("Error while disabling account", e);
         }
-
     }
-
 
     @Override
     @Transactional(rollbackFor = {ActionFailedException.class, Exception.class})
@@ -262,6 +301,38 @@ public class AccountServiceImpl implements AccountService {
         }
     }
 
+    @Transactional(rollbackFor = {ActionFailedException.class, Exception.class})
+    @Override
+    public void banSellerAccount(String accountId) {
+        var account = accountRepository.findById(accountId)
+                .orElseThrow(() -> new ValidationException("Account not found with ID: " + accountId));
+        var accountRoles = account.getAccountRoles();
+        accountRoles.stream().filter(accountRole -> "ROLE_SELLER".equals(accountRole.getRole().getCode())).forEach(accountRole -> {
+            accountRole.setEnabled(false);
+        });
+        try {
+            accountRoleRepository.saveAll(accountRoles);
+        } catch (Exception e) {
+            throw new ActionFailedException("Error while banning seller", e);
+        }
+    }
+
+    @Transactional(rollbackFor = {ActionFailedException.class, Exception.class})
+    @Override
+    public void unbanSellerAccount(String accountId) {
+        var account = accountRepository.findById(accountId)
+                .orElseThrow(() -> new ValidationException("Account not found with ID: " + accountId));
+        var accountRoles = account.getAccountRoles();
+        accountRoles.stream().filter(accountRole -> "ROLE_SELLER".equals(accountRole.getRole().getCode())).forEach(accountRole -> {
+            accountRole.setEnabled(true);
+        });
+        try {
+            accountRoleRepository.saveAll(accountRoles);
+        } catch (Exception e) {
+            throw new ActionFailedException("Error while unbanning seller", e);
+        }
+    }
+
     private AccountResponse mapToAccountResponse(AccountEntity account) {
         var builder = AccountResponse.builder()
                 .id(account.getId())
@@ -275,5 +346,81 @@ public class AccountServiceImpl implements AccountService {
                 .lastLogin(account.getLastLogin())
                 .roles(AuthUtils.convertAccountToRole(account));
         return builder.build();
+    }
+
+    private AccountBaseResponse mapToAccountBaseResponse(AccountEntity account) {
+        var builder = AccountBaseResponse.builder()
+                .id(account.getId())
+                .username(account.getUsername())
+                .email(account.getEmail())
+                .enabled(account.isEnabled())
+                .locked(account.isLocked())
+                .using2FA(account.isUsing2FA())
+                .joinInDate(account.getJoinInDate())
+                .changedUsername(account.isChangedUsername())
+                .lastLogin(account.getLastLogin())
+                .roles(AuthUtils.convertAccountToRoleResponse(account));
+        return builder.build();
+    }
+
+    private AccountDetailResponse mapToAccountDetailResponse(AccountEntity account) {
+        var customer = account.getCustomer();
+        var seller = account.getSeller();
+        CustomerBaseResponse customerProfile = null;
+        SellerBaseResponse sellerProfile = null;
+        if (customer != null) {
+            customerProfile = CustomerBaseResponse.builder()
+                    .id(customer.getId())
+                    .firstName(customer.getFirstName())
+                    .lastName(customer.getLastName())
+                    .phone(customer.getPhone())
+                    .address(customer.getAddress())
+                    .avatarUrl(customer.getAvatarUrl())
+                    .username(customer.getAccount().getUsername())
+                    .email(customer.getAccount().getEmail())
+                    .gender(customer.getGender())
+                    .lastUpdate(customer.getUpdatedDate().toLocalDateTime())
+                    .build();
+        }
+        if (seller != null) {
+            sellerProfile = SellerBaseResponse.builder()
+                    .id(seller.getId())
+                    .shopName(seller.getShopName())
+                    .description(seller.getDescription())
+                    .avatarUrl(seller.getAvatarUrl())
+                    .email(seller.getEmail())
+                    .background(seller.getBackground())
+                    .phoneNumber(seller.getPhoneNumber())
+                    .verified(seller.getVerified())
+                    .identityVerifiedStatus(seller.getIdentityVerified())
+                    .createdAt(seller.getCreatedDate().toLocalDateTime())
+                    .updatedAt(seller.getUpdatedDate().toLocalDateTime())
+                    .addressLine(seller.getAddressLine())
+                    .district(seller.getDistrict())
+                    .ward(seller.getWard())
+                    .state(seller.getState())
+                    .build();
+        }
+        return AccountDetailResponse.builder()
+                .id(account.getId())
+                .username(account.getUsername())
+                .email(account.getEmail())
+                .enabled(account.isEnabled())
+                .locked(account.isLocked())
+                .using2FA(account.isUsing2FA())
+                .joinInDate(account.getJoinInDate())
+                .changedUsername(account.isChangedUsername())
+                .lastLogin(account.getLastLogin())
+                .roles(AuthUtils.convertAccountToRoleResponse(account))
+                .customerProfile(customerProfile)
+                .sellerProfile(sellerProfile)
+                .build();
+    }
+    private Predicate getPredicate(Map<String, QueryFieldWrapper> param, Root<AccountEntity> root, CriteriaBuilder criteriaBuilder, List<Predicate> predicates) {
+        if (param != null && !param.isEmpty()) {
+            Predicate[] defaultPredicates = accountRepository.createDefaultPredicate(criteriaBuilder, root, param);
+            predicates.addAll(Arrays.asList(defaultPredicates));
+        }
+        return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
     }
 }
