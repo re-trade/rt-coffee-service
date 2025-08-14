@@ -1,9 +1,13 @@
 package org.retrade.main.service.impl;
 
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Root;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.validator.routines.EmailValidator;
+import org.retrade.common.model.dto.request.QueryFieldWrapper;
 import org.retrade.common.model.dto.request.QueryWrapper;
 import org.retrade.common.model.dto.response.PaginationWrapper;
 import org.retrade.common.model.exception.ActionFailedException;
@@ -24,13 +28,11 @@ import org.retrade.main.service.JwtService;
 import org.retrade.main.service.MessageProducerService;
 import org.retrade.main.util.AuthUtils;
 import org.retrade.main.util.TokenUtils;
-import org.springframework.data.domain.Page;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -131,17 +133,21 @@ public class AccountServiceImpl implements AccountService {
         if (!AuthUtils.convertAccountToRole(currentAccount).contains("ROLE_ADMIN")) {
             throw new ValidationException("Access denied: Admin role required");
         }
-        Page<AccountEntity> accountPage = accountRepository.queryAny(queryWrapper, queryWrapper.pagination());
-        List<AccountBaseResponse> accountResponses = accountPage.getContent().stream()
-                .map(this::mapToAccountBaseResponse)
-                .collect(Collectors.toList());
-        return new PaginationWrapper.Builder<List<AccountBaseResponse>>()
-                .setData(accountResponses)
-                .setPage(accountPage.getNumber())
-                .setSize(accountPage.getSize())
-                .setTotalPages(accountPage.getTotalPages())
-                .setTotalElements((int) accountPage.getTotalElements())
-                .build();
+        return accountRepository.query(queryWrapper, (param) -> ((root, query, criteriaBuilder) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            predicates.add(criteriaBuilder.notEqual(root.get("id"), currentAccount.getId()));
+            if (query != null) {
+                query.orderBy(criteriaBuilder.desc(root.get("createdDate")));
+                query.orderBy(criteriaBuilder.desc(root.get("updatedDate")));
+            }
+            return getPredicate(param, root, criteriaBuilder, predicates);
+        }), (items) -> {
+            var list = items.map(this::mapToAccountBaseResponse).toList();
+            return new PaginationWrapper.Builder<List<AccountBaseResponse>>()
+                    .setData(list)
+                    .setPaginationInfo(items)
+                    .build();
+        });
     }
 
     @Override
@@ -409,5 +415,12 @@ public class AccountServiceImpl implements AccountService {
                 .customerProfile(customerProfile)
                 .sellerProfile(sellerProfile)
                 .build();
+    }
+    private Predicate getPredicate(Map<String, QueryFieldWrapper> param, Root<AccountEntity> root, CriteriaBuilder criteriaBuilder, List<Predicate> predicates) {
+        if (param != null && !param.isEmpty()) {
+            Predicate[] defaultPredicates = accountRepository.createDefaultPredicate(criteriaBuilder, root, param);
+            predicates.addAll(Arrays.asList(defaultPredicates));
+        }
+        return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
     }
 }
