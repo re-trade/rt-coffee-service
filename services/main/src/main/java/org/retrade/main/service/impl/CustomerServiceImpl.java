@@ -155,11 +155,19 @@ public class CustomerServiceImpl implements CustomerService {
     }
 
     @Override
+    @Transactional(rollbackFor = {ActionFailedException.class, ValidationException.class, Exception.class})
     public CustomerContactResponse createCustomerContact(CustomerContactRequest request) {
         var account = authUtils.getUserAccountFromAuthentication();
         var customer = account.getCustomer();
         if (customer == null) {
             throw new ValidationException("Customer profile not found");
+        }
+        if (request.getDefaulted() != null && request.getDefaulted()) {
+            var defaultedContact = customerContactRepository.findByCustomerAndDefaulted(customer, true);
+            defaultedContact.forEach(contact -> {
+                contact.setDefaulted(false);
+            });
+            customerContactRepository.saveAll(defaultedContact);
         }
         var customerContactCreate = CustomerContactEntity.builder()
                 .customerName(request.getCustomerName())
@@ -185,6 +193,13 @@ public class CustomerServiceImpl implements CustomerService {
         if (!customer.equals(contactEntity.getCustomer())) {
             throw new ValidationException("You are not authorized to update this customer contact");
         }
+        if (request.getDefaulted() != null && request.getDefaulted()) {
+            var defaultedContact = customerContactRepository.findByCustomerAndDefaulted(customer, true);
+            defaultedContact.forEach(contact -> {
+                contact.setDefaulted(false);
+            });
+            customerContactRepository.saveAll(defaultedContact);
+        }
         contactEntity.setCustomerName(request.getCustomerName());
         contactEntity.setPhone(request.getPhone());
         contactEntity.setState(request.getState());
@@ -201,7 +216,7 @@ public class CustomerServiceImpl implements CustomerService {
     @Override
     public CustomerContactResponse removeCustomerContact(String id) {
         var customer = getAuthCustomer();
-        var contactEntity = customerContactRepository.findById(id).orElseThrow(() -> new ValidationException("Customer contact not found with id: " + id));
+        var contactEntity = customerContactRepository.findById(id).orElseThrow(() -> new ValidationException("Thông tin liên lạc không tồn tại"));
         if (!customer.equals(contactEntity.getCustomer())) {
             throw new ValidationException("You are not authorized to update this customer contact");
         }
