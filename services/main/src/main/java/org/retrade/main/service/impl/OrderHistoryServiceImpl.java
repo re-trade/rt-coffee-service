@@ -152,22 +152,5 @@ public class OrderHistoryServiceImpl implements OrderHistoryService {
                 .name(orderStatusEntity.getName())
                 .build();
     }
-    private boolean validateStatus(String currentStatus, String nextStatus) {
-        List<String> validFlow = List.of(
-                "PENDING",
-                "CONFIRMED",
-                "PREPARING",
-                "DELIVERING",
-                "DELIVERED"
-        );
-
-        int currentIndex = validFlow.indexOf(currentStatus);
-        int nextIndex = validFlow.indexOf(nextStatus);
-        if (currentIndex == -1 || nextIndex == -1) {
-            return false;
-        }
-
-        return nextIndex == currentIndex + 1;
-    }
 
 }

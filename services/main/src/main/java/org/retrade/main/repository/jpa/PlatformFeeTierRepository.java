@@ -7,7 +7,6 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
-import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -21,10 +20,11 @@ public interface PlatformFeeTierRepository extends BaseJpaRepository<PlatformFee
     Optional<BigDecimal> findMatchingFeeRate(@Param("grandPrice") BigDecimal grandPrice);
 
     @Query("""
-       SELECT t FROM platform_fee_tiers t
-       WHERE t.minPrice <= :maxPrice
-         AND (t.maxPrice IS NULL OR t.maxPrice >= :minPrice)
+        SELECT t
+        FROM platform_fee_tiers t
+        WHERE t.minPrice <= :amount
+          AND (t.maxPrice IS NULL OR :amount <= t.maxPrice)
     """)
-    List<PlatformFeeTierEntity> findByPriceRange(@Param("minPrice") BigDecimal minPrice,
-                                                 @Param("maxPrice") BigDecimal maxPrice);
+    Optional<PlatformFeeTierEntity> findMatchingTier(@Param("amount") BigDecimal amount);
+
 }

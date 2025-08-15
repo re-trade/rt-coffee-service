@@ -12,7 +12,6 @@ import org.retrade.main.model.dto.response.*;
 import org.retrade.main.model.entity.*;
 import org.retrade.main.repository.jpa.OrderComboRepository;
 import org.retrade.main.repository.jpa.OrderStatusRepository;
-import org.retrade.main.repository.jpa.PlatformFeeTierRepository;
 import org.retrade.main.repository.jpa.SellerRevenueRepository;
 import org.retrade.main.service.RevenueService;
 import org.retrade.main.util.AuthUtils;
@@ -20,8 +19,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -33,7 +30,6 @@ public class RevenueServiceImpl implements RevenueService {
     private final AuthUtils authUtils;
     private final SellerRevenueRepository sellerRevenueRepository;
     private final OrderStatusRepository orderStatusRepository;
-    private final PlatformFeeTierRepository platformFeeTierRepository;
 
     @Override
     public PaginationWrapper<List<RevenueResponse>> getMyRevenue(QueryWrapper queryWrapper) {
@@ -46,32 +42,6 @@ public class RevenueServiceImpl implements RevenueService {
                 (param) -> buildRevenuePredicate(param, seller, keyword),
                 this::mapToPaginationWrapper
         );
-    }
-
-    private OrderDestinationResponse wrapOrderDestinationResponse(OrderDestinationEntity orderDestination) {
-        return OrderDestinationResponse.builder()
-                .customerName(orderDestination.getCustomerName())
-                .phone(orderDestination.getPhone())
-                .state(orderDestination.getState())
-                .country(orderDestination.getCountry())
-                .district(orderDestination.getDistrict())
-                .ward(orderDestination.getWard())
-                .addressLine(orderDestination.getAddressLine())
-                .build();
-    }
-
-    private Set<CustomerOrderItemResponse> wrapCustomerOrderItemResponse(Set<OrderItemEntity> orderItems) {
-        if (orderItems.isEmpty()) {
-            return Collections.emptySet();
-        }
-        return orderItems.stream().map(item -> CustomerOrderItemResponse.builder()
-                .itemId(item.getId())
-                .itemThumbnail(item.getBackgroundUrl())
-                .itemName(item.getProductName())
-                .productId(item.getProduct().getId())
-                .basePrice(item.getBasePrice())
-                .quantity(item.getQuantity())
-                .build()).collect(Collectors.toSet());
     }
 
     private Predicate getSellerRevenuePredicate(Map<String, QueryFieldWrapper> param, Root<SellerRevenueEntity> root, CriteriaBuilder criteriaBuilder, List<Predicate> predicates) {
@@ -145,30 +115,8 @@ public class RevenueServiceImpl implements RevenueService {
     }
 
     private PaginationWrapper<List<RevenueResponse>> mapToPaginationWrapper(Page<SellerRevenueEntity> items) {
-        List<BigDecimal> prices = items.stream()
-                .map(r -> r.getOrderCombo().getGrandPrice())
-                .filter(Objects::nonNull)
-                .toList();
-
-        if (prices.isEmpty()) {
-            return new PaginationWrapper.Builder<List<RevenueResponse>>()
-                    .setPaginationInfo(items)
-                    .setData(Collections.emptyList())
-                    .build();
-        }
-
-        BigDecimal minPrice = prices.stream().min(BigDecimal::compareTo).orElse(BigDecimal.ZERO);
-        BigDecimal maxPrice = prices.stream().max(BigDecimal::compareTo).orElse(BigDecimal.ZERO);
-
-        List<PlatformFeeTierEntity> tiers = platformFeeTierRepository.findByPriceRange(minPrice, maxPrice);
-
-        TreeMap<BigDecimal, PlatformFeeTierEntity> feeMap = new TreeMap<>();
-        for (PlatformFeeTierEntity tier : tiers) {
-            feeMap.put(tier.getMinPrice(), tier);
-        }
-
         List<RevenueResponse> list = items.stream()
-                .map(r -> wrapRevenueWithFeeMap(r.getOrderCombo(), feeMap))
+                .map(this::wrapRevenueFromEntity)
                 .toList();
 
         return new PaginationWrapper.Builder<List<RevenueResponse>>()
@@ -177,20 +125,8 @@ public class RevenueServiceImpl implements RevenueService {
                 .build();
     }
 
-    private RevenueResponse wrapRevenueWithFeeMap(OrderComboEntity combo, TreeMap<BigDecimal, PlatformFeeTierEntity> feeMap) {
-        BigDecimal price = combo.getGrandPrice();
-        Map.Entry<BigDecimal, PlatformFeeTierEntity> entry = feeMap.floorEntry(price);
-
-        BigDecimal feeRate = BigDecimal.ZERO;
-        if (entry != null) {
-            PlatformFeeTierEntity tier = entry.getValue();
-            if (tier.getMaxPrice() == null || price.compareTo(tier.getMaxPrice()) <= 0) {
-                feeRate = tier.getFeeRate();
-            }
-        }
-
-        BigDecimal feeAmount = price.multiply(feeRate).setScale(2, RoundingMode.HALF_UP);
-        BigDecimal netAmount = price.subtract(feeAmount);
+    private RevenueResponse wrapRevenueFromEntity(SellerRevenueEntity revenue) {
+        OrderComboEntity combo = revenue.getOrderCombo();
 
         return RevenueResponse.builder()
                 .orderComboId(combo.getId())
@@ -202,13 +138,38 @@ public class RevenueServiceImpl implements RevenueService {
                         .code(combo.getOrderStatus().getCode())
                         .name(combo.getOrderStatus().getName())
                         .build())
-                .totalPrice(price)
-                .feePercent(feeRate.doubleValue())
-                .feeAmount(feeAmount)
-                .netAmount(netAmount)
+                .totalPrice(revenue.getTotalAmount())
+                .feePercent(revenue.getPlatformFeeRate())
+                .feeAmount(revenue.getPlatformFeeAmount())
+                .netAmount(revenue.getSellerRevenue())
                 .build();
     }
 
+    private OrderDestinationResponse wrapOrderDestinationResponse(OrderDestinationEntity orderDestination) {
+        return OrderDestinationResponse.builder()
+                .customerName(orderDestination.getCustomerName())
+                .phone(orderDestination.getPhone())
+                .state(orderDestination.getState())
+                .country(orderDestination.getCountry())
+                .district(orderDestination.getDistrict())
+                .ward(orderDestination.getWard())
+                .addressLine(orderDestination.getAddressLine())
+                .build();
+    }
+
+    private Set<CustomerOrderItemResponse> wrapCustomerOrderItemResponse(Set<OrderItemEntity> orderItems) {
+        if (orderItems.isEmpty()) {
+            return Collections.emptySet();
+        }
+        return orderItems.stream().map(item -> CustomerOrderItemResponse.builder()
+                .itemId(item.getId())
+                .itemThumbnail(item.getBackgroundUrl())
+                .itemName(item.getProductName())
+                .productId(item.getProduct().getId())
+                .basePrice(item.getBasePrice())
+                .quantity(item.getQuantity())
+                .build()).collect(Collectors.toSet());
+    }
 
     private SellerEntity getSeller() {
         return authUtils.getUserAccountFromAuthentication().getSeller();
