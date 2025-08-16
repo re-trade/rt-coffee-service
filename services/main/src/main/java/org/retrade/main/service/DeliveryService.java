@@ -5,4 +5,6 @@ import org.retrade.main.model.dto.response.DeliveryResponse;
 
 public interface DeliveryService {
     DeliveryResponse signDelivery(DeliveryTrackRequest request);
+
+    DeliveryResponse getDeliveryByOrderComboId(String orderComboId);
 }

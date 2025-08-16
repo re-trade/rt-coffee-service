@@ -9,14 +9,17 @@ import org.retrade.common.model.dto.request.QueryWrapper;
 import org.retrade.common.model.dto.response.PaginationWrapper;
 import org.retrade.common.model.exception.ActionFailedException;
 import org.retrade.common.model.exception.ValidationException;
+import org.retrade.main.model.constant.NotificationTypeCode;
 import org.retrade.main.model.constant.OrderStatusCodes;
 import org.retrade.main.model.dto.request.CancelOrderRequest;
 import org.retrade.main.model.dto.request.CreateOrderRequest;
 import org.retrade.main.model.dto.request.OrderItemRequest;
 import org.retrade.main.model.dto.response.*;
 import org.retrade.main.model.entity.*;
+import org.retrade.main.model.message.SocketNotificationMessage;
 import org.retrade.main.repository.jpa.*;
 import org.retrade.main.service.CartService;
+import org.retrade.main.service.MessageProducerService;
 import org.retrade.main.service.OrderService;
 import org.retrade.main.util.AuthUtils;
 import org.retrade.main.validator.OrderStatusValidator;
@@ -51,6 +54,7 @@ public class OrderServiceImpl implements OrderService {
     private final PlatformFeeTierRepository platformFeeTierRepository;
     private final SellerRevenueRepository sellerRevenueRepository;
     private final AccountRepository accountRepository;
+    private final MessageProducerService messageProducerService;
 
     @Override
     @Transactional(rollbackFor = {ActionFailedException.class, Exception.class})
@@ -335,8 +339,9 @@ public class OrderServiceImpl implements OrderService {
         } catch (Exception e) {
             throw new ActionFailedException(e.getMessage());
         }
+        sendCompletedOrderNotification(account, orderComboEntity);
+        sendCompletedOrderNotification(sellerAccount, orderComboEntity);
     }
-
 
     @Override
     @Transactional(readOnly = true)
@@ -1001,21 +1006,20 @@ public class OrderServiceImpl implements OrderService {
         productRepository.saveAll(products);
     }
 
-    private SellerRevenueEntity calculateRevenueFromOrder(OrderComboEntity order) {
-        var totalAmount = order.getGrandPrice();
-        PlatformFeeTierEntity tier = platformFeeTierRepository.findMatchingTier(totalAmount)
-                .orElseThrow(() -> new ValidationException("No fee tier found for amount: " + totalAmount));
+    private void sendCompletedOrderNotification(AccountEntity account, OrderComboEntity orderCombo) {
+        try {
+            String title = "Đơn hàng " + orderCombo.getId() + " đã hoàn tất";
+            String content = "Cảm ơn bạn đã nhận đơn hàng " + orderCombo.getId() + ". Giao dịch đã hoàn tất thành công!";
 
-        BigDecimal feeAmount = totalAmount.multiply(tier.getFeeRate())
-                .setScale(2, RoundingMode.HALF_UP);
-        BigDecimal sellerRevenue = totalAmount.subtract(feeAmount);
-
-        return SellerRevenueEntity.builder()
-                .orderCombo(order)
-                .totalAmount(totalAmount)
-                .platformFeeRate(tier.getFeeRate().doubleValue())
-                .platformFeeAmount(feeAmount)
-                .sellerRevenue(sellerRevenue)
-                .build();
+            messageProducerService.sendSocketNotification(SocketNotificationMessage.builder()
+                    .accountId(account.getId())
+                    .messageId(UUID.randomUUID().toString())
+                    .title(title)
+                    .type(NotificationTypeCode.ORDER)
+                    .content(content)
+                    .build());
+        } catch (Exception e) {
+            log.error("Gửi thông báo hoàn tất đơn {} thất bại", orderCombo.getId(), e);
+        }
     }
 }
