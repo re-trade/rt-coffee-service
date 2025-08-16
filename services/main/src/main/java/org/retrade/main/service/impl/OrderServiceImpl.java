@@ -9,14 +9,17 @@ import org.retrade.common.model.dto.request.QueryWrapper;
 import org.retrade.common.model.dto.response.PaginationWrapper;
 import org.retrade.common.model.exception.ActionFailedException;
 import org.retrade.common.model.exception.ValidationException;
+import org.retrade.main.model.constant.NotificationTypeCode;
 import org.retrade.main.model.constant.OrderStatusCodes;
 import org.retrade.main.model.dto.request.CancelOrderRequest;
 import org.retrade.main.model.dto.request.CreateOrderRequest;
 import org.retrade.main.model.dto.request.OrderItemRequest;
 import org.retrade.main.model.dto.response.*;
 import org.retrade.main.model.entity.*;
+import org.retrade.main.model.message.SocketNotificationMessage;
 import org.retrade.main.repository.jpa.*;
 import org.retrade.main.service.CartService;
+import org.retrade.main.service.MessageProducerService;
 import org.retrade.main.service.OrderService;
 import org.retrade.main.util.AuthUtils;
 import org.retrade.main.validator.OrderStatusValidator;
@@ -36,7 +39,6 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Slf4j
 public class OrderServiceImpl implements OrderService {
-
     private final OrderRepository orderRepository;
     private final OrderItemRepository orderItemRepository;
     private final OrderComboRepository orderComboRepository;
@@ -48,8 +50,10 @@ public class OrderServiceImpl implements OrderService {
     private final CartService cartService;
     private final AuthUtils authUtils;
     private final OrderStatusValidator  orderStatusValidator;
-    private static final BigDecimal TAX_RATE = new BigDecimal("0.10");
+    private final PlatformFeeTierRepository platformFeeTierRepository;
+    private final SellerRevenueRepository sellerRevenueRepository;
     private final AccountRepository accountRepository;
+    private final MessageProducerService messageProducerService;
 
     @Override
     @Transactional(rollbackFor = {ActionFailedException.class, Exception.class})
@@ -64,12 +68,11 @@ public class OrderServiceImpl implements OrderService {
         Map<SellerEntity, List<ProductEntity>> productsBySeller = groupProductsBySeller(products);
 
         BigDecimal subtotal = calculateSubtotal(products, request.getItems());
-        BigDecimal taxTotal = calculateTax(subtotal);
         BigDecimal discountTotal = BigDecimal.ZERO;
 
-        BigDecimal grandTotal = subtotal.add(taxTotal).subtract(discountTotal);
+        BigDecimal grandTotal = subtotal.subtract(discountTotal);
 
-        OrderEntity order = createOrderEntity(customer, subtotal, taxTotal, discountTotal, grandTotal);
+        OrderEntity order = createOrderEntity(customer, subtotal, BigDecimal.ZERO, discountTotal, grandTotal);
         OrderEntity savedOrder;
         OrderDestinationEntity orderDestination;
         try {
@@ -287,7 +290,34 @@ public class OrderServiceImpl implements OrderService {
         }
     }
 
-    @Transactional(rollbackFor = {ActionFailedException.class, Exception.class})
+    @Transactional(rollbackFor = {ActionFailedException.class, Exception.class, ValidationException.class})
+    @Override
+    public void confirmDelivery(String id) {
+        var account = authUtils.getUserAccountFromAuthentication();
+        if (account.getCustomer() == null) {
+            throw new ValidationException("User is not a customer");
+        }
+        var customerEntity = account.getCustomer();
+        var orderComboEntity = getOrderComboFromCustomerById(id, customerEntity);
+        if (!OrderStatusCodes.DELIVERED.equals(orderComboEntity.getOrderStatus().getCode())) {
+            throw new ValidationException(
+                    "Order combo status not valid for confirm delivery: " + orderComboEntity.getOrderStatus().getCode()
+            );
+        }
+        OrderStatusEntity completedStatus = orderStatusRepository.findByCode(OrderStatusCodes.RETRIEVED)
+                .orElseThrow(() -> new ValidationException("Completed order status not found"));
+        orderComboEntity.setOrderStatus(completedStatus);
+        try {
+            orderComboRepository.save(orderComboEntity);
+        } catch (Exception e) {
+            throw new ActionFailedException(e.getMessage());
+        }
+        var sellerAccount = orderComboEntity.getSeller().getAccount();
+        sendCompletedOrderNotification(account, orderComboEntity);
+        sendCompletedOrderNotification(sellerAccount, orderComboEntity);
+    }
+
+    @Transactional(rollbackFor = {ActionFailedException.class, ValidationException.class, Exception.class})
     @Override
     public void completedOrder(String id) {
         var account = authUtils.getUserAccountFromAuthentication();
@@ -295,26 +325,40 @@ public class OrderServiceImpl implements OrderService {
             throw new ValidationException("User is not a customer");
         }
         var customerEntity = account.getCustomer();
-        var orderComboEntity = orderComboRepository.findById(id).orElseThrow(() -> new ValidationException("Order combo not found with ID: " + id + " for customer: " + customerEntity.getId()));
-        if (!orderComboEntity.getOrderStatus().getCode().equals(OrderStatusCodes.DELIVERED)) {
-            throw new ValidationException("Order combo status not valid for completed: " + orderComboEntity.getOrderStatus().getCode());
+        var orderComboEntity = getOrderComboFromCustomerById(id, customerEntity);
+        if (!OrderStatusCodes.RETRIEVED.equals(orderComboEntity.getOrderStatus().getCode())) {
+            throw new ValidationException(
+                    "Order combo status not valid for completed: " + orderComboEntity.getOrderStatus().getCode()
+            );
         }
-        if (!orderComboEntity.getOrderDestination().getOrder().getCustomer().getId().equals(customerEntity.getId())) {
-            throw new ValidationException("You are not the owner");
-        }
-        OrderStatusEntity deliveredStatus = orderStatusRepository.findByCode(OrderStatusCodes.COMPLETED)
+        OrderStatusEntity completedStatus = orderStatusRepository.findByCode(OrderStatusCodes.COMPLETED)
                 .orElseThrow(() -> new ValidationException("Completed order status not found"));
-        orderComboEntity.setOrderStatus(deliveredStatus);
-        var comboAccount = orderComboEntity.getSeller().getAccount();
-        BigDecimal rollbackPrice = orderComboEntity.getGrandPrice();
-        BigDecimal currentBalance = comboAccount.getBalance() != null ? comboAccount.getBalance() : BigDecimal.ZERO;
-        comboAccount.setBalance(currentBalance.add(rollbackPrice));
+        orderComboEntity.setOrderStatus(completedStatus);
+        BigDecimal totalAmount = orderComboEntity.getGrandPrice();
+        PlatformFeeTierEntity tier = platformFeeTierRepository.findMatchingTier(totalAmount)
+                .orElseThrow(() -> new ValidationException("No fee tier found for amount: " + totalAmount));
+        BigDecimal feeAmount = totalAmount.multiply(tier.getFeeRate())
+                .setScale(2, RoundingMode.HALF_UP);
+        BigDecimal sellerRevenueAmount = totalAmount.subtract(feeAmount);
+        var sellerAccount = orderComboEntity.getSeller().getAccount();
+        BigDecimal currentBalance = sellerAccount.getBalance() != null ? sellerAccount.getBalance() : BigDecimal.ZERO;
+        sellerAccount.setBalance(currentBalance.add(sellerRevenueAmount));
+        SellerRevenueEntity revenueEntity = SellerRevenueEntity.builder()
+                .orderCombo(orderComboEntity)
+                .totalAmount(totalAmount)
+                .platformFeeRate(tier.getFeeRate().doubleValue())
+                .platformFeeAmount(feeAmount)
+                .sellerRevenue(sellerRevenueAmount)
+                .build();
         try {
             orderComboRepository.save(orderComboEntity);
-            accountRepository.save(comboAccount);
+            accountRepository.save(sellerAccount);
+            sellerRevenueRepository.save(revenueEntity);
         } catch (Exception e) {
             throw new ActionFailedException(e.getMessage());
         }
+        sendCompletedOrderNotification(account, orderComboEntity);
+        sendCompletedOrderNotification(sellerAccount, orderComboEntity);
     }
 
     @Override
@@ -435,7 +479,7 @@ public class OrderServiceImpl implements OrderService {
 
             predicates.add(criteriaBuilder.equal(sellerJoin.get("id"), seller.getId()));
 
-            predicates.add(criteriaBuilder.equal(statusJoin.get("code"), "PAYMENT_CONFIRMATION"));
+            predicates.add(criteriaBuilder.equal(statusJoin.get("code"), OrderStatusCodes.PAYMENT_CONFIRMATION));
 
             Map<String, QueryFieldWrapper> searchParams = queryWrapper.search();
             QueryFieldWrapper search = searchParams != null ? searchParams.get("keyword") : null;
@@ -638,10 +682,6 @@ public class OrderServiceImpl implements OrderService {
                     return product.getCurrentPrice().multiply(BigDecimal.valueOf(quantity));
                 })
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
-    }
-
-    private BigDecimal calculateTax(BigDecimal subtotal) {
-        return subtotal.multiply(TAX_RATE).setScale(2, RoundingMode.HALF_UP);
     }
 
     private OrderEntity createOrderEntity(CustomerEntity customer, BigDecimal subtotal, BigDecimal taxTotal,
@@ -982,5 +1022,34 @@ public class OrderServiceImpl implements OrderService {
             product.setQuantity(product.getQuantity() - orderedQuantity);
         }
         productRepository.saveAll(products);
+    }
+
+    private void sendCompletedOrderNotification(AccountEntity account, OrderComboEntity orderCombo) {
+        try {
+            String title = "Đơn hàng " + orderCombo.getId() + " đã hoàn tất";
+            String content = "Cảm ơn bạn đã nhận đơn hàng " + orderCombo.getId() + ". Giao dịch đã hoàn tất thành công!";
+
+            messageProducerService.sendSocketNotification(SocketNotificationMessage.builder()
+                    .accountId(account.getId())
+                    .messageId(UUID.randomUUID().toString())
+                    .title(title)
+                    .type(NotificationTypeCode.ORDER)
+                    .content(content)
+                    .build());
+        } catch (Exception e) {
+            log.error("Gửi thông báo hoàn tất đơn {} thất bại", orderCombo.getId(), e);
+        }
+    }
+
+    private OrderComboEntity getOrderComboFromCustomerById (String id, CustomerEntity customerEntity) {
+        var orderComboEntity = orderComboRepository.findById(id)
+                .orElseThrow(() -> new ValidationException(
+                        "Order combo not found with ID: " + id + " for customer: " + customerEntity.getId()
+                ));
+        if (!orderComboEntity.getOrderDestination().getOrder().getCustomer().getId()
+                .equals(customerEntity.getId())) {
+            throw new ValidationException("You are not the owner");
+        }
+        return orderComboEntity;
     }
 }

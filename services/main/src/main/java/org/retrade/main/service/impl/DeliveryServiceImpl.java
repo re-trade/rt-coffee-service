@@ -4,27 +4,28 @@ import lombok.RequiredArgsConstructor;
 import org.retrade.common.model.exception.ActionFailedException;
 import org.retrade.common.model.exception.ValidationException;
 import org.retrade.main.model.constant.DeliveryTypeEnum;
+import org.retrade.main.model.constant.OrderStatusCodes;
 import org.retrade.main.model.dto.request.DeliveryTrackRequest;
 import org.retrade.main.model.dto.response.DeliveryResponse;
 import org.retrade.main.model.entity.OrderComboDeliveryEntity;
-import org.retrade.main.model.entity.OrderComboEntity;
-import org.retrade.main.model.entity.OrderHistoryEntity;
-import org.retrade.main.model.entity.SellerEntity;
 import org.retrade.main.repository.jpa.OrderComboDeliveryRepository;
 import org.retrade.main.repository.jpa.OrderComboRepository;
-import org.retrade.main.repository.jpa.OrderHistoryRepository;
 import org.retrade.main.service.DeliveryService;
 import org.retrade.main.util.AuthUtils;
+import org.retrade.main.validator.OrderStatusValidator;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Comparator;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
 public class DeliveryServiceImpl implements DeliveryService {
-    private final MessageProducerServiceImpl messageProducerService;
     private final OrderComboDeliveryRepository orderComboDeliveryRepository;
-    private final OrderHistoryRepository orderHistoryRepository;
     private final OrderComboRepository orderComboRepository;
     private final AuthUtils authUtils;
+    private final OrderStatusValidator orderStatusValidator;
 
     @Override
     public DeliveryResponse signDelivery(DeliveryTrackRequest request) {
@@ -37,7 +38,7 @@ public class DeliveryServiceImpl implements DeliveryService {
         if (!orderCombo.getSeller().getId().equals(seller.getId())) {
             throw new ValidationException("Account is not a seller of this order combo");
         }
-        if (!orderCombo.getOrderStatus().getCode().equals("PREPARING")){
+        if (!orderCombo.getOrderStatus().getCode().equals(OrderStatusCodes.PREPARING)){
             throw new ValidationException("Order combo is not in PREPARING status");
         }
         OrderComboDeliveryEntity.OrderComboDeliveryEntityBuilder builder = OrderComboDeliveryEntity.builder();
@@ -49,32 +50,49 @@ public class DeliveryServiceImpl implements DeliveryService {
         builder.deliveryCode(request.getDeliveryCode());
         try {
             var result = orderComboDeliveryRepository.save(builder.build());
-            addOrderLogs(orderCombo, seller, "Start Delivering");
             return wrapDeliveryResponse(result);
         }catch (Exception ex) {
             throw new ActionFailedException("Have a problem when sign delivery", ex);
         }
     }
 
-    private void addOrderLogs(OrderComboEntity orderCombo, SellerEntity seller, String note) {
-        var orderLogs = OrderHistoryEntity.builder()
-                .orderCombo(orderCombo)
-                .seller(seller)
-                .status(true)
-                .notes(note)
-                .build();
-        try {
-            orderHistoryRepository.save(orderLogs);
-        } catch (Exception ex) {
-            throw new ActionFailedException("Have a problem when add order logs", ex);
+    @Override
+    @Transactional(readOnly = true)
+    public DeliveryResponse getDeliveryByOrderComboId(String orderComboId) {
+        var account = authUtils.getUserAccountFromAuthentication();
+        if (account.getCustomer() == null) {
+            throw new ValidationException("Tài khoản không phải là khách hàng");
         }
+        var customer = account.getCustomer();
+        var orderCombo = orderComboRepository.findById(orderComboId).orElseThrow(() -> new ValidationException("Không tìm thấy đơn hàng"));
+        if (!Set.of(OrderStatusCodes.PENDING, OrderStatusCodes.PREPARING).contains(orderCombo.getOrderStatus().getCode())) {
+            throw new ValidationException("Đơn hàng không ở trạng thái CHỜ XỬ LÝ hoặc ĐANG CHUẨN BỊ");
+        }
+        if (!orderCombo.getOrderDestination().getOrder().getCustomer().getId().equals(customer.getId())) {
+            throw new ValidationException("Bạn không có quyền xem thông tin giao hàng của đơn hàng này");
+        }
+
+        if (!orderStatusValidator.isOrderOnDeliveryStatus(orderCombo.getOrderStatus().getCode())) {
+            throw new ValidationException("Đơn hàng không ở trong giai đoạn giao hàng");
+        }
+        var deliveryStatus = orderComboDeliveryRepository.findByOrderCombo(orderCombo);
+
+        if (deliveryStatus.isEmpty()) {
+            throw new ValidationException("Không tìm thấy trạng thái giao hàng");
+        }
+        OrderComboDeliveryEntity latestDelivery = deliveryStatus.stream()
+                .max(Comparator.comparing(OrderComboDeliveryEntity::getCreatedDate))
+                .orElseThrow(() -> new ValidationException("Không có thông tin giao hàng"));
+        return wrapDeliveryResponse(latestDelivery);
     }
 
     private DeliveryResponse wrapDeliveryResponse (OrderComboDeliveryEntity deliveryEntity) {
+        var combo = deliveryEntity.getOrderCombo();
         return DeliveryResponse.builder()
                 .orderComboId(deliveryEntity.getOrderCombo().getId())
                 .deliveryCode(deliveryEntity.getDeliveryCode())
                 .deliveryType(deliveryEntity.getDeliveryType())
+                .deliveryEvidences(combo.getDeliveryCaptureImages())
                 .build();
     }
 }

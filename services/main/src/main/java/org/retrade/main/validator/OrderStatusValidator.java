@@ -13,28 +13,27 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class OrderStatusValidator {
 
-    // Định nghĩa thứ tự của các status
     private static final Map<String, Integer> STATUS_ORDER = new HashMap<>();
 
     static {
-        STATUS_ORDER.put(OrderStatusCodes.PENDING, 1);        // Đơn hàng chờ thanh toán
-        STATUS_ORDER.put(OrderStatusCodes.PAYMENT_FAILED, 2); // Thanh toán thất bại
-        STATUS_ORDER.put(OrderStatusCodes.PAYMENT_CANCELLED, 3); // Thanh toán bị hủy
-        STATUS_ORDER.put(OrderStatusCodes.PAYMENT_CONFIRMATION, 4); // Đã thanh toán, chờ xác nhận
-        STATUS_ORDER.put(OrderStatusCodes.PREPARING, 5);      // Đang chuẩn bị hàng
-        STATUS_ORDER.put(OrderStatusCodes.DELIVERING, 6);     // Đang giao hàng
-        STATUS_ORDER.put(OrderStatusCodes.DELIVERED, 7);      // Đã giao hàng
-        STATUS_ORDER.put(OrderStatusCodes.COMPLETED, 8);      // Hoàn thành
-        STATUS_ORDER.put(OrderStatusCodes.RETURN_REQUESTED, 9);
-        STATUS_ORDER.put(OrderStatusCodes.RETURN_APPROVED, 10);
-        STATUS_ORDER.put(OrderStatusCodes.RETURNING, 11);
-        STATUS_ORDER.put(OrderStatusCodes.RETURNED, 12);
-        STATUS_ORDER.put(OrderStatusCodes.RETURN_REJECTED, 13);
-        STATUS_ORDER.put(OrderStatusCodes.REFUNDED, 14);
-        STATUS_ORDER.put(OrderStatusCodes.CANCELLED, 15);
+        STATUS_ORDER.put(OrderStatusCodes.PENDING, 1);
+        STATUS_ORDER.put(OrderStatusCodes.PAYMENT_FAILED, 2);
+        STATUS_ORDER.put(OrderStatusCodes.PAYMENT_CANCELLED, 3);
+        STATUS_ORDER.put(OrderStatusCodes.PAYMENT_CONFIRMATION, 4);
+        STATUS_ORDER.put(OrderStatusCodes.PREPARING, 5);
+        STATUS_ORDER.put(OrderStatusCodes.DELIVERING, 6);
+        STATUS_ORDER.put(OrderStatusCodes.DELIVERED, 7);
+        STATUS_ORDER.put(OrderStatusCodes.RETRIEVED, 8);
+        STATUS_ORDER.put(OrderStatusCodes.COMPLETED, 9);
+        STATUS_ORDER.put(OrderStatusCodes.RETURN_REQUESTED, 10);
+        STATUS_ORDER.put(OrderStatusCodes.RETURN_APPROVED, 11);
+        STATUS_ORDER.put(OrderStatusCodes.RETURNING, 12);
+        STATUS_ORDER.put(OrderStatusCodes.RETURNED, 13);
+        STATUS_ORDER.put(OrderStatusCodes.RETURN_REJECTED, 14);
+        STATUS_ORDER.put(OrderStatusCodes.REFUNDED, 15);
+        STATUS_ORDER.put(OrderStatusCodes.CANCELLED, 16);
     }
 
-    // Định nghĩa các trạng thái có thể chuyển đổi hợp lệ
     private static final Map<String, Set<String>> VALID_TRANSITIONS = new HashMap<>();
 
     static {
@@ -64,6 +63,9 @@ public class OrderStatusValidator {
                 OrderStatusCodes.CANCELLED
         ));
         VALID_TRANSITIONS.put(OrderStatusCodes.DELIVERED, Set.of(
+                OrderStatusCodes.RETRIEVED
+        ));
+        VALID_TRANSITIONS.put(OrderStatusCodes.RETRIEVED, Set.of(
                 OrderStatusCodes.COMPLETED,
                 OrderStatusCodes.RETURN_REQUESTED
         ));
@@ -97,25 +99,20 @@ public class OrderStatusValidator {
      * @return true nếu có thể chuyển đổi, false nếu không
      */
     public boolean isValidStatusTransition(String fromStatus, String toStatus) {
-        // Kiểm tra null hoặc empty
         if (fromStatus == null || toStatus == null ||
                 fromStatus.trim().isEmpty() || toStatus.trim().isEmpty()) {
             return false;
         }
 
-        // Kiểm tra status có tồn tại không
         if (!STATUS_ORDER.containsKey(fromStatus) || !STATUS_ORDER.containsKey(toStatus)) {
             return false;
         }
 
-        // Nếu status giống nhau thì không cần chuyển đổi
         if (fromStatus.equals(toStatus)) {
             return false;
         }
 
-        // CANCELLED là trạng thái đặc biệt - có thể cancel từ hầu hết các trạng thái
         if (OrderStatusCodes.CANCELLED.equals(toStatus)) {
-            // Không thể cancel từ các trạng thái đã hoàn thành
             return !Set.of(
                     OrderStatusCodes.COMPLETED,
                     OrderStatusCodes.REFUNDED,
@@ -124,17 +121,14 @@ public class OrderStatusValidator {
             ).contains(fromStatus);
         }
 
-        // Không thể chuyển từ CANCELLED sang trạng thái khác (trừ REFUNDED)
         if (OrderStatusCodes.CANCELLED.equals(fromStatus) && !OrderStatusCodes.REFUNDED.equals(toStatus)) {
             return false;
         }
 
-        // Kiểm tra logic thanh toán: chỉ có thể đến các trạng thái sau khi thanh toán thành công
         if (this.requiresPayment(toStatus) && !this.isPaymentSuccessful(fromStatus)) {
             return false;
         }
 
-        // Kiểm tra xem có thể chuyển đổi hợp lệ không
         Set<String> validNextStatuses = VALID_TRANSITIONS.get(fromStatus);
         return validNextStatuses != null && validNextStatuses.contains(toStatus);
     }
@@ -146,13 +140,11 @@ public class OrderStatusValidator {
      * @return true nếu toStatus đứng sau fromStatus
      */
     public boolean isStatusInOrder(String fromStatus, String toStatus) {
-        // Kiểm tra null hoặc empty
         if (fromStatus == null || toStatus == null ||
                 fromStatus.trim().isEmpty() || toStatus.trim().isEmpty()) {
             return false;
         }
 
-        // Kiểm tra status có tồn tại không
         if (!STATUS_ORDER.containsKey(fromStatus) || !STATUS_ORDER.containsKey(toStatus)) {
             return false;
         }
@@ -204,11 +196,11 @@ public class OrderStatusValidator {
             return false;
         }
 
-        // Các trạng thái cần thanh toán trước
         return Set.of(
                 OrderStatusCodes.PREPARING,
                 OrderStatusCodes.DELIVERING,
                 OrderStatusCodes.DELIVERED,
+                OrderStatusCodes.RETRIEVED,
                 OrderStatusCodes.COMPLETED,
                 OrderStatusCodes.RETURN_REQUESTED,
                 OrderStatusCodes.RETURN_APPROVED,
@@ -233,6 +225,7 @@ public class OrderStatusValidator {
                 OrderStatusCodes.PREPARING,
                 OrderStatusCodes.DELIVERING,
                 OrderStatusCodes.DELIVERED,
+                OrderStatusCodes.RETRIEVED,
                 OrderStatusCodes.COMPLETED,
                 OrderStatusCodes.RETURN_REQUESTED,
                 OrderStatusCodes.RETURN_APPROVED,
@@ -273,7 +266,6 @@ public class OrderStatusValidator {
             return OrderStatusCodes.PAYMENT_CONFIRMATION;
         }
 
-        // Các trạng thái khác không liên quan thanh toán
         return null;
     }
 
@@ -288,7 +280,6 @@ public class OrderStatusValidator {
             return false;
         }
 
-        // Chỉ có thể hoàn tiền khi đã thanh toán và bị cancel hoặc đã trả hàng
         return Set.of(OrderStatusCodes.CANCELLED, OrderStatusCodes.RETURNED).contains(status);
     }
 
@@ -303,7 +294,6 @@ public class OrderStatusValidator {
             return false;
         }
 
-        // Nếu đã cancel và trước đó đã thanh toán thành công
         return OrderStatusCodes.CANCELLED.equals(currentStatus) && isPaymentSuccessful(previousStatus);
     }
 
@@ -314,6 +304,10 @@ public class OrderStatusValidator {
      */
     public boolean isPendingSellerConfirmation(String status) {
         return OrderStatusCodes.PAYMENT_CONFIRMATION.equals(status);
+    }
+
+    public boolean isOrderOnDeliveryStatus(String status) {
+        return isPaymentSuccessful(status) && Set.of(OrderStatusCodes.PREPARING, OrderStatusCodes.DELIVERING).contains(status);
     }
 
     /**

@@ -15,14 +15,14 @@ import java.util.Set;
 @NoArgsConstructor
 @Builder
 public class RevenueResponse {
-    private String orderComboId; // Mã đơn hàng
+    private String orderComboId;
     private Set<CustomerOrderItemResponse> items;
     private OrderDestinationResponse destination;
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private LocalDateTime createdDate; // Ngày tạo
-    private BigDecimal totalPrice; // Tổng tiền
-    private Double feePercent; // Phần trăm phí
-    private BigDecimal feeAmount; // Tiền phí
-    private BigDecimal netAmount; // Thực nhận sau phí
-    private OrderStatusResponse status; // Trạng thái
+    private LocalDateTime createdDate;
+    private BigDecimal totalPrice;
+    private Double feePercent;
+    private BigDecimal feeAmount;
+    private BigDecimal netAmount;
+    private OrderStatusResponse status;
 }

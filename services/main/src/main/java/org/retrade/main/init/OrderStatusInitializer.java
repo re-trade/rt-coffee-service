@@ -28,7 +28,8 @@ public class OrderStatusInitializer implements CommandLineRunner {
                 Map.entry(OrderStatusCodes.RETURN_REJECTED, "Return Rejected"),
                 Map.entry(OrderStatusCodes.RETURNING, "Returning"),
                 Map.entry(OrderStatusCodes.RETURNED, "Returned"),
-                Map.entry(OrderStatusCodes.REFUNDED, "Refunded")
+                Map.entry(OrderStatusCodes.REFUNDED, "Refunded"),
+                Map.entry(OrderStatusCodes.RETRIEVED, "Retrieved")
         );
 
         defaultStatuses.forEach((code, name) -> {
