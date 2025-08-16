@@ -1,34 +1,36 @@
 package org.retrade.main.service.impl;
 
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.retrade.common.model.exception.ActionFailedException;
 import org.retrade.common.model.exception.ValidationException;
+import org.retrade.main.model.constant.DeliveryTypeEnum;
+import org.retrade.main.model.constant.NotificationTypeCode;
 import org.retrade.main.model.constant.OrderStatusCodes;
 import org.retrade.main.model.dto.request.CreateOrderHistoryRequest;
 import org.retrade.main.model.dto.response.OrderHistoryResponse;
 import org.retrade.main.model.dto.response.OrderStatusResponse;
-import org.retrade.main.model.entity.OrderHistoryEntity;
-import org.retrade.main.model.entity.OrderStatusEntity;
-import org.retrade.main.model.entity.SellerEntity;
-import org.retrade.main.repository.jpa.AccountRepository;
-import org.retrade.main.repository.jpa.OrderComboRepository;
-import org.retrade.main.repository.jpa.OrderHistoryRepository;
-import org.retrade.main.repository.jpa.OrderStatusRepository;
+import org.retrade.main.model.entity.*;
+import org.retrade.main.model.message.SocketNotificationMessage;
+import org.retrade.main.repository.jpa.*;
+import org.retrade.main.service.MessageProducerService;
 import org.retrade.main.service.OrderHistoryService;
 import org.retrade.main.util.AuthUtils;
 import org.retrade.main.validator.OrderStatusValidator;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class OrderHistoryServiceImpl implements OrderHistoryService {
     private final OrderHistoryRepository  orderHistoryRepository;
     private final OrderComboRepository orderComboRepository;
@@ -36,6 +38,9 @@ public class OrderHistoryServiceImpl implements OrderHistoryService {
     private final OrderStatusValidator orderStatusValidator;
     private final AuthUtils authUtils;
     private final AccountRepository accountRepository;
+    private final MessageProducerService messageProducerService;
+    private final WalletTransactionRepository walletTransactionRepository;
+    private final OrderComboDeliveryRepository orderComboDeliveryRepository;
 
     @Override
     public List<OrderHistoryResponse> getAllNotesByOrderComboId(String id) {
@@ -53,23 +58,22 @@ public class OrderHistoryServiceImpl implements OrderHistoryService {
         return mapEntityToResponse(orderHistoryEntity);
     }
 
-    @Transactional(rollbackOn = {ValidationException.class, ActionFailedException.class})
+    @Transactional(rollbackFor = {ValidationException.class, ActionFailedException.class})
     @Override
     public OrderHistoryResponse createOrderHistory(CreateOrderHistoryRequest request) {
         var seller = getSellerEntity();
         if (seller == null) {
-            throw new ValidationException("Seller not found");
+            throw new ValidationException("Không tìm thấy người bán");
         }
 
-        var orderCombo = orderComboRepository.findByIdAndSeller(request.getOrderComboId(), seller).orElseThrow(
-                () -> new ValidationException("This order does not belong to you")
-        );
-        OrderStatusEntity orderNewStatus = orderStatusRepository.findById(request.getNewStatusId()).orElseThrow(
-                () -> new ValidationException("Order status not found")
-        );
+        var orderCombo = orderComboRepository.findByIdAndSeller(request.getOrderComboId(), seller)
+                .orElseThrow(() -> new ValidationException("Đơn hàng này không thuộc về bạn"));
+
+        OrderStatusEntity orderNewStatus = orderStatusRepository.findById(request.getNewStatusId())
+                .orElseThrow(() -> new ValidationException("Không tìm thấy trạng thái đơn hàng"));
 
         if (orderNewStatus.equals(orderCombo.getOrderStatus())) {
-            throw new ValidationException("Order status is already in use");
+            throw new ValidationException("Trạng thái đơn hàng hiện tại đã là trạng thái này");
         }
 
         String currentStatusCode = orderCombo.getOrderStatus().getCode();
@@ -78,9 +82,8 @@ public class OrderHistoryServiceImpl implements OrderHistoryService {
         if (!orderStatusValidator.isValidStatusTransition(currentStatusCode, newStatusCode)) {
             Set<String> validNextStatuses = orderStatusValidator.getValidNextStatuses(currentStatusCode);
             String validStatusesStr = String.join(", ", validNextStatuses);
-
             throw new ValidationException(
-                    String.format("Invalid status transition from %s to %s. Valid transitions: [%s]",
+                    String.format("Không thể chuyển trạng thái từ %s sang %s. Các trạng thái hợp lệ tiếp theo: [%s]",
                             currentStatusCode, newStatusCode, validStatusesStr)
             );
         }
@@ -94,21 +97,109 @@ public class OrderHistoryServiceImpl implements OrderHistoryService {
         orderHistoryEntity.setStatus(true);
 
         orderCombo.setOrderStatus(orderNewStatus);
+
+        if (newStatusCode.equals(OrderStatusCodes.DELIVERING)) {
+            if (request.getDeliveryType() == null) {
+                throw new ValidationException("Vui lòng chọn hình thức giao hàng");
+            }
+            if (request.getDeliveryType() != DeliveryTypeEnum.MANUAL && request.getDeliveryCode() == null) {
+                throw new ValidationException("Vui lòng nhập mã vận đơn");
+            }
+            var orderDelivery = OrderComboDeliveryEntity.builder()
+                    .orderCombo(orderCombo)
+                    .deliveryType(request.getDeliveryType())
+                    .deliveryCode(request.getDeliveryCode() != null ? request.getDeliveryCode() : "")
+                    .build();
+            try {
+                orderComboDeliveryRepository.save(orderDelivery);
+            } catch (Exception e) {
+                throw new ActionFailedException("Lỗi khi lưu thông tin vận chuyển đơn hàng", e);
+            }
+        } else if (newStatusCode.equals(OrderStatusCodes.DELIVERED)) {
+            if (request.getDeliveryEvidenceImages() == null || request.getDeliveryEvidenceImages().isEmpty()) {
+                throw new ValidationException("Vui lòng cung cấp ảnh chứng minh giao hàng");
+            }
+            orderCombo.setDeliveryCaptureImages(request.getDeliveryEvidenceImages());
+        }
+
         try {
             orderComboRepository.save(orderCombo);
             orderHistoryRepository.save(orderHistoryEntity);
-            if (newStatusCode.equals(OrderStatusCodes.CANCELLED)) {
-                var accountCombo = orderCombo.getOrderDestination().getOrder().getCustomer().getAccount();
-                BigDecimal rollbackPrice = orderCombo.getGrandPrice();
-                BigDecimal currentBalance = accountCombo.getBalance() != null ? accountCombo.getBalance() : BigDecimal.ZERO;
-                accountCombo.setBalance(currentBalance.add(rollbackPrice));
-                accountRepository.save(accountCombo);
-            }
-            return mapEntityToResponse(orderHistoryEntity);
         } catch (Exception e) {
-            throw new ActionFailedException(e.getMessage());
+            throw new ActionFailedException("Lỗi khi lưu đơn hàng", e);
+        }
+
+        var accountCombo = orderCombo.getOrderDestination().getOrder().getCustomer().getAccount();
+        BigDecimal rollbackPrice = BigDecimal.ZERO;
+
+        if (newStatusCode.equals(OrderStatusCodes.CANCELLED)) {
+            rollbackPrice = orderCombo.getGrandPrice();
+            BigDecimal currentBalance = accountCombo.getBalance() != null ? accountCombo.getBalance() : BigDecimal.ZERO;
+            accountCombo.setBalance(currentBalance.add(rollbackPrice));
+
+            var walletTransactionHistory = WalletTransactionEntity.builder()
+                    .note("Hoàn tiền đơn hàng " + orderCombo.getId() + ": " + rollbackPrice.toPlainString())
+                    .amount(rollbackPrice)
+                    .account(accountCombo)
+                    .build();
+            try {
+                walletTransactionRepository.save(walletTransactionHistory);
+                accountRepository.save(accountCombo);
+            } catch (Exception e) {
+                throw new ActionFailedException("Lỗi khi xử lí giao dịch hoàn tiền cho khách hàng");
+            }
+
+        }
+        sendOrderStatusNotification(accountCombo, orderCombo, newStatusCode, rollbackPrice);
+
+        return mapEntityToResponse(orderHistoryEntity);
+    }
+
+
+    private void sendOrderStatusNotification(AccountEntity account, OrderComboEntity orderCombo, String newStatusCode, BigDecimal rollbackPrice) {
+        try {
+            String title;
+            String content = switch (newStatusCode) {
+                case OrderStatusCodes.CANCELLED -> {
+                    title = "Đơn hàng " + orderCombo.getId() + " đã bị hủy";
+                    yield "Đơn hàng " + orderCombo.getId() + " đã bị hủy. Số tiền "
+                            + rollbackPrice.toPlainString() + " đã được hoàn lại vào tài khoản của bạn. Vui lòng kiểm tra số dư.";
+                }
+                case OrderStatusCodes.DELIVERING -> {
+                    title = "Đơn hàng " + orderCombo.getId() + " đang được giao";
+                    yield "Đơn hàng " + orderCombo.getId() + " đang trên đường giao đến bạn. Vui lòng chuẩn bị nhận hàng.";
+                }
+                case OrderStatusCodes.DELIVERED -> {
+                    title = "Đơn hàng " + orderCombo.getId() + " đã giao thành công";
+                    yield "Đơn hàng " + orderCombo.getId() + " đã được giao thành công. Chúc bạn mua sắm vui vẻ!";
+                }
+                case OrderStatusCodes.RETURN_APPROVED -> {
+                    title = "Yêu cầu trả hàng đã được chấp nhận";
+                    yield "Yêu cầu trả hàng cho đơn " + orderCombo.getId() + " đã được chấp nhận. Vui lòng tiến hành gửi trả.";
+                }
+                case OrderStatusCodes.RETURN_REJECTED -> {
+                    title = "Yêu cầu trả hàng bị từ chối";
+                    yield "Yêu cầu trả hàng cho đơn " + orderCombo.getId() + " đã bị từ chối. Vui lòng liên hệ hỗ trợ để biết thêm chi tiết.";
+                }
+                default -> {
+                    title = "Trạng thái đơn hàng " + orderCombo.getId() + " đã thay đổi";
+                    yield "Đơn hàng " + orderCombo.getId() + " hiện đang ở trạng thái " + newStatusCode.replace("_", " ").toLowerCase() + ".";
+                }
+            };
+
+            messageProducerService.sendSocketNotification(SocketNotificationMessage.builder()
+                    .accountId(account.getId())
+                    .messageId(UUID.randomUUID().toString())
+                    .title(title)
+                    .type(NotificationTypeCode.ORDER)
+                    .content(content)
+                    .build());
+
+        } catch (Exception e) {
+            log.error("Gửi thông báo thất bại cho đơn {} với trạng thái {}", orderCombo.getId(), newStatusCode, e);
         }
     }
+
 
     @Override
     public OrderHistoryResponse updateOrderHistory(String id) {
@@ -151,23 +242,6 @@ public class OrderHistoryServiceImpl implements OrderHistoryService {
                 .code(orderStatusEntity.getCode())
                 .name(orderStatusEntity.getName())
                 .build();
-    }
-    private boolean validateStatus(String currentStatus, String nextStatus) {
-        List<String> validFlow = List.of(
-                "PENDING",
-                "CONFIRMED",
-                "PREPARING",
-                "DELIVERING",
-                "DELIVERED"
-        );
-
-        int currentIndex = validFlow.indexOf(currentStatus);
-        int nextIndex = validFlow.indexOf(nextStatus);
-        if (currentIndex == -1 || nextIndex == -1) {
-            return false;
-        }
-
-        return nextIndex == currentIndex + 1;
     }
 
 }

@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.retrade.common.model.exception.ActionFailedException;
 import org.retrade.common.model.exception.ValidationException;
 import org.retrade.main.config.common.CartConfig;
+import org.retrade.main.model.constant.ProductStatusEnum;
 import org.retrade.main.model.dto.request.CartRequest;
 import org.retrade.main.model.dto.response.CartGroupResponse;
 import org.retrade.main.model.dto.response.CartItemResponse;
@@ -12,9 +13,9 @@ import org.retrade.main.model.entity.CartEntity;
 import org.retrade.main.model.entity.CartItemEntity;
 import org.retrade.main.model.entity.ProductEntity;
 import org.retrade.main.model.entity.SellerEntity;
-import org.retrade.main.repository.redis.CartRepository;
 import org.retrade.main.repository.jpa.ProductRepository;
 import org.retrade.main.repository.jpa.SellerRepository;
+import org.retrade.main.repository.redis.CartRepository;
 import org.retrade.main.service.CartService;
 import org.retrade.main.util.AuthUtils;
 import org.springframework.stereotype.Service;
@@ -41,7 +42,7 @@ public class CartServiceImpl implements CartService {
         String userId = getCurrentUserId();
 
         ProductEntity product = productRepository.findById(request.getProductId())
-                .orElseThrow(() -> new ValidationException("Product not found"));
+                .orElseThrow(() -> new ValidationException("Không tìm thấy sản phẩm"));
 
         String shopId = product.getSeller().getId();
 
@@ -54,7 +55,7 @@ public class CartServiceImpl implements CartService {
                 .sum();
 
         if (totalItemsInCart >= cartConfig.getMaxItemsPerCart()) {
-            throw new ValidationException("Cart is full. Maximum items allowed: " + cartConfig.getMaxItemsPerCart());
+            throw new ValidationException("Giỏ hàng của bạn đã đạt giới hạn. Tối đa: %d sản phẩm " + cartConfig.getMaxItemsPerCart());
         }
 
         Optional<CartItemEntity> existingItem = itemsInShop.stream()
@@ -64,6 +65,9 @@ public class CartServiceImpl implements CartService {
         if (existingItem.isPresent()) {
             CartItemEntity item = existingItem.get();
             item.setQuantity(item.getQuantity() + request.getQuantity());
+            if (item.getQuantity() > product.getQuantity()) {
+                throw new ValidationException(String.format("Bạn đã chọn quá số lượng hiện có. Còn lại: %d", product.getQuantity()));
+            }
             item.setUpdatedAt(LocalDateTime.now());
         } else {
             CartItemEntity newItem = CartItemEntity.builder()
@@ -72,7 +76,9 @@ public class CartServiceImpl implements CartService {
                     .updatedAt(LocalDateTime.now())
                     .quantity(request.getQuantity())
                     .build();
-
+            if (newItem.getQuantity() > product.getQuantity()) {
+                throw new ValidationException(String.format("Bạn đã chọn quá số lượng hiện có. Còn lại: %d", product.getQuantity()));
+            }
             itemsInShop.add(newItem);
         }
         cart.setLastUpdated(LocalDateTime.now());
@@ -91,7 +97,9 @@ public class CartServiceImpl implements CartService {
         String userId = getCurrentUserId();
 
         CartEntity cart = cartRepository.findByUserId(userId)
-                .orElseThrow(() -> new ValidationException("Cart not found"));
+                .orElseThrow(() -> new ValidationException("Không tìm thấy giỏ hảng"));
+
+        var product = productRepository.findById(request.getProductId()).orElseThrow(() -> new ValidationException("Không tìm thấy sản phẩm"));
 
         boolean updated = false;
         for (Set<CartItemEntity> shopItems : cart.getShopItems().values()) {
@@ -99,6 +107,9 @@ public class CartServiceImpl implements CartService {
                 if (item.getProductId().equals(request.getProductId())) {
                     item.setUpdatedAt(LocalDateTime.now());
                     item.setQuantity(request.getQuantity());
+                    if (item.getQuantity() > product.getQuantity()) {
+                        throw new ValidationException(String.format("Bạn đã chọn quá số lượng hiện có. Còn lại: %d", product.getQuantity()));
+                    }
                     updated = true;
                     break;
                 }
@@ -107,7 +118,7 @@ public class CartServiceImpl implements CartService {
         }
 
         if (!updated) {
-            throw new ValidationException("Item not found in cart");
+            throw new ValidationException("Món đồ không tồn tại trong giỏ hàng");
         }
         cart.setLastUpdated(LocalDateTime.now());
 
@@ -115,7 +126,7 @@ public class CartServiceImpl implements CartService {
             cartRepository.save(cart);
             return mapToCartResponse(cart);
         } catch (Exception e) {
-            throw new ActionFailedException("Failed to update cart item", e);
+            throw new ActionFailedException("Lỗi khi cập nhập giỏ hàng", e);
         }
     }
 
@@ -152,7 +163,7 @@ public class CartServiceImpl implements CartService {
             cartRepository.save(cart);
             return mapToCartResponse(cart);
         } catch (Exception e) {
-            throw new ActionFailedException("Failed to remove item from cart", e);
+            throw new ActionFailedException("Lỗi khi cập nhập giỏ hàng", e);
         }
     }
 
@@ -266,7 +277,8 @@ public class CartServiceImpl implements CartService {
                     .totalPrice(product.getCurrentPrice())
                     .addedAt(cartItem.getAddedAt())
                     .description(product.getDescription() != null ? product.getDescription() : "N/A")
-                    .productAvailable(true)
+                    .productAvailable(product.getQuantity() > 0 && product.getStatus() == ProductStatusEnum.ACTIVE)
+                    .productQuantity(product.getQuantity() != null ? product.getQuantity() : 0)
                     .quantity(cartItem.getQuantity())
                     .build();
         }).collect(Collectors.toSet());

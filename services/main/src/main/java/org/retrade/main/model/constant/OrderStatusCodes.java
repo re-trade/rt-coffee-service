@@ -9,6 +9,7 @@ public class OrderStatusCodes {
     public static final String PREPARING = "PREPARING";
     public static final String DELIVERING = "DELIVERING";
     public static final String DELIVERED = "DELIVERED";
+    public static final String RETRIEVED = "RETRIEVED";
     public static final String COMPLETED = "COMPLETED";
     public static final String CANCELLED = "CANCELLED";
     public static final String RETURN_REQUESTED = "RETURN_REQUESTED";

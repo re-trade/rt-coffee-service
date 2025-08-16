@@ -33,4 +33,6 @@ public class OrderComboEntity extends BaseSQLEntity {
     private String cancelledReason;
     @Column(name = "date_create_reason")
     private Timestamp reasonCreatedDate;
+    @Column(name = "delivery_capture_images")
+    private Set<String> deliveryCaptureImages;
 }
