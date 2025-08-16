@@ -61,37 +61,38 @@ public class DeliveryServiceImpl implements DeliveryService {
     public DeliveryResponse getDeliveryByOrderComboId(String orderComboId) {
         var account = authUtils.getUserAccountFromAuthentication();
         if (account.getCustomer() == null) {
-            throw new ValidationException("Account is not a customer");
+            throw new ValidationException("Tài khoản không phải là khách hàng");
         }
         var customer = account.getCustomer();
-        var orderCombo = orderComboRepository.findById(orderComboId).orElseThrow(() -> new ValidationException("Order combo not found"));
+        var orderCombo = orderComboRepository.findById(orderComboId).orElseThrow(() -> new ValidationException("Không tìm thấy đơn hàng"));
         if (!Set.of(OrderStatusCodes.PENDING, OrderStatusCodes.PREPARING).contains(orderCombo.getOrderStatus().getCode())) {
-            throw new ValidationException("Order combo is not in PENDING or PREPARING status");
+            throw new ValidationException("Đơn hàng không ở trạng thái CHỜ XỬ LÝ hoặc ĐANG CHUẨN BỊ");
         }
         if (!orderCombo.getOrderDestination().getOrder().getCustomer().getId().equals(customer.getId())) {
-            throw new ValidationException("You are not allowed to view this order's delivery info");
+            throw new ValidationException("Bạn không có quyền xem thông tin giao hàng của đơn hàng này");
         }
 
         if (!orderStatusValidator.isOrderOnDeliveryStatus(orderCombo.getOrderStatus().getCode())) {
-            throw new ValidationException("Order is not in a delivery stage");
+            throw new ValidationException("Đơn hàng không ở trong giai đoạn giao hàng");
         }
-
         var deliveryStatus = orderComboDeliveryRepository.findByOrderCombo(orderCombo);
 
         if (deliveryStatus.isEmpty()) {
-            throw new ValidationException("Delivery status not found");
+            throw new ValidationException("Không tìm thấy trạng thái giao hàng");
         }
         OrderComboDeliveryEntity latestDelivery = deliveryStatus.stream()
                 .max(Comparator.comparing(OrderComboDeliveryEntity::getCreatedDate))
-                .orElseThrow(() -> new ValidationException("No delivery info found"));
+                .orElseThrow(() -> new ValidationException("Không có thông tin giao hàng"));
         return wrapDeliveryResponse(latestDelivery);
     }
 
     private DeliveryResponse wrapDeliveryResponse (OrderComboDeliveryEntity deliveryEntity) {
+        var combo = deliveryEntity.getOrderCombo();
         return DeliveryResponse.builder()
                 .orderComboId(deliveryEntity.getOrderCombo().getId())
                 .deliveryCode(deliveryEntity.getDeliveryCode())
                 .deliveryType(deliveryEntity.getDeliveryType())
+                .deliveryEvidences(combo.getDeliveryCaptureImages())
                 .build();
     }
 }
