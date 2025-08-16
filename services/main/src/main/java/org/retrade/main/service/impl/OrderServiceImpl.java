@@ -39,7 +39,6 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Slf4j
 public class OrderServiceImpl implements OrderService {
-
     private final OrderRepository orderRepository;
     private final OrderItemRepository orderItemRepository;
     private final OrderComboRepository orderComboRepository;
@@ -291,6 +290,33 @@ public class OrderServiceImpl implements OrderService {
         }
     }
 
+    @Transactional(rollbackFor = {ActionFailedException.class, Exception.class, ValidationException.class})
+    @Override
+    public void confirmDelivery(String id) {
+        var account = authUtils.getUserAccountFromAuthentication();
+        if (account.getCustomer() == null) {
+            throw new ValidationException("User is not a customer");
+        }
+        var customerEntity = account.getCustomer();
+        var orderComboEntity = getOrderComboFromCustomerById(id, customerEntity);
+        if (!OrderStatusCodes.DELIVERED.equals(orderComboEntity.getOrderStatus().getCode())) {
+            throw new ValidationException(
+                    "Order combo status not valid for confirm delivery: " + orderComboEntity.getOrderStatus().getCode()
+            );
+        }
+        OrderStatusEntity completedStatus = orderStatusRepository.findByCode(OrderStatusCodes.RETRIEVED)
+                .orElseThrow(() -> new ValidationException("Completed order status not found"));
+        orderComboEntity.setOrderStatus(completedStatus);
+        try {
+            orderComboRepository.save(orderComboEntity);
+        } catch (Exception e) {
+            throw new ActionFailedException(e.getMessage());
+        }
+        var sellerAccount = orderComboEntity.getSeller().getAccount();
+        sendCompletedOrderNotification(account, orderComboEntity);
+        sendCompletedOrderNotification(sellerAccount, orderComboEntity);
+    }
+
     @Transactional(rollbackFor = {ActionFailedException.class, ValidationException.class, Exception.class})
     @Override
     public void completedOrder(String id) {
@@ -299,19 +325,11 @@ public class OrderServiceImpl implements OrderService {
             throw new ValidationException("User is not a customer");
         }
         var customerEntity = account.getCustomer();
-        var orderComboEntity = orderComboRepository.findById(id)
-                .orElseThrow(() -> new ValidationException(
-                        "Order combo not found with ID: " + id + " for customer: " + customerEntity.getId()
-                ));
-
-        if (!OrderStatusCodes.DELIVERED.equals(orderComboEntity.getOrderStatus().getCode())) {
+        var orderComboEntity = getOrderComboFromCustomerById(id, customerEntity);
+        if (!OrderStatusCodes.RETRIEVED.equals(orderComboEntity.getOrderStatus().getCode())) {
             throw new ValidationException(
                     "Order combo status not valid for completed: " + orderComboEntity.getOrderStatus().getCode()
             );
-        }
-        if (!orderComboEntity.getOrderDestination().getOrder().getCustomer().getId()
-                .equals(customerEntity.getId())) {
-            throw new ValidationException("You are not the owner");
         }
         OrderStatusEntity completedStatus = orderStatusRepository.findByCode(OrderStatusCodes.COMPLETED)
                 .orElseThrow(() -> new ValidationException("Completed order status not found"));
@@ -1021,5 +1039,17 @@ public class OrderServiceImpl implements OrderService {
         } catch (Exception e) {
             log.error("Gửi thông báo hoàn tất đơn {} thất bại", orderCombo.getId(), e);
         }
+    }
+
+    private OrderComboEntity getOrderComboFromCustomerById (String id, CustomerEntity customerEntity) {
+        var orderComboEntity = orderComboRepository.findById(id)
+                .orElseThrow(() -> new ValidationException(
+                        "Order combo not found with ID: " + id + " for customer: " + customerEntity.getId()
+                ));
+        if (!orderComboEntity.getOrderDestination().getOrder().getCustomer().getId()
+                .equals(customerEntity.getId())) {
+            throw new ValidationException("You are not the owner");
+        }
+        return orderComboEntity;
     }
 }

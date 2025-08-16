@@ -330,7 +330,7 @@ public class OrderController {
     }
 
     @PutMapping("combo/{id}/customer/completed")
-    @Operation(summary = "Completed customer order", description = "Cancels an order")
+    @Operation(summary = "Completed customer order", description = "Completed an order")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Order cancelled successfully"),
             @ApiResponse(responseCode = "401", description = "Unauthorized"),
@@ -347,14 +347,20 @@ public class OrderController {
                 .build());
     }
 
+    @PutMapping("combo/{id}/customer/delivery-confirmed")
+    @Operation(summary = "Completed customer order", description = "Confirm delivery an order")
+    @PreAuthorize("hasRole('ROLE_CUSTOMER')")
+    public ResponseEntity<ResponseObject<Void>> confirmOrderDelivery(@PathVariable String id) {
+        orderService.confirmDelivery(id);
+        return ResponseEntity.ok(new ResponseObject.Builder<Void>()
+                .success(true)
+                .code("SUCCESS")
+                .messages("Order completed successfully")
+                .build());
+    }
+
     @PutMapping("combo/seller/cancel")
     @Operation(summary = "Cancel seller order", description = "Cancels an order")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Order cancelled successfully"),
-            @ApiResponse(responseCode = "401", description = "Unauthorized"),
-            @ApiResponse(responseCode = "404", description = "Order not found"),
-            @ApiResponse(responseCode = "500", description = "Internal server error")
-    })
     @PreAuthorize("hasRole('ROLE_SELLER')")
     public ResponseEntity<ResponseObject<Void>> cancelOrderSeller(@RequestBody CancelOrderRequest request) {
         orderService.cancelOrderCustomer(request);

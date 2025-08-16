@@ -26,6 +26,8 @@ public interface OrderService {
 
     void cancelOrderSeller(CancelOrderRequest request);
 
+    void confirmDelivery(String id);
+
     void completedOrder(String id);
 
     PaginationWrapper<List<CustomerOrderComboResponse>> getSellerOrderCombos(QueryWrapper queryFieldWrapper);
