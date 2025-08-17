@@ -244,7 +244,7 @@ public class OrderServiceImpl implements OrderService {
         if (!validStatus.contains(orderComboEntity.getOrderStatus().getCode())) {
             throw new ValidationException("Order combo status not valid for cancellation: " + orderComboEntity.getOrderStatus().getCode());
         }
-        if (orderComboEntity.getOrderDestination().getOrder().getCustomer().getId().equals(customerEntity.getId())) {
+        if (!orderComboEntity.getOrderDestination().getOrder().getCustomer().getId().equals(customerEntity.getId())) {
             throw new ValidationException("You are not the owner");
         }
         OrderStatusEntity cancelledStatus = orderStatusRepository.findByCode(OrderStatusCodes.CANCELLED)
