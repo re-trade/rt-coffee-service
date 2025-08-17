@@ -82,7 +82,7 @@ public class SwaggerConfig {
         List<Server> serverList = new ArrayList<>();
         if (contextPath.equals("/api/voucher/v1")) {
             var productionServer = new Server();
-            productionServer.setUrl(String.format("https://%s%s", hostConfig.getBaseHost(), hostConfig.getSwaggerContextPath()));
+            productionServer.setUrl(String.format("https://%s%s", hostConfig.getSwaggerHost(), hostConfig.getSwaggerContextPath()));
             productionServer.setDescription("Production Server");
             serverList.add(productionServer);
             return serverList;

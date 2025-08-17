@@ -32,6 +32,7 @@ services:
       JWT_2FA_EX: ${JWT_2FA_EX:-3000}
       ORIGIN_ALLOWS: ${ORIGIN_ALLOWS}
       BASE_HOST: ${BASE_HOST}
+      SWAGGER_HOST: ${SWAGGER_HOST}
       FRONTEND_URL: ${FRONTEND_URL}
       SWAGGER_CONTEXT_PATH: /api/main/v1
       FORGOT_PASSWORD_TIMEOUT: 10
@@ -98,6 +99,7 @@ services:
       CONTEXT_PATH: /api/feedback-notification/v1
       ORIGIN_ALLOWS: ${ORIGIN_ALLOWS}
       BASE_HOST: ${BASE_HOST}
+      SWAGGER_HOST: ${SWAGGER_HOST}
       FRONTEND_URL: ${FRONTEND_URL}
       MAIN_SERVICE_GRPC_HOST: main-service
       MAIN_SERVICE_GRPC_PORT: 9080
@@ -139,6 +141,7 @@ services:
       PORT: 8080
       ORIGIN_ALLOWS: ${ORIGIN_ALLOWS}
       BASE_HOST: ${BASE_HOST}
+      SWAGGER_HOST: ${SWAGGER_HOST}
       FRONTEND_URL: ${FRONTEND_URL}
       SWAGGER_CONTEXT_PATH: /api/storage/v1
       MAIN_SERVICE_GRPC_HOST: main-service
@@ -230,6 +233,7 @@ services:
       PORT: 8080
       ORIGIN_ALLOWS: ${ORIGIN_ALLOWS}
       BASE_HOST: ${BASE_HOST}
+      SWAGGER_HOST: ${SWAGGER_HOST}
       FRONTEND_URL: ${FRONTEND_URL}
       SWAGGER_CONTEXT_PATH: /api/achievement/v1
       MAIN_SERVICE_GRPC_HOST: main-service
