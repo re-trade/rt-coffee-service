@@ -13,4 +13,5 @@ public class HostConfig {
     private String frontEnd;
     private String swaggerContextPath;
     private Boolean developMode;
+    private String swaggerHost;
 }

@@ -12,5 +12,6 @@ public class HostConfig {
     private String baseHost;
     private String frontEnd;
     private String swaggerContextPath;
+    private String swaggerHost;
     private Boolean developMode;
 }

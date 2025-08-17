@@ -87,6 +87,7 @@ security:
     base-host: ${BASE_HOST:}
     front-end: ${FRONTEND_URL}
     swagger-context-path: ${SWAGGER_CONTEXT_PATH:/api/v1}
+    swagger-host: ${SWAGGER_HOST}
 
 aws:
   region: ${AWS_REGION:hcm}
