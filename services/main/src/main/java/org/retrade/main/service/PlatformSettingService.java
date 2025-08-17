@@ -2,6 +2,7 @@ package org.retrade.main.service;
 
 import org.retrade.common.model.dto.request.QueryWrapper;
 import org.retrade.common.model.dto.response.PaginationWrapper;
+import org.retrade.main.model.dto.request.PlatformFeeTierInsertRequest;
 import org.retrade.main.model.dto.response.PlatformFeeTierResponse;
 
 import java.math.BigDecimal;
@@ -15,6 +16,10 @@ public interface PlatformSettingService {
     boolean getBooleanValue(String key);
 
     BigDecimal findFeeRate(BigDecimal grandPrice);
+
+    PlatformFeeTierResponse upsertTier(PlatformFeeTierInsertRequest dto);
+
+    PlatformFeeTierResponse updateTier(String id, PlatformFeeTierInsertRequest dto);
 
     PaginationWrapper<List<PlatformFeeTierResponse>> getAllPlatformFeeTierConfig(QueryWrapper queryWrapper);
 }
