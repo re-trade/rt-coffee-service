@@ -47,8 +47,4 @@ public class CustomerAccountRegisterRequest {
     @NotEmpty(message = "Address must not be empty")
     @NotNull(message = "Address is required")
     private String address;
-
-    @NotEmpty(message = "Avatar URL must not be empty")
-    @NotNull(message = "Avatar URL is required")
-    private String avatarUrl;
 }
