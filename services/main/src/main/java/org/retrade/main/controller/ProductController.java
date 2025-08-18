@@ -12,10 +12,7 @@ import org.retrade.main.model.dto.request.CreateProductRequest;
 import org.retrade.main.model.dto.request.UpdateProductQuantityRequest;
 import org.retrade.main.model.dto.request.UpdateProductRequest;
 import org.retrade.main.model.dto.request.UpdateProductStatusRequest;
-import org.retrade.main.model.dto.response.FieldAdvanceSearch;
-import org.retrade.main.model.dto.response.ProductHomeStatsResponse;
-import org.retrade.main.model.dto.response.ProductPriceHistoryResponse;
-import org.retrade.main.model.dto.response.ProductResponse;
+import org.retrade.main.model.dto.response.*;
 import org.retrade.main.service.ProductPriceHistoryService;
 import org.retrade.main.service.ProductService;
 import org.springframework.data.domain.Pageable;
@@ -329,4 +326,16 @@ public class ProductController {
                 .messages("Update product quantity successfully")
                 .build());
     }
+
+    @GetMapping("id/random")
+    public ResponseEntity<ResponseObject<RandomProductIdResponse>> randomProductId(){
+        var random = productService.getRandomProductId();
+        return ResponseEntity.ok(new ResponseObject.Builder<RandomProductIdResponse>()
+                .success(true)
+                .code("SUCCESS")
+                .content(random)
+                .messages("Update product quantity successfully")
+                .build());
+    }
+
 }

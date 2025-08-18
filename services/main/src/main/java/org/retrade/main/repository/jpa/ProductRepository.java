@@ -151,6 +151,8 @@ public interface ProductRepository extends BaseJpaRepository<ProductEntity, Stri
 
     Optional<ProductEntity> findByIdAndSeller(String id, SellerEntity seller);
 
+    @Query(value = "SELECT p.id FROM main.products p WHERE p.verified = true AND p.status = :status ORDER BY RANDOM() LIMIT :limit", nativeQuery = true)
+    Set<String> findRandomProductId(@Param("limit") Long limit, @Param("status") int status);
 }
 
 

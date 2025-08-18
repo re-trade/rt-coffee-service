@@ -9,6 +9,7 @@ import org.retrade.main.model.dto.request.UpdateProductStatusRequest;
 import org.retrade.main.model.dto.response.FieldAdvanceSearch;
 import org.retrade.main.model.dto.response.ProductHomeStatsResponse;
 import org.retrade.main.model.dto.response.ProductResponse;
+import org.retrade.main.model.dto.response.RandomProductIdResponse;
 
 import java.util.List;
 
@@ -16,6 +17,8 @@ public interface ProductService {
     ProductResponse createProduct(CreateProductRequest request);
 
     ProductResponse updateProduct(String id, UpdateProductRequest request);
+
+    RandomProductIdResponse getRandomProductId();
 
     ProductResponse updateProductQuantity(UpdateProductQuantityRequest request);
 
