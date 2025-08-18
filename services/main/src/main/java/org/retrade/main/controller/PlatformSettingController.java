@@ -3,16 +3,14 @@ package org.retrade.main.controller;
 import lombok.RequiredArgsConstructor;
 import org.retrade.common.model.dto.request.QueryWrapper;
 import org.retrade.common.model.dto.response.ResponseObject;
+import org.retrade.main.model.dto.request.PlatformFeeTierInsertRequest;
 import org.retrade.main.model.dto.response.PlatformFeeTierResponse;
 import org.retrade.main.service.PlatformSettingService;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -34,6 +32,30 @@ public class PlatformSettingController {
                 .code("SUCCESS")
                 .messages("Get platform fee tier config successfully.")
                 .unwrapPaginationWrapper(result)
+                .build());
+    }
+
+    @PostMapping("fee")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    public ResponseEntity<ResponseObject<PlatformFeeTierResponse>> insertPlatformFeeTierConfig(@RequestBody PlatformFeeTierInsertRequest request) {
+        var result = platformSettingService.upsertTier(request);
+        return ResponseEntity.ok(new ResponseObject.Builder<PlatformFeeTierResponse>()
+                .success(true)
+                .code("SUCCESS")
+                .messages("Insert platform fee tier config successfully.")
+                .content(result)
+                .build());
+    }
+
+    @PutMapping("fee/{id}")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    public ResponseEntity<ResponseObject<PlatformFeeTierResponse>> updatePlatformFeeTierConfig(@RequestBody PlatformFeeTierInsertRequest request, @PathVariable String id) {
+        var result = platformSettingService.updateTier(id, request);
+        return ResponseEntity.ok(new ResponseObject.Builder<PlatformFeeTierResponse>()
+                .success(true)
+                .code("SUCCESS")
+                .messages("Update platform fee tier config successfully.")
+                .content(result)
                 .build());
     }
 }

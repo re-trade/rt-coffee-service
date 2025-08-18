@@ -159,6 +159,20 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    public RandomProductIdResponse getRandomProductId() {
+        var productIds = productRepository.findRandomProductId(3L, ProductStatusEnum.ACTIVE.ordinal());
+        int randomIndex = new Random().nextInt(productIds.size());
+        String randomId = productIds.stream()
+                .skip(randomIndex)
+                .findFirst()
+                .orElseThrow();
+        return RandomProductIdResponse.builder()
+                .selectedProductId(randomId)
+                .randomProductIds(productIds)
+                .build();
+    }
+
+    @Override
     public ProductResponse updateProductQuantity(UpdateProductQuantityRequest request) {
         var account = authUtils.getUserAccountFromAuthentication();
         if (account.getSeller() == null) {
@@ -954,7 +968,7 @@ public class ProductServiceImpl implements ProductService {
             List<Predicate> predicates = new ArrayList<>();
             applyProductSearchFilters(predicates, keyword, queryWrapper.pagination(), criteriaBuilder, param, root);
             predicates.add(criteriaBuilder.equal(root.get("seller"), seller));
-            predicates.add(criteriaBuilder.notEqual(root.get("status"),ProductStatusEnum.DELETED));
+            predicates.add(criteriaBuilder.notEqual(root.get("status"),ProductStatusEnum.DELETED.ordinal()));
             if (query != null) {
                 query.orderBy(criteriaBuilder.desc(root.get("createdDate")));
                 query.orderBy(criteriaBuilder.desc(root.get("updatedDate")));
