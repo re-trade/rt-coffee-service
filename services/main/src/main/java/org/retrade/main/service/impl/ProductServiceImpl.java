@@ -954,6 +954,7 @@ public class ProductServiceImpl implements ProductService {
             List<Predicate> predicates = new ArrayList<>();
             applyProductSearchFilters(predicates, keyword, queryWrapper.pagination(), criteriaBuilder, param, root);
             predicates.add(criteriaBuilder.equal(root.get("seller"), seller));
+            predicates.add(criteriaBuilder.notEqual(root.get("status"),ProductStatusEnum.DELETED));
             if (query != null) {
                 query.orderBy(criteriaBuilder.desc(root.get("createdDate")));
                 query.orderBy(criteriaBuilder.desc(root.get("updatedDate")));
