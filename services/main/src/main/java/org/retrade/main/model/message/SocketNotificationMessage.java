@@ -16,5 +16,6 @@ public class SocketNotificationMessage implements Serializable {
     private String accountId;
     private String title;
     private String type;
+    private String message;
     private String content;
 }

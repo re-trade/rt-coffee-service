@@ -26,7 +26,7 @@ public class NotificationEventListener {
     private final EmailService emailService;
     private final NotificationService notificationService;
 
-    @RabbitListener(queues = RabbitMQConfig.USER_REGISTRATION_QUEUE)
+    @RabbitListener(queues = RabbitMQConfig.SOCKET_NOTIFICATION_QUEUE)
     public void processUserRegistration(Message rawMessage, Channel channel) throws IOException {
         long deliveryTag = rawMessage.getMessageProperties().getDeliveryTag();
 

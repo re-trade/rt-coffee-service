@@ -159,33 +159,42 @@ public class OrderHistoryServiceImpl implements OrderHistoryService {
     private void sendOrderStatusNotification(AccountEntity account, OrderComboEntity orderCombo, String newStatusCode, BigDecimal rollbackPrice) {
         try {
             String title;
-            String content = switch (newStatusCode) {
+            String content;
+            String message;
+
+            switch (newStatusCode) {
                 case OrderStatusCodes.CANCELLED -> {
                     title = "Đơn hàng " + orderCombo.getId() + " đã bị hủy";
-                    yield "Đơn hàng " + orderCombo.getId() + " đã bị hủy. Số tiền "
+                    content = "Đơn hàng " + orderCombo.getId() + " đã bị hủy. Số tiền "
                             + rollbackPrice.toPlainString() + " đã được hoàn lại vào tài khoản của bạn. Vui lòng kiểm tra số dư.";
+                    message = "Đơn hàng đã hủy, hoàn tiền " + rollbackPrice.toPlainString();
                 }
                 case OrderStatusCodes.DELIVERING -> {
                     title = "Đơn hàng " + orderCombo.getId() + " đang được giao";
-                    yield "Đơn hàng " + orderCombo.getId() + " đang trên đường giao đến bạn. Vui lòng chuẩn bị nhận hàng.";
+                    content = "Đơn hàng " + orderCombo.getId() + " đang trên đường giao đến bạn. Vui lòng chuẩn bị nhận hàng.";
+                    message = "Đơn hàng đang giao";
                 }
                 case OrderStatusCodes.DELIVERED -> {
                     title = "Đơn hàng " + orderCombo.getId() + " đã giao thành công";
-                    yield "Đơn hàng " + orderCombo.getId() + " đã được giao thành công. Chúc bạn mua sắm vui vẻ!";
+                    content = "Đơn hàng " + orderCombo.getId() + " đã được giao thành công. Chúc bạn mua sắm vui vẻ!";
+                    message = "Đơn hàng đã giao";
                 }
                 case OrderStatusCodes.RETURN_APPROVED -> {
                     title = "Yêu cầu trả hàng đã được chấp nhận";
-                    yield "Yêu cầu trả hàng cho đơn " + orderCombo.getId() + " đã được chấp nhận. Vui lòng tiến hành gửi trả.";
+                    content = "Yêu cầu trả hàng cho đơn " + orderCombo.getId() + " đã được chấp nhận. Vui lòng tiến hành gửi trả.";
+                    message = "Trả hàng được chấp nhận";
                 }
                 case OrderStatusCodes.RETURN_REJECTED -> {
                     title = "Yêu cầu trả hàng bị từ chối";
-                    yield "Yêu cầu trả hàng cho đơn " + orderCombo.getId() + " đã bị từ chối. Vui lòng liên hệ hỗ trợ để biết thêm chi tiết.";
+                    content = "Yêu cầu trả hàng cho đơn " + orderCombo.getId() + " đã bị từ chối. Vui lòng liên hệ hỗ trợ để biết thêm chi tiết.";
+                    message = "Trả hàng bị từ chối";
                 }
                 default -> {
                     title = "Trạng thái đơn hàng " + orderCombo.getId() + " đã thay đổi";
-                    yield "Đơn hàng " + orderCombo.getId() + " hiện đang ở trạng thái " + newStatusCode.replace("_", " ").toLowerCase() + ".";
+                    content = "Đơn hàng " + orderCombo.getId() + " hiện đang ở trạng thái " + newStatusCode.replace("_", " ").toLowerCase() + ".";
+                    message = "Trạng thái đơn hàng thay đổi";
                 }
-            };
+            }
 
             messageProducerService.sendSocketNotification(SocketNotificationMessage.builder()
                     .accountId(account.getId())
@@ -193,12 +202,14 @@ public class OrderHistoryServiceImpl implements OrderHistoryService {
                     .title(title)
                     .type(NotificationTypeCode.ORDER)
                     .content(content)
+                    .message(message)
                     .build());
 
         } catch (Exception e) {
             log.error("Gửi thông báo thất bại cho đơn {} với trạng thái {}", orderCombo.getId(), newStatusCode, e);
         }
     }
+
 
 
     @Override

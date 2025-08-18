@@ -19,6 +19,8 @@ public class RabbitMQConfig {
     public static final String EMAIL_NOTIFICATION_QUEUE = "email.notification.queue";
     public static final String USER_REGISTRATION_QUEUE = "user.registration.queue";
     public static final String DEAD_LETTER_QUEUE = "dead.letter.queue";
+    public static final String SOCKET_NOTIFICATION_QUEUE = "socket.notification.queue";
+    public static final String SOCKET_RETRY_QUEUE = "socket.retry.queue";
 
     @Bean
     public MessageConverter jsonMessageConverter() {
