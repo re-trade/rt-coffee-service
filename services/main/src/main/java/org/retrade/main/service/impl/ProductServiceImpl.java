@@ -72,6 +72,10 @@ public class ProductServiceImpl implements ProductService {
         if (seller == null) {
             throw new ValidationException("Seller profile not found");
         }
+        var status = ProductStatusEnum.INIT;
+        if(request.getStatus() != null && request.getStatus() == ProductStatusEnum.DRAFT) {
+            status = ProductStatusEnum.DRAFT;
+        }
         validateCategories(request.getCategoryIds());
         var product = ProductEntity.builder()
                 .name(request.getName())
@@ -88,7 +92,7 @@ public class ProductServiceImpl implements ProductService {
                 .currentPrice(request.getCurrentPrice())
                 .categories(convertCategoryIdsToEntities(request.getCategoryIds()))
                 .tags(request.getTags())
-                .status(request.getStatus() != null ? request.getStatus() : ProductStatusEnum.DRAFT)
+                .status(status)
                 .verified(false)
                 .avgVote(0.0)
                 .build();
@@ -964,6 +968,7 @@ public class ProductServiceImpl implements ProductService {
             List<Predicate> predicates = new ArrayList<>();
             applyProductSearchFilters(predicates, keyword, queryWrapper.pagination(), criteriaBuilder, param, root);
             predicates.add(criteriaBuilder.equal(root.get("seller"), seller));
+            predicates.add(criteriaBuilder.notEqual(root.get("status"),ProductStatusEnum.DELETED));
             if (query != null) {
                 query.orderBy(criteriaBuilder.desc(root.get("createdDate")));
                 query.orderBy(criteriaBuilder.desc(root.get("updatedDate")));
