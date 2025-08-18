@@ -153,6 +153,17 @@ public interface ProductRepository extends BaseJpaRepository<ProductEntity, Stri
 
     @Query(value = "SELECT p.id FROM main.products p WHERE p.verified = true AND p.status = :status ORDER BY RANDOM() LIMIT :limit", nativeQuery = true)
     Set<String> findRandomProductId(@Param("limit") Long limit, @Param("status") int status);
+
+    @Modifying
+    @Query("""
+        UPDATE products p
+        SET p.status = :newStatus
+        WHERE p.quantity = 0
+          AND p.status = :oldStatus
+          AND p.verified = true
+    """)
+    int updateStatusForOutOfStock(@Param("oldStatus") ProductStatusEnum oldStatus,
+                                  @Param("newStatus") ProductStatusEnum newStatus);
 }
 
 
