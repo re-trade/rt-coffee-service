@@ -10,7 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.retrade.common.model.message.MessageObject;
 import org.retrade.feedback_notification.config.common.RabbitMQConfig;
 import org.retrade.feedback_notification.model.message.EmailNotificationMessage;
-import org.retrade.feedback_notification.model.message.UserRegistrationMessage;
+import org.retrade.feedback_notification.model.message.SocketNotificationMessage;
 import org.retrade.feedback_notification.service.EmailService;
 import org.retrade.feedback_notification.service.NotificationService;
 import org.springframework.amqp.core.Message;
@@ -31,22 +31,19 @@ public class NotificationEventListener {
         long deliveryTag = rawMessage.getMessageProperties().getDeliveryTag();
 
 
-        UserRegistrationMessage message = null;
+        SocketNotificationMessage message = null;
         try {
             byte[] body = rawMessage.getBody();
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.registerModule(new JavaTimeModule());
             objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-            MessageObject<UserRegistrationMessage> wrapper = objectMapper.readValue(
+            MessageObject<SocketNotificationMessage> wrapper = objectMapper.readValue(
                     body,
                     new TypeReference<>() {}
             );
             message = wrapper.getPayload();
-            log.info("Processing user registration message: {}", message.getMessageId());
-            log.info("User registered: {}, email: {}, userId: {}",
-                    message.getUsername(),
-                    message.getEmail(),
-                    message.getUserId());
+            log.info("Processing socket notification message: {}", message.getMessageId());
+            notificationService.makeUserNotificationRead(message);
             channel.basicAck(deliveryTag, false);
             log.info("User registration message processed successfully: {}", message.getMessageId());
         } catch (Exception e) {
