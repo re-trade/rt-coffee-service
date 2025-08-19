@@ -252,12 +252,14 @@ public class OrderServiceImpl implements OrderService {
         orderComboEntity.setCancelledReason(request.reason());
         orderComboEntity.setOrderStatus(cancelledStatus);
         orderComboEntity.setReasonCreatedDate(Timestamp.valueOf(LocalDateTime.now()));
-        BigDecimal rollbackPrice = orderComboEntity.getGrandPrice();
-        BigDecimal currentBalance = account.getBalance() != null ? account.getBalance() : BigDecimal.ZERO;
-        account.setBalance(currentBalance.add(rollbackPrice));
         try {
             orderComboRepository.save(orderComboEntity);
-            accountRepository.save(account);
+            if (orderStatusValidator.isPaymentSuccessful(orderComboEntity.getOrderStatus().getCode())) {
+                BigDecimal rollbackPrice = orderComboEntity.getGrandPrice();
+                BigDecimal currentBalance = account.getBalance() != null ? account.getBalance() : BigDecimal.ZERO;
+                account.setBalance(currentBalance.add(rollbackPrice));
+                accountRepository.save(account);
+            }
         } catch (Exception e) {
             throw new ValidationException(e.getMessage());
         }
@@ -313,8 +315,8 @@ public class OrderServiceImpl implements OrderService {
             throw new ActionFailedException(e.getMessage());
         }
         var sellerAccount = orderComboEntity.getSeller().getAccount();
-        sendCompletedOrderNotification(account, orderComboEntity);
-        sendCompletedOrderNotification(sellerAccount, orderComboEntity);
+        sendOrderStatusNotification(account, orderComboEntity, OrderStatusCodes.RETRIEVED, false);
+        sendOrderStatusNotification(sellerAccount, orderComboEntity, OrderStatusCodes.RETRIEVED, true);
     }
 
     @Transactional(rollbackFor = {ActionFailedException.class, ValidationException.class, Exception.class})
@@ -357,8 +359,8 @@ public class OrderServiceImpl implements OrderService {
         } catch (Exception e) {
             throw new ActionFailedException(e.getMessage());
         }
-        sendCompletedOrderNotification(account, orderComboEntity);
-        sendCompletedOrderNotification(sellerAccount, orderComboEntity);
+        sendOrderStatusNotification(account, orderComboEntity, OrderStatusCodes.COMPLETED, false);
+        sendOrderStatusNotification(sellerAccount, orderComboEntity, OrderStatusCodes.COMPLETED, true);
     }
 
     @Override
@@ -1024,22 +1026,78 @@ public class OrderServiceImpl implements OrderService {
         productRepository.saveAll(products);
     }
 
-    private void sendCompletedOrderNotification(AccountEntity account, OrderComboEntity orderCombo) {
+    private void sendOrderStatusNotification(AccountEntity account, OrderComboEntity orderCombo, String newStatusCode, boolean isSeller) {
+        var rollbackPrice = orderCombo.getGrandPrice();
         try {
-            String title = "Đơn hàng " + orderCombo.getId() + " đã hoàn tất";
-            String content = "Cảm ơn bạn đã nhận đơn hàng " + orderCombo.getId() + ". Giao dịch đã hoàn tất thành công!";
-            String message = "Đơn hàng đã hoàn tất";
+            String title;
+            String content;
+            String message;
 
-            messageProducerService.sendSocketNotification(SocketNotificationMessage.builder()
-                    .accountId(account.getId())
-                    .messageId(UUID.randomUUID().toString())
-                    .title(title)
-                    .type(NotificationTypeCode.ORDER)
-                    .content(content)
-                    .message(message)
-                    .build());
+            switch (newStatusCode) {
+                case OrderStatusCodes.CANCELLED -> {
+                    if (isSeller) {
+                        title = "Đơn hàng #" + orderCombo.getId() + " của khách đã bị hủy";
+                        content = "Khách hàng đã hủy đơn. Vui lòng kiểm tra chi tiết trong hệ thống.";
+                        message = "Khách hủy đơn hàng #" + orderCombo.getId();
+                    } else {
+                        title = "Đơn hàng #" + orderCombo.getId() + " đã bị hủy";
+                        String refundNote = (rollbackPrice != null && rollbackPrice.compareTo(BigDecimal.ZERO) > 0)
+                                ? " Số tiền " + rollbackPrice.toPlainString() + " VND sẽ/đã được hoàn về tài khoản của bạn."
+                                : " Không phát sinh hoàn tiền.";
+                        content = "Đơn hàng của bạn đã được hủy." + refundNote;
+                        message = (rollbackPrice != null && rollbackPrice.compareTo(BigDecimal.ZERO) > 0)
+                                ? "Đã hủy đơn, hoàn " + rollbackPrice.toPlainString() + " VND"
+                                : "Đã hủy đơn";
+                    }
+                }
+                case OrderStatusCodes.RETRIEVED -> {
+                    if (isSeller) {
+                        title = "Đơn hàng #" + orderCombo.getId() + " đã được khách nhận";
+                        content = "Khách hàng đã xác nhận đã nhận đơn hàng. Vui lòng lưu lại để đối soát.";
+                        message = "Khách đã nhận hàng";
+                    } else {
+                        title = "Đơn hàng #" + orderCombo.getId() + " đã được nhận";
+                        content = "Bạn đã nhận hàng thành công. Vui lòng kiểm tra sản phẩm ngay sau khi nhận.";
+                        message = "Đã nhận hàng";
+                    }
+                }
+                case OrderStatusCodes.COMPLETED -> {
+                    if (isSeller) {
+                        title = "Đơn hàng #" + orderCombo.getId() + " đã hoàn tất";
+                        content = "Đơn hàng đã hoàn tất. Doanh thu sẽ được cập nhật trong báo cáo.";
+                        message = "Hoàn tất đơn, cập nhật doanh thu";
+                    } else {
+                        title = "Đơn hàng #" + orderCombo.getId() + " đã hoàn tất";
+                        content = "Giao dịch đã hoàn tất. Cảm ơn bạn đã sử dụng dịch vụ!";
+                        message = "Hoàn tất đơn";
+                    }
+                }
+                default -> {
+                    if (isSeller) {
+                        title = "Đơn hàng #" + orderCombo.getId() + " thay đổi trạng thái";
+                        content = "Đơn hàng hiện ở trạng thái: " + newStatusCode.replace("_", " ").toLowerCase() + ".";
+                        message = "Trạng thái đơn hàng: " + newStatusCode;
+                    } else {
+                        title = "Cập nhật trạng thái đơn hàng #" + orderCombo.getId();
+                        content = "Đơn hàng của bạn hiện ở trạng thái: " + newStatusCode.replace("_", " ").toLowerCase() + ".";
+                        message = "Trạng thái: " + newStatusCode;
+                    }
+                }
+            }
+
+            messageProducerService.sendSocketNotification(
+                    SocketNotificationMessage.builder()
+                            .accountId(account.getId())
+                            .messageId(UUID.randomUUID().toString())
+                            .title(title)
+                            .type(NotificationTypeCode.ORDER)
+                            .content(content)
+                            .message(message)
+                            .build()
+            );
+
         } catch (Exception e) {
-            log.error("Gửi thông báo hoàn tất đơn {} thất bại", orderCombo.getId(), e);
+            log.error("Gửi thông báo thất bại cho đơn {} với trạng thái {}", orderCombo.getId(), newStatusCode, e);
         }
     }
 
