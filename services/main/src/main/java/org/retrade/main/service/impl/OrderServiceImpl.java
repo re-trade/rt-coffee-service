@@ -1028,6 +1028,7 @@ public class OrderServiceImpl implements OrderService {
         try {
             String title = "Đơn hàng " + orderCombo.getId() + " đã hoàn tất";
             String content = "Cảm ơn bạn đã nhận đơn hàng " + orderCombo.getId() + ". Giao dịch đã hoàn tất thành công!";
+            String message = "Đơn hàng đã hoàn tất";
 
             messageProducerService.sendSocketNotification(SocketNotificationMessage.builder()
                     .accountId(account.getId())
@@ -1035,6 +1036,7 @@ public class OrderServiceImpl implements OrderService {
                     .title(title)
                     .type(NotificationTypeCode.ORDER)
                     .content(content)
+                    .message(message)
                     .build());
         } catch (Exception e) {
             log.error("Gửi thông báo hoàn tất đơn {} thất bại", orderCombo.getId(), e);
