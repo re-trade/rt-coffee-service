@@ -8,9 +8,11 @@ import org.retrade.main.model.constant.IdentityCardTypeEnum;
 import org.retrade.main.model.dto.request.ApproveSellerRequest;
 import org.retrade.main.model.dto.request.SellerRegisterRequest;
 import org.retrade.main.model.dto.request.SellerUpdateRequest;
-import org.retrade.main.model.dto.response.*;
+import org.retrade.main.model.dto.response.SellerBaseMetricResponse;
+import org.retrade.main.model.dto.response.SellerRegisterResponse;
+import org.retrade.main.model.dto.response.SellerResponse;
+import org.retrade.main.model.dto.response.SellerStatusResponse;
 import org.retrade.main.service.FileService;
-import org.retrade.main.service.OrderService;
 import org.retrade.main.service.SellerService;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
@@ -30,7 +32,6 @@ import java.util.List;
 public class SellerController {
     private final SellerService sellerService;
     private final FileService fileService;
-    private final OrderService orderService;
 
     @PostMapping(path = "register")
     public ResponseEntity<ResponseObject<SellerRegisterResponse>> registerAsASeller(
@@ -42,6 +43,17 @@ public class SellerController {
                 .code("SUCCESS")
                 .content(result)
                 .messages("Register Seller Successfully")
+                .build());
+    }
+
+    @DeleteMapping(path = "profile")
+    @PreAuthorize("hasRole('ROLE_CUSTOMER')")
+    public ResponseEntity<ResponseObject<Void>> removeSellerProfileInit() {
+        sellerService.removeSellerProfileInit();
+        return ResponseEntity.ok(new ResponseObject.Builder<Void>()
+                .success(true)
+                .code("SUCCESS")
+                .messages("Remove Seller Profile Successfully")
                 .build());
     }
 

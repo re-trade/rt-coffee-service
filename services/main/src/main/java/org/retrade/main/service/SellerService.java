@@ -24,6 +24,8 @@ public interface SellerService {
 
     PaginationWrapper<List<SellerResponse>> getSellers (QueryWrapper wrapper);
 
+    void removeSellerProfileInit();
+
     SellerRegisterResponse cccdSubmit(String front, String back);
 
     SellerResponse updateSellerProfile (SellerUpdateRequest request);

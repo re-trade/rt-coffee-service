@@ -35,8 +35,8 @@ public class SecurityConfig {
             exception.authenticationEntryPoint(customAuthenticationEntryPoint);
         });
         http.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .addFilterAfter(this.jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-                .addFilterAfter(this.jwtCookieAuthenticationFilter, JwtAuthenticationFilter.class);
+                .addFilterAfter(this.jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+//                .addFilterAfter(this.jwtCookieAuthenticationFilter, JwtAuthenticationFilter.class);
         return http.build();
     }
 }
