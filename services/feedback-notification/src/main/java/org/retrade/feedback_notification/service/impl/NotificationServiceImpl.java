@@ -88,7 +88,7 @@ public class NotificationServiceImpl implements NotificationService {
         notification.setAccount(account);
         try {
             var result = notificationRepository.save(notification);
-            webSocketService.sentToUser(message.getAccountId(), wrapToNotificationResponse(result));
+            webSocketService.sentToUser(account.getUsername(), wrapToNotificationResponse(result));
         } catch (Exception e) {
             throw new ActionFailedException("Failed to mark notification as read", e);
         }
