@@ -141,6 +141,28 @@ public class SellerServiceImpl implements SellerService {
     }
 
     @Override
+    @Transactional(rollbackFor = {ActionFailedException.class, Exception.class})
+    public void removeSellerProfileInit() {
+        var account = authUtils.getUserAccountFromAuthentication();
+        if (account.getSeller() == null) {
+            throw new ValidationException("Account is not a seller");
+        }
+        var seller = account.getSeller();
+        if (seller.getIdentityVerified() != IdentityVerifiedStatusEnum.INIT) {
+            throw new ValidationException("Can't remove seller profile when identity is not init");
+        }
+        var roles = AuthUtils.convertAccountToRole(account);
+        if (roles.contains("ROLE_SELLER")) {
+            throw new ValidationException("Can't remove seller profile when account is a seller");
+        }
+        try {
+            sellerRepository.delete(seller);
+        } catch (Exception ex) {
+            throw new ActionFailedException("Failed to remove seller profile", ex);
+        }
+    }
+
+    @Override
     public SellerRegisterResponse cccdSubmit(String front, String back) {
         var sellerEntity = getSellerEntity(front, back);
         if (sellerEntity.getIdentityVerified() == IdentityVerifiedStatusEnum.VERIFIED) {
