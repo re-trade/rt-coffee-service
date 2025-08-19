@@ -11,6 +11,7 @@ import org.retrade.common.model.message.MessageObject;
 import org.retrade.feedback_notification.config.common.RabbitMQConfig;
 import org.retrade.feedback_notification.model.message.EmailNotificationMessage;
 import org.retrade.feedback_notification.model.message.SocketNotificationMessage;
+import org.retrade.feedback_notification.model.message.UserRegistrationMessage;
 import org.retrade.feedback_notification.service.EmailService;
 import org.retrade.feedback_notification.service.NotificationService;
 import org.springframework.amqp.core.Message;
@@ -27,7 +28,7 @@ public class NotificationEventListener {
     private final NotificationService notificationService;
 
     @RabbitListener(queues = RabbitMQConfig.SOCKET_NOTIFICATION_QUEUE)
-    public void processUserRegistration(Message rawMessage, Channel channel) throws IOException {
+    public void processSocketNotification(Message rawMessage, Channel channel) throws IOException {
         long deliveryTag = rawMessage.getMessageProperties().getDeliveryTag();
 
 
@@ -44,6 +45,35 @@ public class NotificationEventListener {
             message = wrapper.getPayload();
             log.info("Processing socket notification message: {}", message.getMessageId());
             notificationService.makeUserNotificationRead(message);
+            channel.basicAck(deliveryTag, false);
+            log.info("User registration message processed successfully: {}", message.getMessageId());
+        } catch (Exception e) {
+            log.error("Error processing user registration message: {}", e.getMessage(), e);
+            channel.basicNack(deliveryTag, false, false);
+        }
+    }
+
+    @RabbitListener(queues = RabbitMQConfig.USER_REGISTRATION_QUEUE)
+    public void processUserRegistration(Message rawMessage, Channel channel) throws IOException {
+        long deliveryTag = rawMessage.getMessageProperties().getDeliveryTag();
+
+
+        UserRegistrationMessage message = null;
+        try {
+            byte[] body = rawMessage.getBody();
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.registerModule(new JavaTimeModule());
+            objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+            MessageObject<UserRegistrationMessage> wrapper = objectMapper.readValue(
+                    body,
+                    new TypeReference<>() {}
+            );
+            message = wrapper.getPayload();
+            log.info("Processing user registration message: {}", message.getMessageId());
+            log.info("User registered: {}, email: {}, userId: {}",
+                    message.getUsername(),
+                    message.getEmail(),
+                    message.getUserId());
             channel.basicAck(deliveryTag, false);
             log.info("User registration message processed successfully: {}", message.getMessageId());
         } catch (Exception e) {
