@@ -1,6 +1,7 @@
 package org.retrade.main.repository.jpa;
 
 import org.retrade.common.repository.BaseJpaRepository;
+import org.retrade.main.model.constant.IdentityVerifiedStatusEnum;
 import org.retrade.main.model.entity.AccountEntity;
 import org.retrade.main.model.entity.SellerEntity;
 import org.springframework.data.jpa.repository.Modifying;
@@ -35,4 +36,23 @@ public interface SellerRepository extends BaseJpaRepository<SellerEntity, String
         )
     """)
     void updateSellerAverageRatings(@Param("lastSync") LocalDateTime lastSync);
+
+
+    @Modifying
+    @Query("""
+        DELETE FROM sellers s
+        WHERE s.identityVerified = :status
+          AND s.createdDate <= :expiredDate
+          AND NOT EXISTS (
+              SELECT 1 FROM account_roles ar
+              JOIN ar.role r
+              WHERE ar.account = s.account
+                AND r.code = 'ROLE_SELLER'
+          )
+    """)
+    int deleteByIdentityVerifiedAndNotSellerAndExpired(
+            @Param("status") IdentityVerifiedStatusEnum status,
+            @Param("expiredDate") LocalDateTime expiredDate
+    );
+
 }
