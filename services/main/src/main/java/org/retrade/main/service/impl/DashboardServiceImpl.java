@@ -193,7 +193,7 @@ public class DashboardServiceImpl implements DashboardService {
         }
         var seller = account.getSeller();
         var orderStatus = orderStatusRepository.findByCode(OrderStatusCodes.COMPLETED).orElseThrow(() -> new ValidationException("Order status not found"));
-        var totalOrder = orderComboRepository.countBySeller(seller);
+        var totalOrder = orderComboRepository.countBySellerAndOrderStatus_CodeNot(seller, OrderStatusCodes.PENDING);
         var orderCompleted = orderComboRepository.countBySellerAndOrderStatus_Code(seller, OrderStatusCodes.COMPLETED);
         var orderCancel = orderComboRepository.countBySellerAndOrderStatus_Code(seller, OrderStatusCodes.CANCELLED);
         var totalReceive = orderComboRepository.getTotalGrandPriceBySellerAndStatus(seller, orderStatus);
