@@ -15,4 +15,5 @@ public class ApproveSellerRequest {
     private Boolean forced;
     @NotNull(message = "Approve flag must not be null")
     private Boolean approve;
+    private String reason;
 }

@@ -29,6 +29,7 @@ public class SellerResponse {
     private String phoneNumber;
     private Boolean verified;
     private Double avgVote;
+    private String rejectReason;
     private IdentityVerifiedStatusEnum identityVerifiedStatus;
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createdAt;

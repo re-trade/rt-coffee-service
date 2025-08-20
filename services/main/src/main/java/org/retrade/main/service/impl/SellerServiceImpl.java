@@ -94,8 +94,7 @@ public class SellerServiceImpl implements SellerService {
         validateApproveSeller(sellerEntity, request.getForced());
         if (!request.getApprove()) {
             sellerEntity.setVerified(false);
-            sellerEntity.setFrontSideIdentityCard("example");
-            sellerEntity.setBackSideIdentityCard("example");
+            sellerEntity.setRejectReason(request.getReason());
         } else {
             sellerEntity.setVerified(true);
             if (request.getForced()) {
@@ -165,7 +164,7 @@ public class SellerServiceImpl implements SellerService {
     @Override
     public SellerRegisterResponse cccdSubmit(String front, String back) {
         var sellerEntity = getSellerEntity(front, back);
-        if (sellerEntity.getIdentityVerified() == IdentityVerifiedStatusEnum.VERIFIED) {
+        if (sellerEntity.getIdentityVerified() == IdentityVerifiedStatusEnum.VERIFIED && sellerEntity.getVerified()) {
             throw new ValidationException("Seller already verified");
         }
         sellerEntity.setIdentityVerified(IdentityVerifiedStatusEnum.WAITING);
@@ -327,6 +326,7 @@ public class SellerServiceImpl implements SellerService {
                 .district(sellerEntity.getDistrict())
                 .ward(sellerEntity.getWard())
                 .state(sellerEntity.getState())
+                .rejectReason(sellerEntity.getRejectReason())
                 .build();
     }
 

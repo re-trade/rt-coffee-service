@@ -67,7 +67,6 @@ public class CustomerServiceImpl implements CustomerService {
         if (request.getAvatarUrl() != null) {
             customer.setAvatarUrl(request.getAvatarUrl());
         }
-
         try {
             var updatedCustomer = customerRepository.save(customer);
             return mapToCustomerResponse(updatedCustomer);
