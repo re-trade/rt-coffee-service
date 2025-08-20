@@ -50,7 +50,7 @@ public class AccountController {
                 .success(true)
                 .code("SUCCESS")
                 .content(response)
-                .messages("Account retrieved successfully")
+                .messages("Lấy thông tin tài khoản thành công")
                 .build());
     }
 
@@ -62,7 +62,7 @@ public class AccountController {
                 .success(true)
                 .code("SUCCESS")
                 .content(response)
-                .messages("Account retrieved successfully")
+                .messages("Lấy thông tin tài khoản thành công")
                 .build());
     }
 
@@ -88,7 +88,7 @@ public class AccountController {
                             "content": {
                                 "existed": true
                             },
-                            "messages": "Account retrieved successfully"
+                            "messages": "Lấy thông tin tài khoản thành công"
                         }
                         """
                                     ),
@@ -102,7 +102,7 @@ public class AccountController {
                             "content": {
                                 "existed": false
                             },
-                            "messages": "Account retrieved successfully"
+                            "messages": "Lấy thông tin tài khoản thành công"
                         }
                         """
                                     )
@@ -117,7 +117,7 @@ public class AccountController {
                 .success(true)
                 .code("SUCCESS")
                 .content(Map.of("existed", response))
-                .messages("Account retrieved successfully")
+                .messages("Lấy thông tin tài khoản thành công")
                 .build());
     }
 
@@ -143,7 +143,7 @@ public class AccountController {
                             "content": {
                                 "existed": true
                             },
-                            "messages": "Account retrieved successfully"
+                            "messages": "Lấy thông tin tài khoản thành công"
                         }
                         """
                                     ),
@@ -157,7 +157,7 @@ public class AccountController {
                             "content": {
                                 "existed": false
                             },
-                            "messages": "Account retrieved successfully"
+                            "messages": "Lấy thông tin tài khoản thành công"
                         }
                         """
                                     )
@@ -172,7 +172,7 @@ public class AccountController {
                 .success(true)
                 .code("SUCCESS")
                 .content(Map.of("existed", response))
-                .messages("Account retrieved successfully")
+                .messages("Lấy thông tin tài khoản thành công")
                 .build());
     }
 
@@ -183,7 +183,7 @@ public class AccountController {
         return ResponseEntity.ok(new ResponseObject.Builder<Void>()
                 .success(true)
                 .code("SUCCESS")
-                .messages("Password updated successfully")
+                .messages("Cập nhật mật khẩu thành công")
                 .build());
     }
     @PreAuthorize(value = "hasRole('ROLE_ADMIN')")
@@ -193,7 +193,7 @@ public class AccountController {
         return ResponseEntity.ok(new ResponseObject.Builder<Void>()
                         .success(true)
                         .code("SUCCESS")
-                        .messages("Account password reset successfully")
+                        .messages("Đặt lại mật khẩu tài khoản thành công")
                 .build());
     }
 
@@ -204,7 +204,7 @@ public class AccountController {
                 .success(true)
                 .code("SUCCESS")
                 .content(response)
-                .messages("Account username change successful. Please check your email for the new username.")
+                .messages("Thay đổi tên người dùng thành công. Vui lòng kiểm tra email để nhận tên người dùng mới.")
                 .build());
     }
 
@@ -218,7 +218,7 @@ public class AccountController {
                 .success(true)
                 .code("SUCCESS")
                 .content(result)
-                .messages("Account password reset successfully")
+                .messages("Cập nhật tên người dùng thành công.")
                 .build());
     }
 
@@ -228,7 +228,7 @@ public class AccountController {
         return ResponseEntity.ok(new ResponseObject.Builder<Void>()
                 .success(true)
                 .code("SUCCESS")
-                .messages("Account deleted successfully")
+                .messages("Xóa tài khoản thành công")
                 .build());
     }
 
@@ -240,7 +240,7 @@ public class AccountController {
                 .success(true)
                 .code("SUCCESS")
                 .unwrapPaginationWrapper(response)
-                .messages("Accounts retrieved successfully")
+                .messages("Lấy danh sách tài khoản thành công")
                 .build());
     }
 
@@ -251,7 +251,7 @@ public class AccountController {
         return ResponseEntity.ok(new ResponseObject.Builder<Void>()
                 .success(true)
                 .code("SUCCESS")
-                .messages("ban customer with" + id + "successfully")
+                .messages("Khóa khách hàng với ID " + id + "thành công")
                 .build());
     }
     @PutMapping("{id}/enable-customer")
@@ -261,7 +261,7 @@ public class AccountController {
         return ResponseEntity.ok(new ResponseObject.Builder<Void>()
                 .success(true)
                 .code("SUCCESS")
-                .messages("unban customer with" + id + "successfully")
+                .messages("Mở khóa khách hàng với ID" + id + "thành công")
                 .build());
     }
 
@@ -272,7 +272,7 @@ public class AccountController {
         return ResponseEntity.ok(new ResponseObject.Builder<Void>()
                 .success(true)
                 .code("SUCCESS")
-                .messages("Account ban successfully")
+                .messages("Khóa tài khoản thành công")
                 .build());
     }
 
@@ -283,7 +283,7 @@ public class AccountController {
         return ResponseEntity.ok(new ResponseObject.Builder<Void>()
                 .success(true)
                 .code("SUCCESS")
-                .messages("Account unban successfully")
+                .messages("Mở khóa tài khoản thành công")
                 .build());
     }
 
@@ -294,7 +294,7 @@ public class AccountController {
         return ResponseEntity.ok(new ResponseObject.Builder<Void>()
                 .success(true)
                 .code("SUCCESS")
-                .messages("Account seller unban successfully")
+                .messages("Khóa tài khoản người bán thành công")
                 .build());
     }
 
@@ -305,7 +305,7 @@ public class AccountController {
         return ResponseEntity.ok(new ResponseObject.Builder<Void>()
                 .success(true)
                 .code("SUCCESS")
-                .messages("Account seller unban successfully")
+                .messages("Mở Khóa tài khoản người bán thành công")
                 .build());
     }
 }
