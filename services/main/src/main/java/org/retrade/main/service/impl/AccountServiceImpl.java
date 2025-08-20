@@ -65,9 +65,9 @@ public class AccountServiceImpl implements AccountService {
     public AccountDetailResponse getAccountById(String id) {
         AccountEntity currentAccount = authUtils.getUserAccountFromAuthentication();
         AccountEntity account = accountRepository.findById(id)
-                .orElseThrow(() -> new ValidationException("Account not found with id: " + id));
+                .orElseThrow(() -> new ValidationException("Không tìm thấy tài khoản với ID: " + id));
         if (!currentAccount.getId().equals(id) && !AuthUtils.convertAccountToRole(currentAccount).contains("ROLE_ADMIN")) {
-            throw new ValidationException("Access denied: You can only access your own account");
+            throw new ValidationException("Từ chối truy cập: Bạn chỉ có thể truy cập tài khoản của chính mình.");
         }
         return mapToAccountDetailResponse(account);
     }
@@ -77,16 +77,16 @@ public class AccountServiceImpl implements AccountService {
     public void updatePassword(UpdatePasswordRequest request) {
         var account = authUtils.getUserAccountFromAuthentication();
         if (!passwordEncoder.matches(request.getCurrentPassword(), account.getHashPassword())) {
-            throw new ValidationException("Current password is incorrect");
+            throw new ValidationException("Mật khẩu hiện tại không chính xác.");
         }
         if (!Objects.equals(request.getNewPassword(), request.getConfirmPassword())) {
-            throw new ValidationException("New password and confirm password do not match");
+            throw new ValidationException("Mật khẩu mới và mật khẩu xác nhận không khớp.");
         }
         account.setHashPassword(passwordEncoder.encode(request.getNewPassword()));
         try {
             accountRepository.save(account);
         } catch (Exception e) {
-            throw new ActionFailedException("Error while updating password", e);
+            throw new ActionFailedException("Lỗi khi cập nhật mật khẩu.", e);
         }
     }
 
@@ -95,9 +95,9 @@ public class AccountServiceImpl implements AccountService {
     public void deleteAccount(String id) {
         AccountEntity currentAccount = authUtils.getUserAccountFromAuthentication();
         AccountEntity account = accountRepository.findById(id)
-                .orElseThrow(() -> new ValidationException("Account not found with id: " + id));
+                .orElseThrow(() -> new ValidationException("Không tìm thấy tài khoản với ID: " + id));
         if (!currentAccount.getId().equals(id) && !AuthUtils.convertAccountToRole(currentAccount).contains("ROLE_ADMIN")) {
-            throw new ValidationException("Access denied: You can only delete your own account");
+            throw new ValidationException("Từ chối truy cập: Bạn chỉ có thể xóa tài khoản của chính mình.");
         }
         account.setEnabled(false);
         account.setLocked(true);
@@ -106,7 +106,7 @@ public class AccountServiceImpl implements AccountService {
 
     @Override
     public void resetPassword(String id) {
-        var account = accountRepository.findById(id).orElseThrow(() -> new ValidationException("Account not found with id: " + id));
+        var account = accountRepository.findById(id).orElseThrow(() -> new ValidationException("Không tìm thấy tài khoản với ID: " + id));
         var passwordGen = TokenUtils.generatePassword(12);
         account.setHashPassword(passwordEncoder.encode(passwordGen));
         try {
@@ -122,7 +122,7 @@ public class AccountServiceImpl implements AccountService {
                     .build();
             messageProducerService.sendEmailNotification(emailMessage);
         } catch (Exception e) {
-            throw new ActionFailedException("Error while resetting password", e);
+            throw new ActionFailedException("Lỗi khi đặt lại mật khẩu.", e);
         }
     }
 
@@ -131,7 +131,7 @@ public class AccountServiceImpl implements AccountService {
         AccountEntity currentAccount = authUtils.getUserAccountFromAuthentication();
 
         if (!AuthUtils.convertAccountToRole(currentAccount).contains("ROLE_ADMIN")) {
-            throw new ValidationException("Access denied: Admin role required");
+            throw new ValidationException("Từ chối truy cập: Yêu cầu quyền quản trị viên.");
         }
         return accountRepository.query(queryWrapper, (param) -> ((root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
@@ -156,18 +156,18 @@ public class AccountServiceImpl implements AccountService {
         var email = request.getNewEmail();
         var emailValidator = EmailValidator.getInstance();
         if (!emailValidator.isValid(email)) {
-            throw new ValidationException("Email input is not valid");
+            throw new ValidationException("Email không hợp lệ.");
         }
         var account = authUtils.getUserAccountFromAuthentication();
         if (!passwordEncoder.matches(request.getPasswordConfirm(), account.getHashPassword())) {
-            throw new ValidationException("Password does not match");
+            throw new ValidationException("Mật khẩu không khớp.");
         }
         account.setEmail(email);
         try {
             var result = accountRepository.save(account);
             return mapToAccountResponse(result);
         } catch (Exception e) {
-            throw new ActionFailedException("Error while updating email", e);
+            throw new ActionFailedException("Lỗi khi cập nhật email.", e);
         }
     }
     @Transactional(rollbackFor = {ActionFailedException.class, Exception.class})
@@ -175,17 +175,17 @@ public class AccountServiceImpl implements AccountService {
     public AccountResponse updateUsername(UpdateUsernameRequest updateRequest, HttpServletRequest request, HttpServletResponse response) {
         var username = updateRequest.username();
         if (username.length() < 3 || username.length() > 32) {
-            throw new ValidationException("Username must be between 3 and 32 characters");
+            throw new ValidationException("Tên người dùng phải có độ dài từ 3 đến 32 ký tự.");
         }
         if (accountRepository.existsByUsername(username)) {
-            throw new ValidationException("Username already exists");
+            throw new ValidationException("Tên người dùng đã tồn tại.");
         }
         var account = authUtils.getUserAccountFromAuthentication();
         if (account.isChangedUsername()) {
-            throw new ValidationException("User can only change username once per ever");
+            throw new ValidationException("Người dùng chỉ có thể đổi tên người dùng một lần duy nhất.");
         }
         if (!passwordEncoder.matches(updateRequest.passwordConfirm(), account.getHashPassword())) {
-            throw new ValidationException("Password does not match");
+            throw new ValidationException("Mật khẩu không khớp.");
         }
         account.setUsername(username);
         account.setChangedUsername(true);
@@ -194,7 +194,7 @@ public class AccountServiceImpl implements AccountService {
             jwtService.removeAuthToken(request, response);
             return mapToAccountResponse(result);
         } catch (Exception e) {
-            throw new ActionFailedException("Error while updating email", e);
+            throw new ActionFailedException("Lỗi khi cập nhật email.", e);
         }
     }
 
@@ -202,7 +202,7 @@ public class AccountServiceImpl implements AccountService {
     @Override
     public void banAccount(String accountId) {
         var account = accountRepository.findById(accountId)
-                .orElseThrow(() -> new ValidationException("Account not found with ID: " + accountId));
+                .orElseThrow(() -> new ValidationException("Không tìm thấy tài khoản với ID: " + accountId));
         account.setLocked(true);
         var accountRoles = account.getAccountRoles();
         accountRoles.forEach(accountRole -> {
@@ -212,7 +212,7 @@ public class AccountServiceImpl implements AccountService {
             accountRepository.save(account);
             accountRoleRepository.saveAll(accountRoles);
         } catch (Exception e) {
-            throw new ActionFailedException("Error while banning account", e);
+            throw new ActionFailedException("Lỗi khi cấm tài khoản.", e);
         }
     }
 
@@ -220,7 +220,7 @@ public class AccountServiceImpl implements AccountService {
     @Transactional(rollbackFor = {ActionFailedException.class, Exception.class})
     public void unbanAccount(String accountId) {
         var account = accountRepository.findById(accountId)
-                .orElseThrow(() -> new ValidationException("Account not found with ID: " + accountId));
+                .orElseThrow(() -> new ValidationException("Không tìm thấy tài khoản với ID: " + accountId));
         account.setLocked(false);
         var accountRoles = account.getAccountRoles();
         accountRoles.forEach(accountRole -> {
@@ -230,7 +230,7 @@ public class AccountServiceImpl implements AccountService {
             accountRepository.save(account);
             accountRoleRepository.saveAll(accountRoles);
         } catch (Exception e) {
-            throw new ActionFailedException("Error while unbanning account", e);
+            throw new ActionFailedException("Lỗi khi gỡ cấm tài khoản.", e);
         }
     }
 
@@ -240,11 +240,11 @@ public class AccountServiceImpl implements AccountService {
 
         var roles = authUtils.getRolesFromAuthUser();
         if (!roles.contains("ROLE_ADMIN")) {
-            throw new ValidationException("User does not have permission to approve seller");
+            throw new ValidationException("Người dùng không có quyền để duyệt người bán.");
         }
 
         CustomerEntity customer = customerRepository.findById(customerId)
-                .orElseThrow(() -> new ValidationException("Customer not found with ID: " + customerId));
+                .orElseThrow(() -> new ValidationException("Không tìm thấy khách hàng với ID: " + customerId));
 
         AccountEntity account = customer.getAccount();
         Set<AccountRoleEntity> accountRoles = account.getAccountRoles();
@@ -254,7 +254,7 @@ public class AccountServiceImpl implements AccountService {
                 .findFirst();
 
         if (customerRole.isEmpty()) {
-            throw new ValidationException("Customer role not found for account ID: " + account.getId());
+            throw new ValidationException("Không tìm thấy vai trò khách hàng cho ID tài khoản.: " + account.getId());
         }
         account.setEnabled(false);
         AccountRoleEntity roleToUpdate = customerRole.get();
@@ -264,7 +264,7 @@ public class AccountServiceImpl implements AccountService {
             accountRepository.save(account);
             return mapToAccountResponse(account);
         } catch (Exception e) {
-            throw new ActionFailedException("Error while disabling account", e);
+            throw new ActionFailedException("Lỗi khi vô hiệu hóa tài khoản.", e);
         }
     }
 
@@ -273,11 +273,11 @@ public class AccountServiceImpl implements AccountService {
     public AccountResponse enableCustomerAccount(String customerId) {
         var roles = authUtils.getRolesFromAuthUser();
         if (!roles.contains("ROLE_ADMIN")) {
-            throw new ValidationException("User does not have permission to approve seller");
+            throw new ValidationException("Chỉ quản trị viên có quyền phê duyệt người bán.");
         }
 
         CustomerEntity customer = customerRepository.findById(customerId)
-                .orElseThrow(() -> new ValidationException("Customer not found with ID: " + customerId));
+                .orElseThrow(() -> new ValidationException("Không tìm thấy khách hàng với ID: " + customerId));
 
         AccountEntity account = customer.getAccount();
         Set<AccountRoleEntity> accountRoles = account.getAccountRoles();
@@ -287,7 +287,7 @@ public class AccountServiceImpl implements AccountService {
                 .findFirst();
 
         if (customerRole.isEmpty()) {
-            throw new ValidationException("Customer role not found for account ID: " + account.getId());
+            throw new ValidationException("Không tìm thấy vai trò khách hàng cho ID tài khoản: " + account.getId());
         }
         account.setEnabled(false);
         AccountRoleEntity roleToUpdate = customerRole.get();
@@ -297,7 +297,7 @@ public class AccountServiceImpl implements AccountService {
             accountRepository.save(account);
             return mapToAccountResponse(account);
         } catch (Exception e) {
-            throw new ActionFailedException("Error while enabling account", e);
+            throw new ActionFailedException("Lỗi khi kích hoạt tài khoản.", e);
         }
     }
 
@@ -305,7 +305,7 @@ public class AccountServiceImpl implements AccountService {
     @Override
     public void banSellerAccount(String accountId) {
         var account = accountRepository.findById(accountId)
-                .orElseThrow(() -> new ValidationException("Account not found with ID: " + accountId));
+                .orElseThrow(() -> new ValidationException("Không tìm thấy tài khoản với ID: " + accountId));
         var accountRoles = account.getAccountRoles();
         accountRoles.stream().filter(accountRole -> "ROLE_SELLER".equals(accountRole.getRole().getCode())).forEach(accountRole -> {
             accountRole.setEnabled(false);
@@ -313,7 +313,7 @@ public class AccountServiceImpl implements AccountService {
         try {
             accountRoleRepository.saveAll(accountRoles);
         } catch (Exception e) {
-            throw new ActionFailedException("Error while banning seller", e);
+            throw new ActionFailedException("Lỗi khi cấm người bán.", e);
         }
     }
 
@@ -321,7 +321,7 @@ public class AccountServiceImpl implements AccountService {
     @Override
     public void unbanSellerAccount(String accountId) {
         var account = accountRepository.findById(accountId)
-                .orElseThrow(() -> new ValidationException("Account not found with ID: " + accountId));
+                .orElseThrow(() -> new ValidationException("Không tìm thấy tài khoản với ID: " + accountId));
         var accountRoles = account.getAccountRoles();
         accountRoles.stream().filter(accountRole -> "ROLE_SELLER".equals(accountRole.getRole().getCode())).forEach(accountRole -> {
             accountRole.setEnabled(true);
@@ -329,7 +329,7 @@ public class AccountServiceImpl implements AccountService {
         try {
             accountRoleRepository.saveAll(accountRoles);
         } catch (Exception e) {
-            throw new ActionFailedException("Error while unbanning seller", e);
+            throw new ActionFailedException("Lỗi khi gỡ cấm người bán.", e);
         }
     }
 
