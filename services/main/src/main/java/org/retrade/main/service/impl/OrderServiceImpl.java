@@ -18,7 +18,6 @@ import org.retrade.main.model.dto.response.*;
 import org.retrade.main.model.entity.*;
 import org.retrade.main.model.message.SocketNotificationMessage;
 import org.retrade.main.repository.jpa.*;
-import org.retrade.main.service.CartService;
 import org.retrade.main.service.MessageProducerService;
 import org.retrade.main.service.OrderService;
 import org.retrade.main.util.AuthUtils;
@@ -47,7 +46,6 @@ public class OrderServiceImpl implements OrderService {
     private final OrderDestinationRepository orderDestinationRepository;
     private final CustomerRepository customerRepository;
     private final CustomerContactRepository customerContactRepository;
-    private final CartService cartService;
     private final AuthUtils authUtils;
     private final OrderStatusValidator  orderStatusValidator;
     private final PlatformFeeTierRepository platformFeeTierRepository;
@@ -85,8 +83,6 @@ public class OrderServiceImpl implements OrderService {
         List<OrderComboEntity> orderCombos = createOrderCombos(productsBySeller, orderDestination, request.getItems());
 
         createOrderItems(savedOrder, products, orderCombos, request.getItems());
-
-        cartService.clearCart();
 
         return mapToOrderResponse(savedOrder);
     }
