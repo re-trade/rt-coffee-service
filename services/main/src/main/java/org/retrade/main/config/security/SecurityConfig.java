@@ -46,8 +46,8 @@ public class SecurityConfig {
                 })
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .addFilterBefore(this.cookieValidationFilter, UsernamePasswordAuthenticationFilter.class)
-                .addFilterAfter(this.jwtAuthenticationFilter, CookieValidationFilter.class);
-//                .addFilterAfter(this.jwtCookieAuthenticationFilter, JwtAuthenticationFilter.class);
+                .addFilterAfter(this.jwtAuthenticationFilter, CookieValidationFilter.class)
+                .addFilterAfter(this.jwtCookieAuthenticationFilter, JwtAuthenticationFilter.class);
         return http.build();
     }
 }
