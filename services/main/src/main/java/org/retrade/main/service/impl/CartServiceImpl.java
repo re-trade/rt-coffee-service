@@ -87,7 +87,7 @@ public class CartServiceImpl implements CartService {
             cart = cartRepository.save(cart);
             return mapToCartResponse(cart);
         } catch (Exception e) {
-            throw new ActionFailedException("Failed to add item to cart", e);
+            throw new ActionFailedException("Thêm sản phẩm vào giỏ hàng thất bại", e);
         }
     }
 
@@ -136,7 +136,7 @@ public class CartServiceImpl implements CartService {
         String userId = getCurrentUserId();
 
         CartEntity cart = cartRepository.findByUserId(userId)
-                .orElseThrow(() -> new ValidationException("Cart not found"));
+                .orElseThrow(() -> new ValidationException("Không tìm thấy giỏ hàng"));
 
         boolean removed = false;
 
@@ -155,7 +155,7 @@ public class CartServiceImpl implements CartService {
         }
 
         if (!removed) {
-            throw new ValidationException("Item not found in cart");
+            throw new ValidationException("Không tìm thấy sản phẩm trong giỏ hàng");
         }
         cart.setLastUpdated(LocalDateTime.now());
 
@@ -186,7 +186,7 @@ public class CartServiceImpl implements CartService {
         try {
             cartRepository.deleteByUserId(userId);
         } catch (Exception e) {
-            throw new ActionFailedException("Failed to clear cart", e);
+            throw new ActionFailedException("Xóa giỏ hàng thất bại", e);
         }
     }
 
@@ -238,7 +238,7 @@ public class CartServiceImpl implements CartService {
 
             CartGroupResponse group = CartGroupResponse.builder()
                     .sellerId(shopId)
-                    .sellerName(seller != null ? seller.getShopName() : "Unknown Seller")
+                    .sellerName(seller != null ? seller.getShopName() : "Người bán không xác định")
                     .sellerAvatarUrl(seller != null ? seller.getAvatarUrl() : "")
                     .items(itemResponses)
                     .build();
@@ -261,7 +261,7 @@ public class CartServiceImpl implements CartService {
             if (product == null) {
                 return CartItemResponse.builder()
                         .productId(cartItem.getProductId())
-                        .productName("Product not found")
+                        .productName("Không tìm thấy sản phẩm")
                         .totalPrice(BigDecimal.ZERO)
                         .addedAt(cartItem.getAddedAt())
                         .description("N/A")
