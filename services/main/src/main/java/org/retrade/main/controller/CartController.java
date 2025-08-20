@@ -35,7 +35,7 @@ public class CartController {
                 .success(true)
                 .code("ITEM_ADDED_TO_CART")
                 .content(result)
-                .messages("Item added to cart successfully")
+                .messages("Thêm sản phẩm vào giỏ hàng thành công")
                 .build());
     }
 
@@ -47,7 +47,7 @@ public class CartController {
                 .success(true)
                 .code("CART_ITEM_UPDATED")
                 .content(result)
-                .messages("Cart item updated successfully")
+                .messages("Cập nhật sản phẩm trong giỏ hàng thành công")
                 .build());
     }
 
@@ -59,7 +59,7 @@ public class CartController {
                 .success(true)
                 .code("ITEM_REMOVED_FROM_CART")
                 .content(result)
-                .messages("Item removed from cart successfully")
+                .messages("Xóa sản phẩm khỏi giỏ hàng thành công")
                 .build());
     }
 
@@ -75,7 +75,7 @@ public class CartController {
                 .success(true)
                 .code("CART_RETRIEVED")
                 .content(result)
-                .messages("Cart retrieved successfully")
+                .messages("Lấy danh sách giỏ hàng thành công")
                 .build());
     }
 
@@ -85,7 +85,7 @@ public class CartController {
         return ResponseEntity.ok(new ResponseObject.Builder<Void>()
                 .success(true)
                 .code("CART_CLEARED")
-                .messages("Cart cleared successfully")
+                .messages("Xóa giỏ hàng thành công")
                 .build());
     }
 }

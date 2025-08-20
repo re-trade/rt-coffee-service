@@ -29,7 +29,7 @@ public class BrandController {
         return ResponseEntity.ok(new ResponseObject.Builder<List<BrandResponse>>()
                 .success(true)
                 .code("BRANDS_RETRIEVED")
-                .messages("Brands retrieved successfully")
+                .messages("Lấy danh sách thương hiệu thành công")
                 .unwrapPaginationWrapper(response)
                 .build());
     }
@@ -40,7 +40,7 @@ public class BrandController {
         return ResponseEntity.ok(new ResponseObject.Builder<BrandResponse>()
                 .success(true)
                 .code("BRAND_SUBMIT")
-                .messages("Brands retrieved successfully")
+                .messages("Tạo thương hiệu thành công")
                 .content(response)
                 .build());
     }
@@ -51,7 +51,7 @@ public class BrandController {
         return ResponseEntity.ok(new ResponseObject.Builder<BrandResponse>()
                 .success(true)
                 .code("BRAND_SUBMIT")
-                .messages("Brands retrieved successfully")
+                .messages("Cập nhật thương hiệu thành công")
                 .content(response)
                 .build());
     }
@@ -65,7 +65,7 @@ public class BrandController {
         return ResponseEntity.ok(new ResponseObject.Builder<List<BrandResponse>>()
                 .success(true)
                 .code("BRANDS_RETRIEVED")
-                .messages("Brands retrieved successfully")
+                .messages("Lấy thương hiệu theo danh mục thành công")
                 .unwrapPaginationWrapper(response)
                 .build());
     }
@@ -77,7 +77,7 @@ public class BrandController {
         return ResponseEntity.ok(new ResponseObject.Builder<List<BrandResponse>>()
                 .success(true)
                 .code("BRAND_SUBMIT")
-                .messages("Brands retrieved successfully")
+                .messages("Lấy tất cả thương hiệu thành công")
                 .content(response)
                 .build());
     }
