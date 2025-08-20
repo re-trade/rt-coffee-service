@@ -56,7 +56,7 @@ public class AuthenticationController {
                     .contentType(MediaType.IMAGE_PNG)
                     .body(imageBytes);
         } catch (IOException e) {
-            throw new ActionFailedException("Failed to register 2fa authentication", e);
+            throw new ActionFailedException("Không thể đăng ký xác thực 2FA", e);
         }
     }
 
@@ -72,7 +72,7 @@ public class AuthenticationController {
         return ResponseEntity.ok(new ResponseObject.Builder<Map<String, Boolean>>()
                         .success(true)
                         .code("OTP_VALIDATE_SUCCESS")
-                        .messages("OTP_VALIDATE_SUCCESS")
+                        .messages("Xác thực OTP thành công")
                         .content(Map.of("code", result))
                 .build());
     }
@@ -90,7 +90,7 @@ public class AuthenticationController {
         return ResponseEntity.ok(new ResponseObject.Builder<AuthResponse>()
                         .code("AUTH_SUCCESS")
                         .success(true)
-                        .messages("Authentication successful")
+                        .messages("Đăng nhập thành công")
                         .content(result)
                         .build()
         );
@@ -109,7 +109,7 @@ public class AuthenticationController {
             return ResponseEntity.status(HttpStatus.FOUND).location(URI.create(hostConfig.getFrontEnd()))
                     .body(new ResponseObject.Builder<AuthResponse>()
                             .code("SUCCESS")
-                            .messages("Login Success")
+                            .messages("Đăng nhập thành công")
                             .content(result)
                             .success(true)
                             .build());
@@ -117,14 +117,14 @@ public class AuthenticationController {
             return ResponseEntity.status(HttpStatus.FOUND).location(URI.create(hostConfig.getFrontEnd()))
                     .body(new ResponseObject.Builder<AuthResponse>()
                             .code("FAILED")
-                            .messages("Login Failed")
+                            .messages("Đăng nhập thất bại")
                             .success(true)
                             .build());
         } catch (ActionFailedException ex) {
             return ResponseEntity.status(HttpStatus.FOUND).location(URI.create(hostConfig.getFrontEnd()))
                     .body(new ResponseObject.Builder<AuthResponse>()
                             .code("SUCCESS")
-                            .messages("Login Failed")
+                            .messages("Đăng nhập thất bại")
                             .success(true)
                             .build());
         }
@@ -136,7 +136,7 @@ public class AuthenticationController {
         return ResponseEntity.ok(
                 new ResponseObject.Builder<Void>()
                         .code("SUCCESS")
-                        .messages("Please Check Your Email")
+                        .messages("Vui lòng kiểm tra email của bạn")
                         .success(true)
                         .build()
         );
@@ -154,7 +154,7 @@ public class AuthenticationController {
         return ResponseEntity.ok(
                 new ResponseObject.Builder<Void>()
                         .code("SUCCESS")
-                        .messages("Password has been reset successfully")
+                        .messages("Mật khẩu đã được đặt lại thành công")
                         .success(true)
                         .build()
         );
@@ -166,7 +166,7 @@ public class AuthenticationController {
         return ResponseEntity.ok(new ResponseObject.Builder<AuthResponse>()
                 .code("AUTH_SUCCESS")
                 .success(true)
-                .messages("Authentication refresh token successful")
+                .messages("Làm mới mã xác thực thành công")
                 .content(result)
                 .build()
         );
@@ -178,7 +178,7 @@ public class AuthenticationController {
         return ResponseEntity.ok(
                 new ResponseObject.Builder<Void>()
                         .code("SUCCESS")
-                        .messages("Logout Success")
+                        .messages("Đăng xuất thành công")
                         .success(true)
                         .build()
         );
@@ -190,7 +190,7 @@ public class AuthenticationController {
         return ResponseEntity.ok(
                 new ResponseObject.Builder<Void>()
                         .code("SUCCESS")
-                        .messages("Logout Success")
+                        .messages("Đăng xuất tất cả thành công")
                         .success(true)
                         .build()
         );
@@ -203,7 +203,7 @@ public class AuthenticationController {
         return ResponseEntity.ok(
                 new ResponseObject.Builder<Void>()
                         .code("SUCCESS")
-                        .messages("Change Password Success")
+                        .messages("Đổi mật khẩu thành công")
                         .success(true)
                         .build()
         );
