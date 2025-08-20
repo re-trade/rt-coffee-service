@@ -120,7 +120,7 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public BufferedImage register2FaAuthentication(int width, int height) {
         var account = authUtils.getUserAccountFromAuthentication();
-        if (account.isUsing2FA()) throw new ValidationException("This user is using 2FA authentication now");
+        if (account.isUsing2FA()) throw new ValidationException("Người dùng này hiện đang sử dụng xác thực 2FA");
         var otpText = TokenUtils.generateOTPValue(account.getSecret(), account.getUsername(), "ReTrade");
         return QRUtils.generateQRCode(otpText, width, height);
     }
@@ -147,7 +147,7 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public void forgotPasswordUrlCreate(String email) {
-        var accountEntity = accountRepository.findByEmail(email).orElseThrow(() -> new ValidationException("Not found account with this email"));
+        var accountEntity = accountRepository.findByEmail(email).orElseThrow(() -> new ValidationException("Không tìm thấy tài khoản với email này"));
         var token = UUID.randomUUID().toString();
         var url = String.format("%s?token=%s", forgotPasswordConfig.getCallbackUrl(), token);
         redisTemplate.opsForValue().set("user:forgot-password:" + token, email, forgotPasswordConfig.getTimeout(), TimeUnit.MINUTES);
@@ -171,10 +171,10 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public void forgotPasswordConfirm(ForgotPasswordRequest request) {
         if (!request.getPassword().equals(request.getRePassword()))
-            throw new ValidationException("Passwords do not match");
+            throw new ValidationException("Mật khẩu không khớp");
         String email = (String) redisTemplate.opsForValue().get("user:forgot-password:" + request.getToken());
-        if (email == null) throw new ValidationException("Token Not Valid");
-        var accountEntity = accountRepository.findByEmail(email).orElseThrow(() -> new ValidationException("Not found account with this email"));
+        if (email == null) throw new ValidationException("Mã token không hợp lệ");
+        var accountEntity = accountRepository.findByEmail(email).orElseThrow(() -> new ValidationException("Không tìm thấy tài khoản với email này"));
         accountEntity.setHashPassword(passwordEncoder.encode(request.getPassword()));
         accountRepository.save(accountEntity);
     }
@@ -233,13 +233,13 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public void resetPassword(ResetPasswordRequest request) {
         var accountEntity = authUtils.getUserAccountFromAuthentication();
-        if (accountEntity == null) throw new ActionFailedException("Not Found Account");
-        if (accountEntity.getCustomer() == null) throw new ValidationException("This action requires customer role");
+        if (accountEntity == null) throw new ActionFailedException("Không tìm thấy tài khoản");
+        if (accountEntity.getCustomer() == null) throw new ValidationException("Hành động này yêu cầu tài khoản khách hàng");
 
         if (!passwordEncoder.matches(request.getOldPassword(), accountEntity.getHashPassword()))
-            throw new ValidationException("Old password is incorrect");
+            throw new ValidationException("Mật khẩu cũ không chính xác");
         if (!request.getNewPassword().equals(request.getConfirmNewPassword()))
-            throw new ValidationException("New password and confirmation do not match");
+            throw new ValidationException("Mật khẩu mới và xác nhận mật khẩu không khớp");
 
         accountEntity.setHashPassword(passwordEncoder.encode(request.getNewPassword()));
         accountRepository.save(accountEntity);
@@ -267,15 +267,15 @@ public class AuthServiceImpl implements AuthService {
     public AuthResponse refreshAuthentication(HttpServletRequest request) {
         var tokenMap = CookieUtils.getCookieMap(request);
         var refreshCookie = tokenMap.get(JwtTokenType.REFRESH_TOKEN);
-        if (refreshCookie == null) throw new ValidationException("Refresh token is required");
+        if (refreshCookie == null) throw new ValidationException("Cần có refresh token");
 
         var claims = jwtService.getUserClaimsFromJwt(refreshCookie.getValue(), JwtTokenType.REFRESH_TOKEN);
-        if (claims.isEmpty()) throw new ValidationException("Refresh token is invalid");
+        if (claims.isEmpty()) throw new ValidationException("Refresh token không hợp lệ");
 
         var userClaims = claims.get();
         var redisKey = "refresh:user:" + authUtils.getUserAccountFromAuthentication().getUsername() + ":" + userClaims.getSessionId();
         if (!redisTemplate.hasKey(redisKey)) {
-            throw new ValidationException("Session is expired or logged out");
+            throw new ValidationException("Phiên đăng nhập đã hết hạn hoặc đã đăng xuất");
         }
 
         var newAccessToken = jwtService.generateToken(userClaims.getUsername(), userClaims.getRoles(), JwtTokenType.ACCESS_TOKEN);
@@ -356,7 +356,7 @@ public class AuthServiceImpl implements AuthService {
                 var gson = new Gson();
                 return gson.fromJson(profileJson, GoogleProfileResponse.class);
             }
-            throw new ActionFailedException("Problem connecting to Google");
+            throw new ActionFailedException("Có vấn đề khi kết nối tới Google");
         } catch (IOException ex) {
             throw new ActionFailedException(ex.getMessage());
         }
