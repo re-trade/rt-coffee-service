@@ -38,6 +38,11 @@ minio:
   secret-key: ${MINIO_SECRET_KEY:}
   bucket-name: ${MINIO_BUCKET_NAME:retrade}
 
+grpc:
+  client:
+    id-card-extractor:
+      host: ${IDENTITY_SERVICE_GRPC_HOST:localhost}
+      port: ${IDENTITY_SERVICE_GRPC_PORT:5000}
 server:
   port: 8087
 

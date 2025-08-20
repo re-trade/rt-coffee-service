@@ -49,7 +49,6 @@ public class CCCDVerifiedConsumer {
             }
             try {
                 sellerService.updateVerifiedSeller(message);
-                channel.basicAck(deliveryTag, false);
             } catch (ValidationException ex) {
                 messageProducerService.sendEmailNotification(EmailNotificationMessage.builder()
                                 .to(sellerProfile.get().email())
