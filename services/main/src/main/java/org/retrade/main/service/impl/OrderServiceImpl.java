@@ -252,8 +252,16 @@ public class OrderServiceImpl implements OrderService {
         orderComboEntity.setCancelledReason(request.reason());
         orderComboEntity.setOrderStatus(cancelledStatus);
         orderComboEntity.setReasonCreatedDate(Timestamp.valueOf(LocalDateTime.now()));
+        List<ProductEntity> updatedProducts = orderComboEntity.getOrderItems().stream()
+                .map(item -> {
+                    ProductEntity product = item.getProduct();
+                    product.setQuantity(product.getQuantity() + item.getQuantity());
+                    return product;
+                })
+                .collect(Collectors.toList());
         try {
             orderComboRepository.save(orderComboEntity);
+            productRepository.saveAll(updatedProducts);
             if (orderStatusValidator.isPaymentSuccessful(orderComboEntity.getOrderStatus().getCode())) {
                 BigDecimal rollbackPrice = orderComboEntity.getGrandPrice();
                 BigDecimal currentBalance = account.getBalance() != null ? account.getBalance() : BigDecimal.ZERO;
@@ -284,8 +292,16 @@ public class OrderServiceImpl implements OrderService {
         BigDecimal rollbackPrice = orderCombo.getGrandPrice();
         BigDecimal currentBalance = accountCombo.getBalance() != null ? accountCombo.getBalance() : BigDecimal.ZERO;
         accountCombo.setBalance(currentBalance.add(rollbackPrice));
+        List<ProductEntity> updatedProducts = orderCombo.getOrderItems().stream()
+                .map(item -> {
+                    ProductEntity product = item.getProduct();
+                    product.setQuantity(product.getQuantity() + item.getQuantity());
+                    return product;
+                })
+                .toList();
         try {
             orderComboRepository.save(orderCombo);
+            productRepository.saveAll(updatedProducts);
             accountRepository.save(accountCombo);
         } catch (Exception e) {
             throw new ActionFailedException(e.getMessage());

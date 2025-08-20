@@ -41,6 +41,7 @@ public class OrderHistoryServiceImpl implements OrderHistoryService {
     private final MessageProducerService messageProducerService;
     private final WalletTransactionRepository walletTransactionRepository;
     private final OrderComboDeliveryRepository orderComboDeliveryRepository;
+    private final ProductRepository productRepository;
 
     @Override
     public List<OrderHistoryResponse> getAllNotesByOrderComboId(String id) {
@@ -142,9 +143,17 @@ public class OrderHistoryServiceImpl implements OrderHistoryService {
                     .amount(rollbackPrice)
                     .account(accountCombo)
                     .build();
+            List<ProductEntity> updatedProducts = orderCombo.getOrderItems().stream()
+                    .map(item -> {
+                        ProductEntity product = item.getProduct();
+                        product.setQuantity(product.getQuantity() + item.getQuantity());
+                        return product;
+                    })
+                    .toList();
             try {
                 walletTransactionRepository.save(walletTransactionHistory);
                 accountRepository.save(accountCombo);
+                productRepository.saveAll(updatedProducts);
             } catch (Exception e) {
                 throw new ActionFailedException("Lỗi khi xử lí giao dịch hoàn tiền cho khách hàng");
             }
