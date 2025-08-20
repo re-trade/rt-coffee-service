@@ -82,7 +82,7 @@ public class OrderServiceImpl implements OrderService {
         } catch (Exception e) {
             throw new ActionFailedException("Failed to save order destination", e);
         }
-        List<OrderComboEntity> orderCombos = createOrderCombos(productsBySeller, orderDestination);
+        List<OrderComboEntity> orderCombos = createOrderCombos(productsBySeller, orderDestination, request.getItems());
 
         createOrderItems(savedOrder, products, orderCombos, request.getItems());
 
@@ -714,7 +714,7 @@ public class OrderServiceImpl implements OrderService {
                 .build();
     }
 
-    private List<OrderComboEntity> createOrderCombos(Map<SellerEntity, List<ProductEntity>> productsBySeller, OrderDestinationEntity orderDestination) {
+    private List<OrderComboEntity> createOrderCombos(Map<SellerEntity, List<ProductEntity>> productsBySeller, OrderDestinationEntity orderDestination, List<OrderItemRequest> items) {
         OrderStatusEntity pendingStatus = orderStatusRepository.findByCode("PENDING")
                 .orElseThrow(() -> new ValidationException("Pending order status not found"));
 
@@ -723,11 +723,7 @@ public class OrderServiceImpl implements OrderService {
         for (Map.Entry<SellerEntity, List<ProductEntity>> entry : productsBySeller.entrySet()) {
             SellerEntity seller = entry.getKey();
             List<ProductEntity> sellerProducts = entry.getValue();
-
-            BigDecimal sellerTotal = sellerProducts.stream()
-                    .map(ProductEntity::getCurrentPrice)
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
-
+            BigDecimal sellerTotal = calculateSubtotal(sellerProducts, items);
             OrderComboEntity combo = OrderComboEntity.builder()
                     .seller(seller)
                     .grandPrice(sellerTotal)
