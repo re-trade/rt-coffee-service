@@ -29,7 +29,7 @@ public class CategoryServiceImpl implements CategoryService {
     @Override
     public CategoryResponse createCategory(CategoryRequest request) {
         if (categoryExists(request.getName())) {
-            throw new ValidationException("Category already exists with name: " + request.getName());
+            throw new ValidationException("Danh mục đã tồn tại với tên: " + request.getName());
         }
         CategoryEntity category = CategoryEntity.builder()
                 .name(request.getName())
@@ -45,7 +45,7 @@ public class CategoryServiceImpl implements CategoryService {
             category = categoryRepository.save(category);
             return mapToCategoryResponse(category);
         } catch (Exception ex) {
-            throw new ActionFailedException("Failed to create category", ex);
+            throw new ActionFailedException("Tạo danh mục thất bại", ex);
         }
     }
 
@@ -55,13 +55,13 @@ public class CategoryServiceImpl implements CategoryService {
         CategoryEntity categoryParent = null;
         if (request.getCategoryParentId() != null) {
             if (categoryRepository.isCategoryLoop(category.getId(), request.getCategoryParentId())) {
-                throw new ValidationException("Category loop detected");
+                throw new ValidationException("Phát hiện vòng lặp danh mục");
             }
             categoryParent = getCategoryEntityById(request.getCategoryParentId());
         }
         if (request.getName() != null && !request.getName().equals(category.getName())) {
             if (categoryExists(request.getName())) {
-                throw new ValidationException("Category already exists with name: " + request.getName());
+                throw new ValidationException("Danh mục đã tồn tại với tên: " + request.getName());
             }
             category.setName(request.getName());
         }
@@ -78,7 +78,7 @@ public class CategoryServiceImpl implements CategoryService {
             category = categoryRepository.save(category);
             return mapToCategoryResponse(category);
         } catch (Exception ex) {
-            throw new ActionFailedException("Failed to update category", ex);
+            throw new ActionFailedException("FCập nhật danh mục thất bại", ex);
         }
     }
 
@@ -175,13 +175,13 @@ public class CategoryServiceImpl implements CategoryService {
     @Override
     public CategoryEntity getCategoryEntityById(String id) {
         return categoryRepository.findById(id)
-                .orElseThrow(() -> new ValidationException("Category not found with id: " + id));
+                .orElseThrow(() -> new ValidationException("Không tìm thấy danh mục với id: " + id));
     }
 
     @Override
     public CategoryEntity getCategoryEntityByName(String name) {
         return categoryRepository.findByName(name)
-                .orElseThrow(() -> new ValidationException("Category not found with name: " + name));
+                .orElseThrow(() -> new ValidationException("Không tìm thấy danh mục với tên:  " + name));
     }
 
     @Override

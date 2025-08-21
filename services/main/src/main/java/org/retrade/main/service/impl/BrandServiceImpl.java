@@ -49,14 +49,14 @@ public class BrandServiceImpl implements BrandService {
             var response = brandRepository.save(brandEntity);
             return mapToBrandResponse(response);
         } catch (Exception ex) {
-            throw new ActionFailedException("Failed to create brand", ex);
+            throw new ActionFailedException("Không thể tạo thương hiệu", ex);
         }
     }
 
     @Override
     @Transactional
     public BrandResponse updateBrand(String id, BrandRequest request) {
-        var brand = brandRepository.findById(id).orElseThrow(() -> new ActionFailedException("Brand not found"));
+        var brand = brandRepository.findById(id).orElseThrow(() -> new ActionFailedException("Không tìm thấy thương hiệu"));
         brand.setName(request.getName());
         brand.setDescription(request.getDescription());
         brand.setImgUrl(request.getImgUrl());
@@ -68,7 +68,7 @@ public class BrandServiceImpl implements BrandService {
             var response = brandRepository.save(brand);
             return mapToBrandResponse(response);
         } catch (Exception ex) {
-            throw new ActionFailedException("Failed to update brand", ex);
+            throw new ActionFailedException("Không thể cập nhật thương hiệu", ex);
         }
     }
 
@@ -90,7 +90,7 @@ public class BrandServiceImpl implements BrandService {
     public PaginationWrapper<List<BrandResponse>> getAllBrandByCategoriesList(QueryWrapper queryWrapper) {
         var categories = queryWrapper.search().remove("categoryId");
         if (categories == null) {
-            throw new ValidationException("categoryId is required for this query");
+            throw new ValidationException("categoryId là bắt buộc cho truy vấn này");
         }
         return brandRepository.query(queryWrapper, (param) -> (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();

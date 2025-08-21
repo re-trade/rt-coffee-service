@@ -49,7 +49,7 @@ public class CustomerServiceImpl implements CustomerService {
     public CustomerResponse getCurrentCustomerProfile() {
         var account = authUtils.getUserAccountFromAuthentication();
         var customer = customerRepository.findByAccount(account)
-                .orElseThrow(() -> new ValidationException("Customer profile not found"));
+                .orElseThrow(() -> new ValidationException("Không tìm thấy hồ sơ khách hàng"));
         return mapToCustomerResponse(customer);
     }
 
@@ -58,7 +58,7 @@ public class CustomerServiceImpl implements CustomerService {
     public CustomerResponse updateCustomerProfile(UpdateCustomerProfileRequest request) {
         var account = authUtils.getUserAccountFromAuthentication();
         var customer = customerRepository.findByAccount(account)
-                .orElseThrow(() -> new ValidationException("Customer profile not found"));
+                .orElseThrow(() -> new ValidationException("Không tìm thấy hồ sơ khách hàng"));
         customer.setGender(request.getGender());
         customer.setFirstName(request.getFirstName());
         customer.setLastName(request.getLastName());
@@ -71,7 +71,7 @@ public class CustomerServiceImpl implements CustomerService {
             var updatedCustomer = customerRepository.save(customer);
             return mapToCustomerResponse(updatedCustomer);
         } catch (Exception ex) {
-            throw new ActionFailedException("Failed to update customer profile", ex);
+            throw new ActionFailedException("Cập nhật hồ sơ khách hàng thất bại", ex);
         }
     }
 
@@ -95,12 +95,12 @@ public class CustomerServiceImpl implements CustomerService {
     public void updateUserAvatar(String avatarUrl) {
         var account = authUtils.getUserAccountFromAuthentication();
         var customer = customerRepository.findByAccount(account)
-                .orElseThrow(() -> new ValidationException("Customer profile not found"));
+                .orElseThrow(() -> new ValidationException("Không tìm thấy hồ sơ khách hàng"));
         customer.setAvatarUrl(avatarUrl);
         try {
             customerRepository.save(customer);
         } catch (Exception ex) {
-            throw new ActionFailedException("Failed to update customer avatar", ex);
+            throw new ActionFailedException("Cập nhật ảnh đại diện khách hàng thất bại", ex);
         }
     }
 
@@ -109,7 +109,7 @@ public class CustomerServiceImpl implements CustomerService {
         var account = authUtils.getUserAccountFromAuthentication();
         var customer = account.getCustomer();
         if (customer == null) {
-            throw new ValidationException("Customer profile not found");
+            throw new ValidationException("Không tìm thấy hồ sơ khách hàng");
         }
         return customerContactRepository.query(queryWrapper, (param) -> (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
@@ -129,7 +129,7 @@ public class CustomerServiceImpl implements CustomerService {
         var account = authUtils.getUserAccountFromAuthentication();
         var customer = account.getCustomer();
         if (customer == null) {
-            throw new ValidationException("Customer profile not found");
+            throw new ValidationException("Không tìm thấy hồ sơ khách hàng");
         }
         var boughtProduct = orderItemRepository.sumQuantityByCustomerId(customer);
         var orderPlace = orderRepository.countByCustomer(customer);
@@ -146,9 +146,9 @@ public class CustomerServiceImpl implements CustomerService {
     public CustomerContactResponse getCustomerContactById(String id) {
         var customer = getAuthCustomer();
         var customerContact = customerContactRepository.findById(id)
-                .orElseThrow(() -> new ValidationException("Customer contact not found with id: " + id));
+                .orElseThrow(() -> new ValidationException("Không tìm thấy thông tin liên lạc của khách hàng với id: " + id));
         if (!customerContact.getCustomer().equals(customer)) {
-            throw new ValidationException("Customer contact not found with id: " + id);
+            throw new ValidationException("Không tìm thấy thông tin liên lạc của khách hàngvới id " + id);
         }
         return mapToCustomerContactResponse(customerContact);
     }
@@ -159,7 +159,7 @@ public class CustomerServiceImpl implements CustomerService {
         var account = authUtils.getUserAccountFromAuthentication();
         var customer = account.getCustomer();
         if (customer == null) {
-            throw new ValidationException("Customer profile not found");
+            throw new ValidationException("Không tìm thấy hồ sơ khách hàng");
         }
         if (request.getDefaulted() != null && request.getDefaulted()) {
             var defaultedContact = customerContactRepository.findByCustomerAndDefaulted(customer, true);
@@ -188,9 +188,9 @@ public class CustomerServiceImpl implements CustomerService {
     @Override
     public CustomerContactResponse updateCustomerContact(String id, CustomerContactRequest request) {
         var customer = getAuthCustomer();
-        var contactEntity = customerContactRepository.findById(id).orElseThrow(() -> new ValidationException("Customer contact not found with id: " + id));
+        var contactEntity = customerContactRepository.findById(id).orElseThrow(() -> new ValidationException("Không tìm thấy thông tin liên lạc của khách hàng với id: " + id));
         if (!customer.equals(contactEntity.getCustomer())) {
-            throw new ValidationException("You are not authorized to update this customer contact");
+            throw new ValidationException("Bạn không có quyền cập nhật thông tin liên lạc này");
         }
         if (request.getDefaulted() != null && request.getDefaulted()) {
             var defaultedContact = customerContactRepository.findByCustomerAndDefaulted(customer, true);
@@ -217,13 +217,13 @@ public class CustomerServiceImpl implements CustomerService {
         var customer = getAuthCustomer();
         var contactEntity = customerContactRepository.findById(id).orElseThrow(() -> new ValidationException("Thông tin liên lạc không tồn tại"));
         if (!customer.equals(contactEntity.getCustomer())) {
-            throw new ValidationException("You are not authorized to update this customer contact");
+            throw new ValidationException("Bạn không có quyền cập nhật thông tin liên lạc này");
         }
         try {
             customerContactRepository.delete(contactEntity);
             return mapToCustomerContactResponse(contactEntity);
         } catch (Exception ex) {
-            throw new ActionFailedException("Failed to remove customer contact", ex);
+            throw new ActionFailedException("Xóa thông tin liên lạc thất bại", ex);
         }
     }
 
@@ -236,19 +236,19 @@ public class CustomerServiceImpl implements CustomerService {
             Phonenumber.PhoneNumber number = phoneNumberUtil.parse(phone, "VN");
             boolean isValid = phoneNumberUtil.isValidNumber(number);
             if (!isValid) {
-                throw new ValidationException("Invalid phone number: " + phone);
+                throw new ValidationException("Số điện thoại không hợp lệ: " + phone);
             }
         } catch (Exception ex) {
-            throw new ValidationException("Invalid phone number");
+            throw new ValidationException("Số điện thoại không hợp lệ");
         }
         var phone = request.getNewPhone();
         var account = authUtils.getUserAccountFromAuthentication();
         if (!passwordEncoder.matches(request.getPasswordConfirm(), account.getHashPassword())) {
-            throw new ValidationException("Invalid password");
+            throw new ValidationException("Mật khẩu không hợp lệ");
         }
         var customer = account.getCustomer();
         if (customer == null) {
-            throw new ValidationException("Customer profile not found");
+            throw new ValidationException("Không tìm thấy hồ sơ khách hàng");
         }
 
         customer.setPhone(phone);
@@ -256,7 +256,7 @@ public class CustomerServiceImpl implements CustomerService {
             var result = customerRepository.save(customer);
             return mapToCustomerResponse(result);
         } catch (Exception ex) {
-            throw new ActionFailedException("Failed to update customer phone number", ex);
+            throw new ActionFailedException("Cập nhật số điện thoại khách hàng thất bại", ex);
         }
 
     }
@@ -265,7 +265,7 @@ public class CustomerServiceImpl implements CustomerService {
         var account = authUtils.getUserAccountFromAuthentication();
         var customer = account.getCustomer();
         if (customer == null) {
-            throw new ValidationException("Customer profile not found");
+            throw new ValidationException("Không tìm thấy hồ sơ khách hàng");
         }
         return customer;
     }
