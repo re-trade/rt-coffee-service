@@ -34,7 +34,7 @@ public class CategoryController {
         return ResponseEntity.ok(new ResponseObject.Builder<CategoryResponse>()
                 .success(true)
                 .code("CATEGORIES_RETRIEVED")
-                .messages("Categories retrieved successfully")
+                .messages("Lấy danh mục thành công")
                 .content(category)
                 .build());
     }
@@ -47,7 +47,7 @@ public class CategoryController {
         return ResponseEntity.ok(new ResponseObject.Builder<CategoryResponse>()
                 .success(true)
                 .code("CATEGORIES_RETRIEVED")
-                .messages("Categories retrieved successfully")
+                .messages("Lấy danh mục thành công")
                 .content(category)
                 .build());
     }
@@ -70,7 +70,7 @@ public class CategoryController {
         return ResponseEntity.ok(new ResponseObject.Builder<List<CategoryResponse>>()
                 .success(true)
                 .code("CATEGORIES_RETRIEVED")
-                .messages("Categories retrieved successfully")
+                .messages("Lấy danh mục thành công")
                 .unwrapPaginationWrapper(categories)
                 .build());
     }
@@ -88,7 +88,7 @@ public class CategoryController {
         return ResponseEntity.ok(new ResponseObject.Builder<List<CategoryResponse>>()
                 .success(true)
                 .code("CATEGORIES_RETRIEVED")
-                .messages("Categories retrieved successfully")
+                .messages("Lấy danh mục thành công")
                 .unwrapPaginationWrapper(categories)
                 .build());
     }
@@ -99,7 +99,7 @@ public class CategoryController {
         return ResponseEntity.ok(new ResponseObject.Builder<List<CategoryResponse>>()
                 .success(true)
                 .code("CATEGORIES_RETRIEVED")
-                .messages("Categories retrieved successfully")
+                .messages("Lấy danh mục thành công")
                 .content(response)
                 .build());
     }
@@ -110,7 +110,7 @@ public class CategoryController {
         return ResponseEntity.ok(new ResponseObject.Builder<CategoryResponse>()
                 .success(true)
                 .code("CATEGORY_RETRIEVED")
-                .messages("Category retrieved successfully")
+                .messages("Lấy danh mục thành công")
                 .content(category)
                 .build());
     }
@@ -121,7 +121,7 @@ public class CategoryController {
         return ResponseEntity.ok(new ResponseObject.Builder<CategoryResponse>()
                 .success(true)
                 .code("CATEGORY_RETRIEVED")
-                .messages("Category retrieved successfully")
+                .messages("Lấy danh mục thành công")
                 .content(category)
                 .build());
     }
@@ -136,7 +136,7 @@ public class CategoryController {
         return ResponseEntity.ok(new ResponseObject.Builder<List<CategoryResponse>>()
                 .success(true)
                 .code("CATEGORIES_RETRIEVED")
-                .messages("Categories retrieved successfully")
+                .messages("Lấy danh mục thành công")
                 .unwrapPaginationWrapper(response)
                 .build());
     }
@@ -158,7 +158,7 @@ public class CategoryController {
         return ResponseEntity.ok(new ResponseObject.Builder<List<CategoryResponse>>()
                 .success(true)
                 .code("CATEGORIES_RETRIEVED")
-                .messages("Child categories retrieved successfully")
+                .messages("Lấy danh mục con thành công")
                 .unwrapPaginationWrapper(categories)
                 .build());
     }
@@ -180,7 +180,7 @@ public class CategoryController {
         return ResponseEntity.ok(new ResponseObject.Builder<List<CategoryResponse>>()
                 .success(true)
                 .code("CATEGORIES_RETRIEVED")
-                .messages("Root categories retrieved successfully")
+                .messages("Lấy danh mục gốc thành công")
                 .unwrapPaginationWrapper(categories)
                 .build());
     }
@@ -202,7 +202,7 @@ public class CategoryController {
         return ResponseEntity.ok(new ResponseObject.Builder<List<CategoryResponse>>()
                 .success(true)
                 .code("CATEGORIES_RETRIEVED")
-                .messages("Categories by type retrieved successfully")
+                .messages("Lấy danh mục theo loại thành công")
                 .unwrapPaginationWrapper(categories)
                 .build());
     }
@@ -224,7 +224,7 @@ public class CategoryController {
         return ResponseEntity.ok(new ResponseObject.Builder<List<CategoryResponse>>()
                 .success(true)
                 .code("CATEGORIES_RETRIEVED")
-                .messages("Categories found successfully")
+                .messages("Tìm kiếm danh mục thành công")
                 .unwrapPaginationWrapper(categories)
                 .build());
     }
