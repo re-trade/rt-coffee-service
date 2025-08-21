@@ -7,9 +7,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.rabbitmq.client.Channel;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.retrade.achievement.client.TokenServiceClient;
 import org.retrade.achievement.model.message.AchievementMessage;
-import org.retrade.achievement.model.payload.OrderMessagePayload;
 import org.retrade.achievement.service.AchievementEvaluatorService;
 import org.retrade.achievement.service.MessageProducerService;
 import org.retrade.common.model.message.MessageObject;
@@ -36,7 +34,7 @@ public class SellerEventListener {
             byte[] body = rawMessage.getBody();
             objectMapper.registerModule(new JavaTimeModule());
             objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-            MessageObject<AchievementMessage<OrderMessagePayload>> wrapper = objectMapper.readValue(
+            MessageObject<AchievementMessage> wrapper = objectMapper.readValue(
                     body,
                     new TypeReference<>() {}
             );

@@ -10,6 +10,7 @@ import org.retrade.common.model.dto.request.QueryWrapper;
 import org.retrade.common.model.dto.response.PaginationWrapper;
 import org.retrade.common.model.exception.ActionFailedException;
 import org.retrade.common.model.exception.ValidationException;
+import org.retrade.main.model.constant.ConditionTypeCode;
 import org.retrade.main.model.constant.IdentityVerifiedStatusEnum;
 import org.retrade.main.model.constant.OrderStatusCodes;
 import org.retrade.main.model.dto.request.ApproveSellerRequest;
@@ -22,6 +23,7 @@ import org.retrade.main.model.dto.response.SellerStatusResponse;
 import org.retrade.main.model.entity.AccountRoleEntity;
 import org.retrade.main.model.entity.RoleEntity;
 import org.retrade.main.model.entity.SellerEntity;
+import org.retrade.main.model.message.AchievementMessage;
 import org.retrade.main.model.message.CCCDVerificationMessage;
 import org.retrade.main.model.message.CCCDVerificationResultMessage;
 import org.retrade.main.model.other.SellerWrapperBase;
@@ -107,6 +109,12 @@ public class SellerServiceImpl implements SellerService {
             sellerRepository.save(sellerEntity);
         } catch (Exception ex) {
             throw new ActionFailedException("Failed to approve seller", ex);
+        }
+        if (request.getApprove()) {
+            messageProducerService.sendAchievementMessage(AchievementMessage.builder()
+                            .sellerId(sellerEntity.getId())
+                            .eventType(ConditionTypeCode.BECOME_SELLER)
+                    .build());
         }
     }
 

@@ -5,10 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.retrade.common.model.message.MessageObject;
 import org.retrade.main.model.constant.ExchangeNameEnum;
 import org.retrade.main.model.constant.RoutingKeyEnum;
-import org.retrade.main.model.message.CCCDVerificationMessage;
-import org.retrade.main.model.message.EmailNotificationMessage;
-import org.retrade.main.model.message.SocketNotificationMessage;
-import org.retrade.main.model.message.UserRegistrationMessage;
+import org.retrade.main.model.message.*;
 import org.retrade.main.service.MessageProducerService;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -103,6 +100,23 @@ public class MessageProducerServiceImpl implements MessageProducerService {
         rabbitTemplate.convertAndSend(
                 ExchangeNameEnum.NOTIFICATION_EXCHANGE.getName(),
                 RoutingKeyEnum.SOCKET_NOTIFICATION_ROUTING_KEY.getName(),
+                messageWrapper
+        );
+    }
+
+    @Override
+    public void sendAchievementMessage(AchievementMessage message) {
+        var messageWrapper = new MessageObject.Builder<AchievementMessage>()
+                .withPayload(message)
+                .withMessageId(UUID.randomUUID().toString())
+                .withSource("main-service")
+                .withType("achievement-notification")
+                .withTimestamp(LocalDateTime.now())
+                .build();
+        log.info("Sending achievement message: {}", messageWrapper.getMessageId());
+        rabbitTemplate.convertAndSend(
+                ExchangeNameEnum.ACHIEVEMENT_EXCHANGE.getName(),
+                RoutingKeyEnum.ACHIEVEMENT_ROUTING_KEY.getName(),
                 messageWrapper
         );
     }

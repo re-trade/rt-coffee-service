@@ -9,6 +9,7 @@ import org.retrade.common.model.dto.request.QueryWrapper;
 import org.retrade.common.model.dto.response.PaginationWrapper;
 import org.retrade.common.model.exception.ActionFailedException;
 import org.retrade.common.model.exception.ValidationException;
+import org.retrade.main.model.constant.ConditionTypeCode;
 import org.retrade.main.model.constant.NotificationTypeCode;
 import org.retrade.main.model.constant.OrderStatusCodes;
 import org.retrade.main.model.dto.request.CancelOrderRequest;
@@ -16,6 +17,7 @@ import org.retrade.main.model.dto.request.CreateOrderRequest;
 import org.retrade.main.model.dto.request.OrderItemRequest;
 import org.retrade.main.model.dto.response.*;
 import org.retrade.main.model.entity.*;
+import org.retrade.main.model.message.AchievementMessage;
 import org.retrade.main.model.message.SocketNotificationMessage;
 import org.retrade.main.repository.jpa.*;
 import org.retrade.main.service.MessageProducerService;
@@ -373,6 +375,7 @@ public class OrderServiceImpl implements OrderService {
         }
         sendOrderStatusNotification(account, orderComboEntity, OrderStatusCodes.COMPLETED, false);
         sendOrderStatusNotification(sellerAccount, orderComboEntity, OrderStatusCodes.COMPLETED, true);
+        sendAchievementMessage(orderComboEntity.getSeller());
     }
 
     @Override
@@ -1106,6 +1109,19 @@ public class OrderServiceImpl implements OrderService {
 
         } catch (Exception e) {
             log.error("Gửi thông báo thất bại cho đơn {} với trạng thái {}", orderCombo.getId(), newStatusCode, e);
+        }
+    }
+
+    private void sendAchievementMessage(SellerEntity seller) {
+        try {
+            messageProducerService.sendAchievementMessage(
+                    AchievementMessage.builder()
+                            .sellerId(seller.getId())
+                            .eventType(ConditionTypeCode.ORDER_COMPLETED)
+                            .build()
+            );
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
         }
     }
 

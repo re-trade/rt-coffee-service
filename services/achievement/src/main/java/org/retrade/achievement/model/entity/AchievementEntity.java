@@ -1,9 +1,10 @@
 package org.retrade.achievement.model.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
+import jakarta.persistence.*;
 import lombok.*;
 import org.retrade.common.model.entity.BaseSQLEntity;
+
+import java.util.Set;
 
 @Getter
 @Setter
@@ -22,4 +23,6 @@ public class AchievementEntity extends BaseSQLEntity {
     private String icon;
     @Column(name = "activated", nullable = false, columnDefinition = "BOOLEAN DEFAULT FALSE")
     private Boolean isActivated;
+    @OneToMany(mappedBy = "achievement", fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    private Set<AchievementConditionEntity> conditions;
 }
