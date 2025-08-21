@@ -3,6 +3,7 @@ package org.retrade.main.repository.jpa;
 import org.retrade.common.repository.BaseJpaRepository;
 import org.retrade.main.model.entity.AccountEntity;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Repository;
 
@@ -22,5 +23,11 @@ public interface AccountRepository extends BaseJpaRepository<AccountEntity, Stri
     long countAccounts();
 
     long countByAccountRoles_Role_CodeNot(String code);
+
+
+    @Query("SELECT COUNT(a) FROM accounts a " +
+            "WHERE YEAR(a.createdDate) = :year " +
+            "AND MONTH(a.createdDate) = :month")
+    long countAccountsCreatedInMonth(@Param("year") int year, @Param("month") int month);
 
 }

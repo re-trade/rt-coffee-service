@@ -5,6 +5,7 @@ import org.retrade.main.model.constant.ProductStatusEnum;
 import org.retrade.main.model.entity.OrderEntity;
 import org.retrade.main.model.entity.ProductEntity;
 import org.retrade.main.model.entity.SellerEntity;
+import org.retrade.main.model.projection.ProductStatusCountProjection;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Modifying;
@@ -164,6 +165,11 @@ public interface ProductRepository extends BaseJpaRepository<ProductEntity, Stri
     """)
     int updateStatusForOutOfStock(@Param("oldStatus") ProductStatusEnum oldStatus,
                                   @Param("newStatus") ProductStatusEnum newStatus);
+
+    @Query("""
+        SELECT p.status AS status, COUNT(p) AS count FROM products p GROUP BY p.status
+    """)
+    List<ProductStatusCountProjection> getProductStatusCount();
 }
 
 

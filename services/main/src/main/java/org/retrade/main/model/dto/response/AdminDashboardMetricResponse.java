@@ -17,4 +17,7 @@ public class AdminDashboardMetricResponse {
     private BigDecimal totalProducts;
     private BigDecimal totalCategories;
     private BigDecimal totalSellers;
+    private Long newUsersThisMonth;
+    private BigDecimal revenueThisMonth;
+    private Long totalReport;
 }

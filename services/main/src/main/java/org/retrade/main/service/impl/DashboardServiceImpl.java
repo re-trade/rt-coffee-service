@@ -8,7 +8,6 @@ import org.retrade.main.model.constant.ProductStatusEnum;
 import org.retrade.main.model.dto.response.*;
 import org.retrade.main.model.projection.RevenueMonthProjection;
 import org.retrade.main.repository.jpa.*;
-import org.retrade.main.service.AccountService;
 import org.retrade.main.service.DashboardService;
 import org.retrade.main.util.AuthUtils;
 import org.retrade.main.util.DateUtils;
@@ -31,10 +30,11 @@ public class DashboardServiceImpl implements DashboardService {
     private final ProductRepository productRepository;
     private final OrderItemRepository orderItemRepository;
     private final OrderStatusRepository orderStatusRepository;
-    private final AccountService accountService;
+    private final SellerRevenueRepository sellerRevenueRepository;
     private final AccountRepository accountRepository;
     private final CategoryRepository categoryRepository;
     private final SellerRepository sellerRepository;
+    private final ReportSellerRepository sellerReportRepository;
 
     @Override
     public List<DashboardMetricResponse> getSellerDashboardMetric(LocalDateTime fromDate, LocalDateTime toDate) {
@@ -209,18 +209,47 @@ public class DashboardServiceImpl implements DashboardService {
 
     @Override
     public AdminDashboardMetricResponse getAdminDashboardMetric() {
+        var currentDate  = LocalDateTime.now();
         var totalUsers = accountRepository.count();
         var totalOrders = orderComboRepository.count();
         var totalProducts = productRepository.count();
         var totalCategories = categoryRepository.count();
         var totalSeller = sellerRepository.count();
+        var newUsersThisMonth = accountRepository.countAccountsCreatedInMonth(currentDate.getYear(), currentDate.getMonthValue());
+        var revenueThisMonth = sellerRevenueRepository.calculateAdminRevenueByMonthAndYear(currentDate.getYear(), currentDate.getMonthValue());
+        var totalReport = sellerReportRepository.count();
         return AdminDashboardMetricResponse.builder()
                 .totalUsers(BigDecimal.valueOf(totalUsers))
                 .totalOrders(BigDecimal.valueOf(totalOrders))
                 .totalProducts(BigDecimal.valueOf(totalProducts))
                 .totalCategories(BigDecimal.valueOf(totalCategories))
                 .totalSellers(BigDecimal.valueOf(totalSeller))
+                .newUsersThisMonth(newUsersThisMonth)
+                .revenueThisMonth(revenueThisMonth)
+                .totalReport(totalReport)
                 .build();
+    }
+
+    @Override
+    public List<RevenuePerMonthResponse> getPlatformRevenuePerMonth(int year) {
+        var rawResult =  sellerRevenueRepository.getRevenuePerMonth(year);
+        Map<Integer, BigDecimal> map = rawResult.stream()
+                .collect(Collectors.toMap(
+                        RevenueMonthProjection::getMonth,
+                        RevenueMonthProjection::getTotal
+                ));
+        return IntStream.rangeClosed(1, 12)
+                .mapToObj(month -> RevenuePerMonthResponse.builder()
+                        .month(month)
+                        .total(map.getOrDefault(month, BigDecimal.ZERO))
+                        .build())
+                .toList();
+    }
+
+    @Override
+    public List<ReviewMetricResponse> getProductReviewStatusMetricResponse() {
+        var result = productRepository.getProductStatusCount();
+        return result.stream().map(item -> new ReviewMetricResponse(item.getStatus(), item.getCount())).toList();
     }
 
 }
