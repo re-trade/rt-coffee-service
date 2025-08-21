@@ -35,7 +35,7 @@ public class CustomerAddressController {
                 .success(true)
                 .code("SUCCESS")
                 .unwrapPaginationWrapper(result)
-                .messages("Get Customer Contacts successful")
+                .messages("Lấy liên hệ khách hàng thành công")
                 .build());
     }
 
@@ -47,7 +47,7 @@ public class CustomerAddressController {
                 .success(true)
                 .code("SUCCESS")
                 .content(result)
-                .messages("Customer profile updated successfully")
+                .messages("Cập nhật hồ sơ khách hàng thành công")
                 .build());
     }
 
@@ -58,7 +58,7 @@ public class CustomerAddressController {
                 .success(true)
                 .code("SUCCESS")
                 .content(result)
-                .messages("Customer address updated successfully")
+                .messages("Cập nhật địa chỉ khách hàng thành công")
                 .build());
     }
 
@@ -69,7 +69,7 @@ public class CustomerAddressController {
                 .success(true)
                 .code("SUCCESS")
                 .content(result)
-                .messages("Customer profile updated successfully")
+                .messages("Cập nhật hồ sơ khách hàng thành công")
                 .build());
     }
 
@@ -80,7 +80,7 @@ public class CustomerAddressController {
                 .success(true)
                 .code("SUCCESS")
                 .content(result)
-                .messages("Customer profile updated successfully")
+                .messages("Cập nhật hồ sơ khách hàng thành công")
                 .build());
     }
 }

@@ -46,7 +46,7 @@ public class CustomerController {
                 .success(true)
                 .code("SUCCESS")
                 .content(result)
-                .messages("Customer profile retrieved successfully")
+                .messages("Lấy thông tin hồ sơ khách hàng thành công")
                 .build());
     }
 
@@ -59,7 +59,7 @@ public class CustomerController {
                 .success(true)
                 .code("SUCCESS")
                 .content(result)
-                .messages("Customer profile updated successfully")
+                .messages("Cập nhật hồ sơ khách hàng thành công")
                 .build());
     }
 
@@ -71,7 +71,7 @@ public class CustomerController {
         return ResponseEntity.ok(new ResponseObject.Builder<Void>()
                 .success(true)
                 .code("SUCCESS")
-                .messages("Customer avatar updated successfully")
+                .messages("Cập nhật ảnh đại diện khách hàng thành công")
                 .build());
     }
 
@@ -83,7 +83,7 @@ public class CustomerController {
                 .success(true)
                 .code("SUCCESS")
                 .content(response)
-                .messages("Account password reset successfully")
+                .messages("Cập nhật số điện thoại khách hàng thành công")
                 .build());
     }
 
@@ -101,7 +101,7 @@ public class CustomerController {
                 .success(true)
                 .code("SUCCESS")
                 .unwrapPaginationWrapper(result)
-                .messages("Customers retrieved successfully")
+                .messages("Lấy danh sách khách hàng thành công")
                 .build());
     }
 
@@ -112,7 +112,7 @@ public class CustomerController {
         return ResponseEntity.ok(new ResponseObject.Builder<Void>()
                 .success(true)
                 .code("SUCCESS")
-                .messages("ban customer with" + id + "successfully")
+                .messages("Khóa tài khoản khách hàng với ID: " + id + "thành công")
                 .build());
     }
     @PutMapping("{id}/enable")
@@ -122,7 +122,7 @@ public class CustomerController {
         return ResponseEntity.ok(new ResponseObject.Builder<Void>()
                 .success(true)
                 .code("SUCCESS")
-                .messages("Unban customer with" + id + "successfully")
+                .messages("Mở khóa tài khoản khách hàng với ID: " + id + "thành công")
                 .build());
     }
 
@@ -135,7 +135,7 @@ public class CustomerController {
                         .code("SUCCESS")
                         .success(true)
                         .content(result)
-                        .messages("Customer bank info retrieved successfully")
+                        .messages("Lấy thông tin ngân hàng của khách hàng thành công")
                         .build()
         );
     }
@@ -152,7 +152,7 @@ public class CustomerController {
                         .code("SUCCESS")
                         .success(true)
                         .unwrapPaginationWrapper(result)
-                        .messages("Customer bank info retrieved successfully")
+                        .messages("Lấy thông tin ngân hàng của khách hàng thành công")
                         .build()
         );
     }
@@ -165,7 +165,7 @@ public class CustomerController {
                         .code("SUCCESS")
                         .success(true)
                         .content(result)
-                        .messages("Customer bank info created successfully")
+                        .messages("Thêm thông tin ngân hàng thành công")
                 .build());
     }
 
@@ -176,7 +176,7 @@ public class CustomerController {
                 .code("SUCCESS")
                 .success(true)
                 .content(result)
-                .messages("Customer bank info created successfully")
+                .messages("Cập nhật thông tin ngân hàng khách hàng thành công")
                 .build());
     }
 
@@ -187,7 +187,7 @@ public class CustomerController {
                 .code("SUCCESS")
                 .success(true)
                 .content(result)
-                .messages("Customer bank info deleted successfully")
+                .messages("Xóa thông tin ngân hàng thành công")
                 .build());
     }
 
@@ -198,7 +198,7 @@ public class CustomerController {
                 .code("SUCCESS")
                 .success(true)
                 .content(result)
-                .messages("Customer metric info retrieved successfully")
+                .messages("Lấy thông tin thống kê khách hàng thành công")
                 .build());
     }
 }

@@ -30,13 +30,13 @@ public class CustomerBankInfoServiceImpl implements CustomerBankInfoService {
 
     @Override
     public CustomerBankInfoResponse getCustomerBankInfoById(String id) {
-        var result = customerBankInfoRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Customer bank info not found for ID: " + id));
+        var result = customerBankInfoRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Không tìm thâ thông tin ngân hàng của khách hàng với ID: " + id));
         var account = authUtils.getUserAccountFromAuthentication();
         var customer = account.getCustomer();
         if (customer != null && customer.getId().equals(result.getCustomer().getId()) ) {
             return wrapCustomerBankResponse(result);
         }
-        throw new ValidationException("Customer bank info not found for ID: " + id);
+        throw new ValidationException("Không tìm thâ thông tin ngân hàng của khách hàng với ID: " + id);
     }
 
     @Override
@@ -44,7 +44,7 @@ public class CustomerBankInfoServiceImpl implements CustomerBankInfoService {
         var account = authUtils.getUserAccountFromAuthentication();
         var customer = account.getCustomer();
         if (customer == null) {
-            throw new ValidationException("User is not a customer, please register customer or contact with Admin");
+            throw new ValidationException("Người dùng không phải là khách hàng, vui lòng đăng ký tài khoản khách hàng hoặc liên hệ Quản trị viên");
         }
         var entity = CustomerBankInfoEntity.builder()
                 .bankName(request.getBankName())
@@ -57,7 +57,7 @@ public class CustomerBankInfoServiceImpl implements CustomerBankInfoService {
             var result = customerBankInfoRepository.save(entity);
             return wrapCustomerBankResponse(result);
         } catch (Exception ex) {
-            throw new ActionFailedException("Failed to create customer bank info", ex);
+            throw new ActionFailedException("Tạo thông tin ngân hàng thất bại ", ex);
         }
     }
 
@@ -72,7 +72,7 @@ public class CustomerBankInfoServiceImpl implements CustomerBankInfoService {
             var result = customerBankInfoRepository.save(entity);
             return wrapCustomerBankResponse(result);
         } catch (Exception ex) {
-            throw new ActionFailedException("Failed to create customer bank info", ex);
+            throw new ActionFailedException("Tạo thông tin ngân hàng thất bại ", ex);
         }
     }
 
@@ -95,7 +95,7 @@ public class CustomerBankInfoServiceImpl implements CustomerBankInfoService {
         var account = authUtils.getUserAccountFromAuthentication();
         var customer = account.getCustomer();
         if (customer == null) {
-            throw new ValidationException("User is not a customer, please register customer or contact with Admin");
+            throw new ValidationException("Người dùng không phải là khách hàng, vui lòng đăng ký tài khoản khách hàng hoặc liên hệ Quản trị viên");
         }
         return customerBankInfoRepository.query(queryWrapper, (param) -> (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
@@ -117,7 +117,7 @@ public class CustomerBankInfoServiceImpl implements CustomerBankInfoService {
             customerBankInfoRepository.delete(entity);
             return wrapCustomerBankResponse(entity);
         } catch (Exception ex) {
-            throw new ActionFailedException("Failed to remove customer bank info", ex);
+            throw new ActionFailedException("Xóa thông tin khách hàng thất bại ", ex);
         }
     }
 
@@ -126,11 +126,11 @@ public class CustomerBankInfoServiceImpl implements CustomerBankInfoService {
         var account = authUtils.getUserAccountFromAuthentication();
         var customer = account.getCustomer();
         if (customer == null) {
-            throw new ValidationException("User is not a customer, please register customer or contact with Admin");
+            throw new ValidationException("Người dùng không phải là khách hàng, vui lòng đăng ký tài khoản khách hàng hoặc liên hệ Quản trị viên");
         }
         var entity = customerBankInfoRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Customer bank info not found for ID: " + id));
         if (!customer.getId().equals(entity.getCustomer().getId())) {
-            throw new ValidationException("Customer bank info not found for ID: " + id);
+            throw new ValidationException("Không tìm thâ thông tin ngân hàng của khách hàng với ID: " + id);
         }
         return entity;
     }
