@@ -7,10 +7,8 @@ import org.retrade.main.model.constant.OrderStatusCodes;
 import org.retrade.main.model.constant.ProductStatusEnum;
 import org.retrade.main.model.dto.response.*;
 import org.retrade.main.model.projection.RevenueMonthProjection;
-import org.retrade.main.repository.jpa.OrderComboRepository;
-import org.retrade.main.repository.jpa.OrderItemRepository;
-import org.retrade.main.repository.jpa.OrderStatusRepository;
-import org.retrade.main.repository.jpa.ProductRepository;
+import org.retrade.main.repository.jpa.*;
+import org.retrade.main.service.AccountService;
 import org.retrade.main.service.DashboardService;
 import org.retrade.main.util.AuthUtils;
 import org.retrade.main.util.DateUtils;
@@ -33,6 +31,10 @@ public class DashboardServiceImpl implements DashboardService {
     private final ProductRepository productRepository;
     private final OrderItemRepository orderItemRepository;
     private final OrderStatusRepository orderStatusRepository;
+    private final AccountService accountService;
+    private final AccountRepository accountRepository;
+    private final CategoryRepository categoryRepository;
+    private final SellerRepository sellerRepository;
 
     @Override
     public List<DashboardMetricResponse> getSellerDashboardMetric(LocalDateTime fromDate, LocalDateTime toDate) {
@@ -193,7 +195,7 @@ public class DashboardServiceImpl implements DashboardService {
         }
         var seller = account.getSeller();
         var orderStatus = orderStatusRepository.findByCode(OrderStatusCodes.COMPLETED).orElseThrow(() -> new ValidationException("Order status not found"));
-        var totalOrder = orderComboRepository.countBySeller(seller);
+        var totalOrder = orderComboRepository.countBySellerAndOrderStatus_CodeNot(seller, OrderStatusCodes.PENDING);
         var orderCompleted = orderComboRepository.countBySellerAndOrderStatus_Code(seller, OrderStatusCodes.COMPLETED);
         var orderCancel = orderComboRepository.countBySellerAndOrderStatus_Code(seller, OrderStatusCodes.CANCELLED);
         var totalReceive = orderComboRepository.getTotalGrandPriceBySellerAndStatus(seller, orderStatus);
@@ -202,6 +204,22 @@ public class DashboardServiceImpl implements DashboardService {
                 .orderCancelled(orderCancel)
                 .totalPaymentReceived(totalReceive)
                 .totalOrder(totalOrder)
+                .build();
+    }
+
+    @Override
+    public AdminDashboardMetricResponse getAdminDashboardMetric() {
+        var totalUsers = accountRepository.count();
+        var totalOrders = orderComboRepository.count();
+        var totalProducts = productRepository.count();
+        var totalCategories = categoryRepository.count();
+        var totalSeller = sellerRepository.count();
+        return AdminDashboardMetricResponse.builder()
+                .totalUsers(BigDecimal.valueOf(totalUsers))
+                .totalOrders(BigDecimal.valueOf(totalOrders))
+                .totalProducts(BigDecimal.valueOf(totalProducts))
+                .totalCategories(BigDecimal.valueOf(totalCategories))
+                .totalSellers(BigDecimal.valueOf(totalSeller))
                 .build();
     }
 

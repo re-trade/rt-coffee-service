@@ -6,6 +6,7 @@ import org.retrade.main.model.dto.response.*;
 import org.retrade.main.service.DashboardService;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -98,6 +99,18 @@ public class DashboardController {
                 .code("SELLER_DASHBOARD_RETRIEVED")
                 .content(result)
                 .messages("Seller Dashboard retrieved successfully")
+                .build());
+    }
+
+    @GetMapping("admin/metric")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    public ResponseEntity<ResponseObject<AdminDashboardMetricResponse>> getAdminDashboardMetric() {
+        var result = dashboardService.getAdminDashboardMetric();
+        return ResponseEntity.ok(new ResponseObject.Builder<AdminDashboardMetricResponse>()
+                .success(true)
+                .code("ADMIN_DASHBOARD_RETRIEVED")
+                .content(result)
+                .messages("Admin Dashboard retrieved successfully")
                 .build());
     }
 

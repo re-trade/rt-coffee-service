@@ -45,6 +45,8 @@ public class SellerEntity extends BaseSQLEntity {
     @Enumerated(EnumType.ORDINAL)
     @Column(name = "identity_verified", nullable = false, columnDefinition = "SMALLINT DEFAULT 0")
     private IdentityVerifiedStatusEnum identityVerified;
+    @Column(name = "reject_reason", length = 255)
+    private String rejectReason;
     @OneToOne(fetch = FetchType.EAGER, optional = false, targetEntity = AccountEntity.class)
     @JoinColumn(name = "account_id", nullable = false)
     private AccountEntity account;

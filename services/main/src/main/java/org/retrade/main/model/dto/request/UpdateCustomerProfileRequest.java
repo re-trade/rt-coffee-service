@@ -26,8 +26,6 @@ public class UpdateCustomerProfileRequest {
     @NotEmpty(message = "Address is required")
     @NotNull(message = "Address cannot be null")
     private String address;
-    @NotEmpty(message = "Avatar url is required")
-    @NotNull(message = "Avatar url cannot be null")
     private String avatarUrl;
     @Min(value = 0, message = "Gender must be between 0 and 2")
     @NotNull(message = "Gender cannot be null")

@@ -19,4 +19,6 @@ public interface DashboardService {
     SellerProductBaseMetricResponse getSellerProductMetric();
 
     SellerOrderBaseMetricResponse getSellerOrderMetric();
+
+    AdminDashboardMetricResponse getAdminDashboardMetric();
 }
