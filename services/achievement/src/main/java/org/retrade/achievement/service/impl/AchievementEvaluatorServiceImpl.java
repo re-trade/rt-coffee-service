@@ -14,6 +14,7 @@ import org.retrade.achievement.service.AchievementEvaluatorService;
 import org.retrade.achievement.service.MessageProducerService;
 import org.retrade.common.model.exception.ValidationException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -32,6 +33,7 @@ public class AchievementEvaluatorServiceImpl implements AchievementEvaluatorServ
     private final TokenServiceClient tokenServiceClient;
 
     @Override
+    @Transactional
     public void evaluate(String sellerId, String type) {
         var totalOrders = orderServiceClient.getOrderCount(sellerId);
         var achievementUnlocked = new ArrayList<AchievementEntity>();
