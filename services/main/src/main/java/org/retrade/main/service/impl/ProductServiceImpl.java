@@ -470,7 +470,7 @@ public class ProductServiceImpl implements ProductService {
     public ProductHomeStatsResponse getStatsHome() {
         var totalProducts = productRepository.countVerifiedProducts();
         var totalProductSell= productRepository.countDistinctSoldVerifiedProducts(OrderStatusCodes.COMPLETED);
-        var totalAccount = accountRepository.countAccounts();
+        var totalAccount = accountRepository.countByAccountRoles_Role_CodeNot("ROLE_ADMIN");
 
         var totalOrder = orderComboRepository.countByOrderStatus();
 

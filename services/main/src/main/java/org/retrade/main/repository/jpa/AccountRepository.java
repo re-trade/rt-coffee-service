@@ -20,4 +20,7 @@ public interface AccountRepository extends BaseJpaRepository<AccountEntity, Stri
 
     @Query("SELECT COUNT(a) from  accounts a where a.enabled = true ")
     long countAccounts();
+
+    long countByAccountRoles_Role_CodeNot(String code);
+
 }
