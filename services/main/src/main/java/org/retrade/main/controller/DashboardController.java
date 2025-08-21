@@ -114,4 +114,26 @@ public class DashboardController {
                 .build());
     }
 
+    @GetMapping("admin/revenue")
+    public ResponseEntity<ResponseObject<List<RevenuePerMonthResponse>>> getPlatformRevenuePerMonth(int year) {
+        var result = dashboardService.getPlatformRevenuePerMonth(year);
+        return ResponseEntity.ok(new ResponseObject.Builder<List<RevenuePerMonthResponse>>()
+                .success(true)
+                .code("ADMIN_DASHBOARD_RETRIEVED")
+                .content(result)
+                .messages("Admin Dashboard retrieved successfully")
+                .build());
+    }
+
+    @GetMapping("admin/product-stats")
+    public ResponseEntity<ResponseObject<List<ReviewMetricResponse>>> getPlatformProductStatusMetric() {
+        var result = dashboardService.getProductReviewStatusMetricResponse();
+        return ResponseEntity.ok(new ResponseObject.Builder<List<ReviewMetricResponse>>()
+                .success(true)
+                .code("ADMIN_DASHBOARD_RETRIEVED")
+                .content(result)
+                .messages("Admin Dashboard retrieved successfully")
+                .build());
+    }
+
 }

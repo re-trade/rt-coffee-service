@@ -9,8 +9,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class AchievementMessage <T> {
+public class AchievementMessage {
     private String sellerId;
     private String eventType;
-    private T payload;
 }

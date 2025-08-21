@@ -4,13 +4,16 @@ import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.retrade.common.model.dto.request.QueryFieldWrapper;
 import org.retrade.common.model.dto.request.QueryWrapper;
 import org.retrade.common.model.dto.response.PaginationWrapper;
 import org.retrade.common.model.exception.ActionFailedException;
 import org.retrade.common.model.exception.ValidationException;
+import org.retrade.main.model.constant.ConditionTypeCode;
 import org.retrade.main.model.constant.IdentityVerifiedStatusEnum;
+import org.retrade.main.model.constant.NotificationTypeCode;
 import org.retrade.main.model.constant.OrderStatusCodes;
 import org.retrade.main.model.dto.request.ApproveSellerRequest;
 import org.retrade.main.model.dto.request.SellerRegisterRequest;
@@ -22,8 +25,10 @@ import org.retrade.main.model.dto.response.SellerStatusResponse;
 import org.retrade.main.model.entity.AccountRoleEntity;
 import org.retrade.main.model.entity.RoleEntity;
 import org.retrade.main.model.entity.SellerEntity;
+import org.retrade.main.model.message.AchievementMessage;
 import org.retrade.main.model.message.CCCDVerificationMessage;
 import org.retrade.main.model.message.CCCDVerificationResultMessage;
+import org.retrade.main.model.message.SocketNotificationMessage;
 import org.retrade.main.model.other.SellerWrapperBase;
 import org.retrade.main.repository.jpa.*;
 import org.retrade.main.service.MessageProducerService;
@@ -34,6 +39,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class SellerServiceImpl implements SellerService {
@@ -107,6 +113,23 @@ public class SellerServiceImpl implements SellerService {
             sellerRepository.save(sellerEntity);
         } catch (Exception ex) {
             throw new ActionFailedException("Failed to approve seller", ex);
+        }
+        if (request.getApprove()) {
+            sendSellerMessageEvent(sellerEntity);
+        }else {
+            try {
+                var notification = SocketNotificationMessage.builder()
+                        .messageId(UUID.randomUUID().toString())
+                        .accountId(sellerEntity.getAccount().getId())
+                        .title("Đăng ký thất bại")
+                        .message("Rất tiếc! Yêu cầu đăng ký người bán của bạn không thành công.")
+                        .content("Vui lòng kiểm tra lại thông tin đã cung cấp hoặc liên hệ hỗ trợ để được hướng dẫn thêm.")
+                        .type(NotificationTypeCode.SYSTEM)
+                        .build();
+                messageProducerService.sendSocketNotification(notification);
+            } catch (Exception ex) {
+                log.error("Failed to send seller message event", ex);
+            }
         }
     }
 
@@ -304,6 +327,26 @@ public class SellerServiceImpl implements SellerService {
         seller.setVerified(true);
         sellerRepository.save(seller);
         return wrapSellerResponse(seller);
+    }
+
+    private void sendSellerMessageEvent(SellerEntity sellerEntity) {
+        try {
+            messageProducerService.sendAchievementMessage(AchievementMessage.builder()
+                    .sellerId(sellerEntity.getId())
+                    .eventType(ConditionTypeCode.BECOME_SELLER)
+                    .build());
+            var notification = SocketNotificationMessage.builder()
+                    .messageId(UUID.randomUUID().toString())
+                    .accountId(sellerEntity.getAccount().getId())
+                    .title("Chào mừng Người bán!")
+                    .message("Chúc mừng! Tài khoản người bán của bạn đã được kích hoạt.")
+                    .content("Bạn đã chính thức trở thành người bán. Hãy bắt đầu đăng sản phẩm và phát triển ngay hôm nay!")
+                    .type(NotificationTypeCode.SYSTEM)
+                    .build();
+            messageProducerService.sendSocketNotification(notification);
+        } catch (Exception ex) {
+            log.error("Failed to send seller message event", ex);
+        }
     }
 
     private SellerResponse wrapSellerResponse(SellerEntity sellerEntity) {

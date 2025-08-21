@@ -21,4 +21,8 @@ public interface DashboardService {
     SellerOrderBaseMetricResponse getSellerOrderMetric();
 
     AdminDashboardMetricResponse getAdminDashboardMetric();
+
+    List<RevenuePerMonthResponse> getPlatformRevenuePerMonth(int year);
+
+    List<ReviewMetricResponse> getProductReviewStatusMetricResponse();
 }

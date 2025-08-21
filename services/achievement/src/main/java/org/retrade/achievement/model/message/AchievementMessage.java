@@ -11,8 +11,7 @@ import java.io.Serializable;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class AchievementMessage <T> implements Serializable {
+public class AchievementMessage implements Serializable {
     private String sellerId;
     private String eventType;
-    private T payload;
 }
