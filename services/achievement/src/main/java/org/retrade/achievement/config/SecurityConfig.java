@@ -26,7 +26,7 @@ public class SecurityConfig {
         http.cors(cors -> cors.configurationSource(corsConfig.corsConfigurationSource()));
         http.authorizeHttpRequests((auth) -> auth.requestMatchers("/api-docs/**", "/swagger-ui/**","/actuator/health")
                 .permitAll()
-                .requestMatchers(HttpMethod.GET, "/achievements/**", "/seller-achievements/sellers/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/achievements/**", "/seller-achievements/seller/*/completed").permitAll()
                 .anyRequest().authenticated());
         http.exceptionHandling(exception -> {
             exception.authenticationEntryPoint(customAuthenticationEntryPoint);
