@@ -128,7 +128,10 @@ public class ProductServiceImpl implements ProductService {
 
         var newCategories = convertCategoryIdsToEntities(request.getCategoryIds());
         validateReTradeUpdate(product, request, newCategories);
-
+        if (!isOnlyQuantityChanged(product, request, newCategories)) {
+            product.setVerified(false);
+            product.setStatus(ProductStatusEnum.DRAFT);
+        }
         product.setName(request.getName());
         product.setShortDescription(request.getShortDescription());
         product.setDescription(request.getDescription());
@@ -143,11 +146,6 @@ public class ProductServiceImpl implements ProductService {
         product.setQuantity(request.getQuantity() != null ? request.getQuantity() : 1);
         product.setWarrantyExpiryDate(request.getWarrantyExpiryDate());
         product.setCondition(request.getCondition());
-
-        if (!isOnlyQuantityChanged(product, request, newCategories)) {
-            product.setVerified(false);
-            product.setStatus(ProductStatusEnum.DRAFT);
-        }
 
         try {
             var updatedProduct = productRepository.save(product);
@@ -483,19 +481,50 @@ public class ProductServiceImpl implements ProductService {
     }
 
     private boolean isOnlyQuantityChanged(ProductEntity oldProduct, UpdateProductRequest request, Set<CategoryEntity> newCategories) {
-        return !Objects.equals(oldProduct.getQuantity(), request.getQuantity()) &&
-                Objects.equals(oldProduct.getName(), request.getName()) &&
-                Objects.equals(oldProduct.getShortDescription(), request.getShortDescription()) &&
-                Objects.equals(oldProduct.getDescription(), request.getDescription()) &&
-                Objects.equals(oldProduct.getThumbnail(), request.getThumbnail()) &&
-                Objects.equals(oldProduct.getProductImages(), request.getProductImages()) &&
-                Objects.equals(oldProduct.getBrand().getId(), request.getBrandId()) &&
-                Objects.equals(oldProduct.getModel(), request.getModel()) &&
-                Objects.equals(oldProduct.getCurrentPrice(), request.getCurrentPrice()) &&
-                Objects.equals(oldProduct.getCategories(), newCategories) &&
-                Objects.equals(oldProduct.getTags(), request.getTags()) &&
-                Objects.equals(oldProduct.getWarrantyExpiryDate(), request.getWarrantyExpiryDate()) &&
-                Objects.equals(oldProduct.getCondition(), request.getCondition());
+        List<String> oldImages = new ArrayList<>(oldProduct.getProductImages());
+        List<String> newImages = new ArrayList<>(request.getProductImages());
+        Collections.sort(oldImages);
+        Collections.sort(newImages);
+        Set<String> oldTags = new HashSet<>(oldProduct.getTags());
+        Set<String> newTags = new HashSet<>(request.getTags());
+        Set<String> oldCategoryIds = oldProduct.getCategories()
+                .stream()
+                .map(CategoryEntity::getId)
+                .collect(Collectors.toSet());
+        Set<String> newCategoryIds = newCategories
+                .stream()
+                .map(CategoryEntity::getId)
+                .collect(Collectors.toSet());
+        boolean quantityChanged      = !Objects.equals(oldProduct.getQuantity(), request.getQuantity());
+        boolean nameEqual            = Objects.equals(oldProduct.getName(), request.getName());
+        boolean shortDescEqual       = Objects.equals(oldProduct.getShortDescription(), request.getShortDescription());
+        boolean descEqual            = Objects.equals(oldProduct.getDescription(), request.getDescription());
+        boolean thumbnailEqual       = Objects.equals(oldProduct.getThumbnail(), request.getThumbnail());
+        boolean imagesEqual          = Objects.equals(oldImages, newImages);
+        boolean brandEqual           = Objects.equals(oldProduct.getBrand().getId(), request.getBrandId());
+        boolean modelEqual           = Objects.equals(oldProduct.getModel(), request.getModel());
+        boolean priceEqual = oldProduct.getCurrentPrice() == null && request.getCurrentPrice() == null
+                || (oldProduct.getCurrentPrice() != null
+                && request.getCurrentPrice() != null
+                && oldProduct.getCurrentPrice().compareTo(request.getCurrentPrice()) == 0);
+
+        boolean categoriesEqual      = Objects.equals(oldCategoryIds, newCategoryIds);
+        boolean tagsEqual            = Objects.equals(oldTags, newTags);
+        boolean warrantyEqual        = Objects.equals(oldProduct.getWarrantyExpiryDate(), request.getWarrantyExpiryDate());
+        boolean conditionEqual       = Objects.equals(oldProduct.getCondition(), request.getCondition());
+        return quantityChanged &&
+                nameEqual &&
+                shortDescEqual &&
+                descEqual &&
+                thumbnailEqual &&
+                imagesEqual &&
+                brandEqual &&
+                modelEqual &&
+                priceEqual &&
+                categoriesEqual &&
+                tagsEqual &&
+                warrantyEqual &&
+                conditionEqual;
     }
 
     private void validateReTradeUpdate(ProductEntity oldProduct, UpdateProductRequest request, Set<CategoryEntity> newCategories) {
