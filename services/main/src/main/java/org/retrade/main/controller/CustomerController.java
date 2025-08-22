@@ -143,7 +143,7 @@ public class CustomerController {
     @GetMapping("me/bank-info")
     @PreAuthorize("hasRole('ROLE_CUSTOMER')")
     public ResponseEntity<ResponseObject<List<CustomerBankInfoResponse>>> getCustomerById(@PageableDefault Pageable pageable, @RequestParam(required = false) String q) {
-        var result = customerBankInfoService.getCustomerBankInfos(QueryWrapper.builder()
+        var result = customerBankInfoService.getUserCustomerBankInfos(QueryWrapper.builder()
                         .search(q)
                         .wrapSort(pageable)
                 .build());
