@@ -11,12 +11,13 @@ import org.retrade.common.model.dto.request.QueryWrapper;
 import org.retrade.common.model.dto.response.PaginationWrapper;
 import org.retrade.common.model.exception.ActionFailedException;
 import org.retrade.common.model.exception.ValidationException;
+import org.retrade.main.model.document.ProductDocument;
 import org.retrade.main.model.dto.request.BrandRequest;
 import org.retrade.main.model.dto.response.BrandResponse;
 import org.retrade.main.model.dto.response.CategoryBaseResponse;
-import org.retrade.main.model.dto.response.CategoryResponse;
 import org.retrade.main.model.entity.BrandEntity;
 import org.retrade.main.model.entity.CategoryEntity;
+import org.retrade.main.repository.elasticsearch.ProductElasticsearchRepository;
 import org.retrade.main.repository.jpa.BrandRepository;
 import org.retrade.main.repository.jpa.CategoryRepository;
 import org.retrade.main.service.BrandService;
@@ -31,6 +32,7 @@ import java.util.stream.Collectors;
 public class BrandServiceImpl implements BrandService {
     private final BrandRepository brandRepository;
     private final CategoryRepository categoryRepository;
+    private final ProductElasticsearchRepository productElasticsearchRepository;
 
     @Override
     @Transactional
@@ -66,6 +68,7 @@ public class BrandServiceImpl implements BrandService {
         }
         try {
             var response = brandRepository.save(brand);
+            updateProductDocumentWhenBrandChange(id, request.getName());
             return mapToBrandResponse(response);
         } catch (Exception ex) {
             throw new ActionFailedException("Không thể cập nhật thương hiệu", ex);
@@ -76,6 +79,10 @@ public class BrandServiceImpl implements BrandService {
     public PaginationWrapper<List<BrandResponse>> getAllBrands(QueryWrapper queryWrapper) {
         return brandRepository.query(queryWrapper, (param) -> (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
+            var keyword = queryWrapper.search().remove("keyword");
+            if (keyword != null) {
+                predicates.add(criteriaBuilder.like(root.get("name"), "%" + keyword.getValue().toString() + "%"));
+            }
             return getPredicate(param, root, criteriaBuilder, predicates);
         }, (items) -> {
             var list = items.map(this::mapToBrandResponse).stream().toList();
@@ -135,6 +142,25 @@ public class BrandServiceImpl implements BrandService {
         }
         return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
     }
+
+    private void updateProductDocumentWhenBrandChange(String brandId, String brandName) {
+        int batchSize = 100;
+        List<ProductDocument> batch = new ArrayList<>();
+        try (var productDocumentStream = productElasticsearchRepository.findByBrandId(brandId)) {
+            productDocumentStream.forEach(product -> {
+                product.setBrand(brandName);
+                batch.add(product);
+                if (batch.size() >= batchSize) {
+                    productElasticsearchRepository.saveAll(batch);
+                    batch.clear();
+                }
+            });
+            if (!batch.isEmpty()) {
+                productElasticsearchRepository.saveAll(batch);
+            }
+        }
+    }
+
 
     private BrandResponse mapToBrandResponse(BrandEntity brandEntity) {
         return BrandResponse.builder()

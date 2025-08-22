@@ -15,6 +15,7 @@ import org.retrade.main.model.constant.ConditionTypeCode;
 import org.retrade.main.model.constant.IdentityVerifiedStatusEnum;
 import org.retrade.main.model.constant.NotificationTypeCode;
 import org.retrade.main.model.constant.OrderStatusCodes;
+import org.retrade.main.model.document.ProductDocument;
 import org.retrade.main.model.dto.request.ApproveSellerRequest;
 import org.retrade.main.model.dto.request.SellerRegisterRequest;
 import org.retrade.main.model.dto.request.SellerUpdateRequest;
@@ -30,6 +31,7 @@ import org.retrade.main.model.message.CCCDVerificationMessage;
 import org.retrade.main.model.message.CCCDVerificationResultMessage;
 import org.retrade.main.model.message.SocketNotificationMessage;
 import org.retrade.main.model.other.SellerWrapperBase;
+import org.retrade.main.repository.elasticsearch.ProductElasticsearchRepository;
 import org.retrade.main.repository.jpa.*;
 import org.retrade.main.service.MessageProducerService;
 import org.retrade.main.service.SellerService;
@@ -49,6 +51,7 @@ public class SellerServiceImpl implements SellerService {
     private final RoleRepository roleRepository;
     private final AccountRoleRepository accountRoleRepository;
     private final ProductRepository productRepository;
+    private final ProductElasticsearchRepository productElasticsearchRepository;
     private final OrderComboRepository orderComboRepository;
 
     @Override
@@ -240,6 +243,7 @@ public class SellerServiceImpl implements SellerService {
         sellerEntity.setPhoneNumber(request.getPhoneNumber());
         try {
             var result = sellerRepository.save(sellerEntity);
+            updateProductSellerInformation(result);
             return wrapSellerResponse(result);
         } catch (Exception ex) {
             throw new ActionFailedException("Failed to create seller", ex);
@@ -419,6 +423,28 @@ public class SellerServiceImpl implements SellerService {
                 .createdAt(sellerEntity.getCreatedDate().toLocalDateTime())
                 .updatedAt(sellerEntity.getUpdatedDate().toLocalDateTime())
                 .build();
+    }
+
+    private void updateProductSellerInformation(SellerEntity sellerEntity) {
+        int batchSize = 100;
+        List<ProductDocument> batch = new ArrayList<>();
+        try (var productDocStream = productElasticsearchRepository.findBySellerId(sellerEntity.getId())) {
+            productDocStream.forEach(product -> {
+                product.setAddressLine(sellerEntity.getAddressLine());
+                product.setSellerShopName(sellerEntity.getShopName());
+                product.setState(sellerEntity.getState());
+                product.setDistrict(sellerEntity.getDistrict());
+                product.setWard(sellerEntity.getWard());
+                batch.add(product);
+                if (batch.size() >= batchSize) {
+                    productElasticsearchRepository.saveAll(batch);
+                    batch.clear();
+                }
+            });
+            if (!batch.isEmpty()) {
+                productElasticsearchRepository.saveAll(batch);
+            }
+        }
     }
 
     private Predicate getSellerPredicate(Map<String, QueryFieldWrapper> param, Root<SellerEntity> root, CriteriaBuilder criteriaBuilder, List<Predicate> predicates) {

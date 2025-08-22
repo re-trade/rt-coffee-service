@@ -10,9 +10,11 @@ import org.retrade.common.model.dto.request.QueryWrapper;
 import org.retrade.common.model.dto.response.PaginationWrapper;
 import org.retrade.common.model.exception.ActionFailedException;
 import org.retrade.common.model.exception.ValidationException;
+import org.retrade.main.model.document.ProductDocument;
 import org.retrade.main.model.dto.request.CategoryRequest;
 import org.retrade.main.model.dto.response.CategoryResponse;
 import org.retrade.main.model.entity.CategoryEntity;
+import org.retrade.main.repository.elasticsearch.ProductElasticsearchRepository;
 import org.retrade.main.repository.jpa.CategoryRepository;
 import org.retrade.main.service.CategoryService;
 import org.springframework.stereotype.Service;
@@ -25,6 +27,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class CategoryServiceImpl implements CategoryService {
     private final CategoryRepository categoryRepository;
+    private final ProductElasticsearchRepository productElasticsearchRepository;
 
     @Override
     public CategoryResponse createCategory(CategoryRequest request) {
@@ -76,6 +79,7 @@ public class CategoryServiceImpl implements CategoryService {
         }
         try {
             category = categoryRepository.save(category);
+            updateProductDocumentWhenCategoryChange(id, request.getName());
             return mapToCategoryResponse(category);
         } catch (Exception ex) {
             throw new ActionFailedException("FCập nhật danh mục thất bại", ex);
@@ -282,5 +286,28 @@ public class CategoryServiceImpl implements CategoryService {
         return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
     }
 
-
+    private void updateProductDocumentWhenCategoryChange(String categoryId, String categoryName) {
+        int batchSize = 100;
+        List<ProductDocument> batch = new ArrayList<>();
+        try(var productDocumentStream = productElasticsearchRepository.findByCategories_Id(categoryId)) {
+            productDocumentStream.forEach(productDocument -> {
+                var categories = productDocument.getCategories();
+                if (categories != null) {
+                    categories.forEach(cat -> {
+                        if (categoryId.equals(cat.getId())) {
+                            cat.setName(categoryName);
+                        }
+                    });
+                }
+                batch.add(productDocument);
+                if (batch.size() >= batchSize) {
+                    productElasticsearchRepository.saveAll(batch);
+                    batch.clear();
+                }
+            });
+            if (!batch.isEmpty()) {
+                productElasticsearchRepository.saveAll(batch);
+            }
+        }
+    }
 }
