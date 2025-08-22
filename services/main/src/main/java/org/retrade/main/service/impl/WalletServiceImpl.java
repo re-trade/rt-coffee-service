@@ -12,33 +12,26 @@ import org.retrade.common.model.exception.ValidationException;
 import org.retrade.main.model.constant.TransactionTypeEnum;
 import org.retrade.main.model.constant.WithdrawStatusEnum;
 import org.retrade.main.model.dto.request.VietQrGenerateRequest;
+import org.retrade.main.model.dto.request.WithdrawApproveRequest;
 import org.retrade.main.model.dto.request.WithdrawRequest;
-import org.retrade.main.model.dto.response.AccountWalletResponse;
-import org.retrade.main.model.dto.response.BankResponse;
-import org.retrade.main.model.dto.response.DecodedFile;
-import org.retrade.main.model.dto.response.WithdrawRequestBaseResponse;
+import org.retrade.main.model.dto.response.*;
 import org.retrade.main.model.entity.AccountEntity;
 import org.retrade.main.model.entity.TransactionEntity;
 import org.retrade.main.model.entity.VietQrBankEntity;
 import org.retrade.main.model.entity.WithdrawRequestEntity;
-import org.retrade.main.repository.jpa.AccountRepository;
-import org.retrade.main.repository.jpa.CustomerBankInfoRepository;
-import org.retrade.main.repository.jpa.TransactionRepository;
-import org.retrade.main.repository.jpa.WithdrawRepository;
+import org.retrade.main.model.message.SocketNotificationMessage;
+import org.retrade.main.repository.jpa.*;
 import org.retrade.main.repository.redis.VietQrBankRepository;
+import org.retrade.main.service.MessageProducerService;
 import org.retrade.main.service.VietQRService;
 import org.retrade.main.service.WalletService;
 import org.retrade.main.util.AuthUtils;
 import org.retrade.main.util.HashUtils;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -49,6 +42,8 @@ public class WalletServiceImpl implements WalletService {
     private final TransactionRepository transactionRepository;
     private final WithdrawRepository withdrawRepository;
     private final VietQrBankRepository vietQrBankRepository;
+    private final WalletTransactionRepository walletTransactionRepository;
+    private final MessageProducerService messageProducerService;
     private final VietQRService vietQRService;
 
 
@@ -91,37 +86,29 @@ public class WalletServiceImpl implements WalletService {
         }
     }
 
-    @Transactional
     @Override
-    public void approveWithdrawRequest(String withdrawRequestId) {
-        var withdraw = withdrawRepository.findById(withdrawRequestId).orElseThrow(() -> new ValidationException("Withdraw request not found"));
+    public void approveWithdrawRequest(WithdrawApproveRequest request) {
+        var withdraw = withdrawRepository.findById(request.getWithdrawId()).orElseThrow(() -> new ValidationException("Withdraw request not found"));
         var account = withdraw.getAccount();
-        if (account.getBalance().compareTo(withdraw.getAmount()) < 0) {
-            throw new ValidationException("Insufficient balance");
-        }
-        updateBalance(account.getBalance().subtract(withdraw.getAmount()), account);
-        var tx = TransactionEntity.builder()
-                .account(account)
-                .amount(withdraw.getAmount().negate())
-                .type(TransactionTypeEnum.WITHDRAW)
-                .build();
-        transactionRepository.save(tx);
-        withdraw.setStatus(WithdrawStatusEnum.COMPLETED);
-        withdraw.setProcessedDate(new Timestamp(System.currentTimeMillis()));
-        withdrawRepository.save(withdraw);
-    }
-
-
-    @Transactional
-    @Override
-    public void cancelWithdrawRequest(String withdrawRequestId) {
-        var withdraw = withdrawRepository.findById(withdrawRequestId).orElseThrow(() -> new ValidationException("Withdraw request not found"));
         if (withdraw.getStatus() != WithdrawStatusEnum.PENDING) {
-            throw new ValidationException("Withdraw status is not PENDING, cannot cancel");
+            throw new ValidationException("Withdraw status is not PENDING");
         }
-        withdraw.setStatus(WithdrawStatusEnum.REJECTED);
-        withdraw.setProcessedDate(new Timestamp(System.currentTimeMillis()));
-        withdrawRepository.save(withdraw);
+        if (request.getApproved()) {
+            if (account.getBalance().compareTo(withdraw.getAmount()) < 0) {
+                throw new ValidationException("Insufficient balance");
+            }
+            updateBalance(account.getBalance().subtract(withdraw.getAmount()), account);
+            var tx = TransactionEntity.builder()
+                    .account(account)
+                    .amount(withdraw.getAmount().negate())
+                    .type(TransactionTypeEnum.WITHDRAW)
+                    .build();
+            transactionRepository.save(tx);
+        } else {
+            withdraw.setStatus(WithdrawStatusEnum.REJECTED);
+            withdraw.setProcessedDate(new Timestamp(System.currentTimeMillis()));
+            withdraw.setNotes(request.getRejectReason());
+        }
     }
 
     @Override
@@ -227,6 +214,52 @@ public class WalletServiceImpl implements WalletService {
                 .bin(bankEntity.getBin())
                 .url(bankEntity.getLogo())
                 .build();
+    }
+
+    @Override
+    public WithdrawRequestDetailResponse getWithdrawRequestDetail(String withdrawRequestId) {
+        var withdrawRequestEntity = withdrawRepository.findById(withdrawRequestId).orElseThrow(() -> new ValidationException("Withdraw request not found"));
+        return wrapWithdrawRequestDetailResponse(withdrawRequestEntity);
+    }
+
+    private void sendSocketNotification(AccountEntity account) {
+        messageProducerService.sendSocketNotification(SocketNotificationMessage.builder()
+                        .messageId(UUID.randomUUID().toString())
+                        .accountId(account.getId())
+                        .title("Withdraw request")
+                        .type("")
+                        .message("Your withdraw request has been submitted. Please check your wallet for the status of your withdraw request.")
+                        .content("")
+                .build());
+    }
+
+    private WithdrawRequestDetailResponse wrapWithdrawRequestDetailResponse(WithdrawRequestEntity withdrawRequestEntity) {
+        var map = vietQrBankRepository.getBankMap();
+        var bank = map.get(withdrawRequestEntity.getBankBin());
+        var account = withdrawRequestEntity.getAccount();
+        var customer = account.getCustomer();
+        var seller = account.getSeller();
+        var withdrawBuilder = WithdrawRequestDetailResponse.builder()
+                .id(withdrawRequestEntity.getId())
+                .amount(withdrawRequestEntity.getAmount())
+                .status(withdrawRequestEntity.getStatus())
+                .username(account.getUsername())
+                .bankName(bank.getName())
+                .bankUrl(bank.getLogo())
+                .bankBin(withdrawRequestEntity.getBankBin());
+        if (customer != null) {
+            withdrawBuilder.customerName(customer.getFirstName() + " " + customer.getLastName());
+            withdrawBuilder.customerEmail(customer.getAccount().getEmail());
+            withdrawBuilder.customerPhone(customer.getPhone());
+            withdrawBuilder.customerAvatarUrl(customer.getAvatarUrl());
+        }
+        if (seller != null) {
+            withdrawBuilder.sellerAvatarUrl(seller.getAvatarUrl());
+            withdrawBuilder.sellerName(seller.getShopName());
+            withdrawBuilder.sellerPhone(seller.getPhoneNumber());
+            withdrawBuilder.sellerEmail(seller.getEmail());
+        }
+        return withdrawBuilder.build();
     }
 
     public AccountWalletResponse wrapAccountWalletResponse(AccountEntity accountEntity) {

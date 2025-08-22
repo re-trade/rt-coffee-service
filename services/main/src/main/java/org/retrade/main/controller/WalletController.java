@@ -4,10 +4,12 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.retrade.common.model.dto.request.QueryWrapper;
 import org.retrade.common.model.dto.response.ResponseObject;
+import org.retrade.main.model.dto.request.WithdrawApproveRequest;
 import org.retrade.main.model.dto.request.WithdrawRequest;
 import org.retrade.main.model.dto.response.AccountWalletResponse;
 import org.retrade.main.model.dto.response.BankResponse;
 import org.retrade.main.model.dto.response.WithdrawRequestBaseResponse;
+import org.retrade.main.model.dto.response.WithdrawRequestDetailResponse;
 import org.retrade.main.service.WalletService;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
@@ -36,23 +38,24 @@ public class WalletController {
                 .build());
     }
 
-    @PostMapping("withdraw/{id}/approve")
-    public ResponseEntity<ResponseObject<Void>> withdrawApproved(@PathVariable String id) {
-        walletService.approveWithdrawRequest(id);
+    @GetMapping("withdraw/{id}")
+    public ResponseEntity<ResponseObject<WithdrawRequestDetailResponse>> withdrawRequest(@PathVariable String id) {
+        var response = walletService.getWithdrawRequestDetail(id);
+        return ResponseEntity.ok(new ResponseObject.Builder<WithdrawRequestDetailResponse>()
+                .success(true)
+                .code("WITHDRAW_RETRIEVED")
+                .content(response)
+                .messages("Withdraw get successfully")
+                .build());
+    }
+
+    @PostMapping("withdraw/review")
+    public ResponseEntity<ResponseObject<Void>> withdrawReview(@RequestBody WithdrawApproveRequest withdrawApproveRequest) {
+        walletService.approveWithdrawRequest(withdrawApproveRequest);
         return ResponseEntity.ok(new ResponseObject.Builder<Void>()
                 .success(true)
                 .code("WITHDRAW_APPROVED")
                 .messages("Withdraw approved successfully")
-                .build());
-    }
-
-    @PostMapping("withdraw/{id}/cancel")
-    public ResponseEntity<ResponseObject<Void>> withdrawCancel(@PathVariable String id) {
-        walletService.cancelWithdrawRequest(id);
-        return ResponseEntity.ok(new ResponseObject.Builder<Void>()
-                .success(true)
-                .code("WITHDRAW_CANCELED")
-                .messages("Withdraw canceled successfully")
                 .build());
     }
 
