@@ -180,7 +180,7 @@ public class ProductServiceImpl implements ProductService {
         }
         var seller = account.getSeller();
         var product = productRepository.findByIdAndSeller(request.productId(), seller).orElseThrow(() -> new ValidationException("Product not found"));
-        if (product.getParentProduct() == null) {
+        if (product.getParentProduct() != null) {
             throw new ValidationException("Can't update quantity for retrade product");
         }
         product.setQuantity(request.quantity());
