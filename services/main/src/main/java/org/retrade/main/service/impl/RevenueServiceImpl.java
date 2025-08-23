@@ -38,8 +38,9 @@ public class RevenueServiceImpl implements RevenueService {
             throw new ValidationException("User is not a seller");
         }
         QueryFieldWrapper keyword = queryWrapper.search().remove("keyword");
+        QueryFieldWrapper orderStatus = queryWrapper.search().remove("orderStatus");
         return sellerRevenueRepository.query(queryWrapper,
-                (param) -> buildRevenuePredicate(param, seller, keyword),
+                (param) -> buildRevenuePredicate(param, seller, keyword, orderStatus),
                 this::mapToPaginationWrapper
         );
     }
@@ -70,12 +71,11 @@ public class RevenueServiceImpl implements RevenueService {
                 .build();
     }
 
-    private Specification<SellerRevenueEntity> buildRevenuePredicate(Map<String, QueryFieldWrapper> param, SellerEntity seller, QueryFieldWrapper keyword) {
+    private Specification<SellerRevenueEntity> buildRevenuePredicate(Map<String, QueryFieldWrapper> param, SellerEntity seller, QueryFieldWrapper keyword, QueryFieldWrapper orderStatus) {
         return (root, query, cb) -> {
-            if (query != null) {
-                query.distinct(true);
-                query.orderBy(cb.desc(root.get("updatedDate")));
-            }
+            assert query != null;
+            query.distinct(true);
+            query.orderBy(cb.desc(root.get("updatedDate")));
 
             List<Predicate> predicates = new ArrayList<>();
             Join<SellerRevenueEntity, OrderComboEntity> orderComboJoin = root.join("orderCombo", JoinType.INNER);
@@ -84,16 +84,21 @@ public class RevenueServiceImpl implements RevenueService {
             predicates.add(cb.equal(orderComboJoin.get("orderStatus").get("code"), OrderStatusCodes.COMPLETED));
 
             if (hasKeyword(keyword)) {
-                assert query != null;
                 predicates.add(buildKeywordPredicate(query, cb, orderComboJoin, keyword.getValue().toString()));
             }
-
+            if (hasOrderStatus(orderStatus)) {
+                predicates.add(cb.equal(orderComboJoin.get("orderStatus").get("code"), orderStatus.getValue().toString()));
+            }
             return getSellerRevenuePredicate(param, root, cb, predicates);
         };
     }
 
     private boolean hasKeyword(QueryFieldWrapper keyword) {
         return keyword != null && keyword.getValue() != null && !keyword.getValue().toString().trim().isEmpty();
+    }
+
+    private boolean hasOrderStatus(QueryFieldWrapper orderStatus) {
+        return orderStatus != null && orderStatus.getValue() != null && !orderStatus.getValue().toString().trim().isEmpty();
     }
 
     private Predicate buildKeywordPredicate(CriteriaQuery<?> query, CriteriaBuilder cb, Join<?, ?> orderComboJoin, String keyword) {
