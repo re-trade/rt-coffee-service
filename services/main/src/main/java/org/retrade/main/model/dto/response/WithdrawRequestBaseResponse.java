@@ -25,4 +25,5 @@ public class WithdrawRequestBaseResponse {
     private String bankBin;
     private String bankName;
     private String bankUrl;
+    private String accountNumber;
 }
