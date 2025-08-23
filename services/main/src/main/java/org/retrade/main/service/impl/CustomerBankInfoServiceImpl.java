@@ -30,13 +30,13 @@ public class CustomerBankInfoServiceImpl implements CustomerBankInfoService {
 
     @Override
     public CustomerBankInfoResponse getCustomerBankInfoById(String id) {
-        var result = customerBankInfoRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Không tìm thâ thông tin ngân hàng của khách hàng với ID: " + id));
+        var result = customerBankInfoRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Không tìm thấy thông tin ngân hàng của khách hàng với ID: " + id));
         var account = authUtils.getUserAccountFromAuthentication();
         var customer = account.getCustomer();
         if (customer != null && customer.getId().equals(result.getCustomer().getId()) ) {
             return wrapCustomerBankResponse(result);
         }
-        throw new ValidationException("Không tìm thâ thông tin ngân hàng của khách hàng với ID: " + id);
+        throw new ValidationException("Không tìm thấy thông tin ngân hàng của khách hàng với ID: " + id);
     }
 
     @Override
@@ -130,7 +130,7 @@ public class CustomerBankInfoServiceImpl implements CustomerBankInfoService {
         }
         var entity = customerBankInfoRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Customer bank info not found for ID: " + id));
         if (!customer.getId().equals(entity.getCustomer().getId())) {
-            throw new ValidationException("Không tìm thâ thông tin ngân hàng của khách hàng với ID: " + id);
+            throw new ValidationException("Không tìm thấy thông tin ngân hàng của khách hàng với ID: " + id);
         }
         return entity;
     }
