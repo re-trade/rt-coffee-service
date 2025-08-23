@@ -30,7 +30,7 @@ import java.util.List;
 @Tag(name = "Customer Management", description = "Customer profile and management endpoints")
 public class CustomerController {
     private final CustomerService customerService;
-    private final CustomerBankInfoService customerBankInfoService;
+    private final CustomerBrvice customerBankInfoService;
     private final AccountService accountService;
 
     @Operation(
