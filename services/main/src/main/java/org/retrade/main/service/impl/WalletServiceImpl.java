@@ -4,12 +4,14 @@ import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.retrade.common.model.dto.request.QueryFieldWrapper;
 import org.retrade.common.model.dto.request.QueryWrapper;
 import org.retrade.common.model.dto.response.PaginationWrapper;
 import org.retrade.common.model.exception.ActionFailedException;
 import org.retrade.common.model.exception.ValidationException;
 import org.retrade.main.config.common.WithdrawConfig;
+import org.retrade.main.model.constant.NotificationTypeCode;
 import org.retrade.main.model.constant.WithdrawStatusEnum;
 import org.retrade.main.model.dto.request.VietQrGenerateRequest;
 import org.retrade.main.model.dto.request.WithdrawApproveRequest;
@@ -34,6 +36,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.*;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class WalletServiceImpl implements WalletService {
@@ -80,7 +83,9 @@ public class WalletServiceImpl implements WalletService {
         var qrCode = vietQRService.generateQr(vietQr);
         withdraw.setQrCodeUrl(qrCode);
         try {
-            withdrawRepository.save(withdraw);
+            var result = withdrawRepository.save(withdraw);
+            sendSocketNotification(result);
+            log.info("Withdraw request created: {}", result.getId());
         } catch (Exception ex) {
             throw new ActionFailedException("Have a problem when save withdraw request", ex);
         }
@@ -114,11 +119,11 @@ public class WalletServiceImpl implements WalletService {
             withdraw.setCancelReason(request.getRejectReason());
         }
         try {
-            withdrawRepository.save(withdraw);
+            var result = withdrawRepository.save(withdraw);
+            sendSocketNotification(result);
         } catch (Exception ex) {
             throw new ActionFailedException("Have a problem when approve withdraw request", ex);
         }
-
     }
 
     @Override
@@ -153,10 +158,9 @@ public class WalletServiceImpl implements WalletService {
     public PaginationWrapper<List<WithdrawRequestBaseResponse>> getWithdrawRequestList(QueryWrapper queryWrapper) {
         return withdrawRepository.query(queryWrapper, (param) -> (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
-            if (query != null) {
-                query.orderBy(criteriaBuilder.asc(root.get("status")));
-                query.orderBy(criteriaBuilder.desc(root.get("updatedDate")));
-            }
+            assert query != null;
+            query.orderBy(criteriaBuilder.desc(root.get("status")));
+            query.orderBy(criteriaBuilder.desc(root.get("updatedDate")));
             return getPredicate(param, root, criteriaBuilder, predicates);
         }, (items)  -> {
             var map = vietQrBankRepository.getBankMap();
@@ -173,6 +177,9 @@ public class WalletServiceImpl implements WalletService {
         var account = authUtils.getUserAccountFromAuthentication();
         return withdrawRepository.query(queryWrapper, (param) -> (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
+            assert query != null;
+            query.orderBy(criteriaBuilder.desc(root.get("status")));
+            query.orderBy(criteriaBuilder.desc(root.get("updatedDate")));
             predicates.add(criteriaBuilder.equal(root.get("account"), account));
             return getPredicate(param, root, criteriaBuilder, predicates);
         }, (items)  -> {
@@ -255,16 +262,42 @@ public class WalletServiceImpl implements WalletService {
         return wrapWithdrawRequestDetailResponse(withdrawRequestEntity);
     }
 
-    private void sendSocketNotification(AccountEntity account) {
-        messageProducerService.sendSocketNotification(SocketNotificationMessage.builder()
-                        .messageId(UUID.randomUUID().toString())
-                        .accountId(account.getId())
-                        .title("Withdraw request")
-                        .type("")
-                        .message("Your withdraw request has been submitted. Please check your wallet for the status of your withdraw request.")
-                        .content("")
-                .build());
+    private void sendSocketNotification(WithdrawRequestEntity withdraw) {
+        try {
+            var account = withdraw.getAccount();
+            String message;
+            String content = switch (withdraw.getStatus()) {
+                case PENDING -> {
+                    message = "Yêu cầu rút tiền của bạn đã được gửi";
+                    yield String.format("Bạn đã yêu cầu rút %.2f VND vào ví. Vui lòng chờ quản trị viên duyệt.", withdraw.getAmount());
+                }
+                case COMPLETED -> {
+                    message = "Yêu cầu rút tiền đã được duyệt";
+                    yield String.format("Yêu cầu rút %.2f VND vào ví của bạn đã được duyệt và đang được xử lý.", withdraw.getAmount());
+                }
+                case REJECTED -> {
+                    message = "Yêu cầu rút tiền bị từ chối";
+                    yield String.format("Yêu cầu rút %.2f VND của bạn đã bị từ chối. Lý do: %s",
+                            withdraw.getAmount(), withdraw.getCancelReason());
+                }
+                default -> {
+                    message = "Cập nhật yêu cầu rút tiền";
+                    yield "Yêu cầu rút tiền của bạn vừa có thay đổi trạng thái.";
+                }
+            };
+            messageProducerService.sendSocketNotification(SocketNotificationMessage.builder()
+                    .messageId(UUID.randomUUID().toString())
+                    .accountId(account.getId())
+                    .title("Thông báo rút tiền")
+                    .type(NotificationTypeCode.ALERT)
+                    .message(message)
+                    .content(content)
+                    .build());
+        } catch (Exception ex) {
+            log.error("Failed to send socket notification", ex);
+        }
     }
+
 
     private WithdrawRequestDetailResponse wrapWithdrawRequestDetailResponse(WithdrawRequestEntity withdrawRequestEntity) {
         var map = vietQrBankRepository.getBankMap();

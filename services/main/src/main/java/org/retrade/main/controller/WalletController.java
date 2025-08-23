@@ -34,7 +34,7 @@ public class WalletController {
         return ResponseEntity.ok(new ResponseObject.Builder<Void>()
                 .success(true)
                 .code("WITHDRAW_SUBMIT")
-                .messages("Withdraw submit successfully")
+                .messages("Yêu cầu rút tiền đã được gửi thành công")
                 .build());
     }
 
@@ -57,7 +57,7 @@ public class WalletController {
                 .success(true)
                 .code("WITHDRAW_REMOVED")
                 .content(response)
-                .messages("Withdraw removed successfully")
+                .messages("Yêu cầu rút tiền đã được xóa thành công.")
                 .build());
     }
 
@@ -67,7 +67,7 @@ public class WalletController {
         return ResponseEntity.ok(new ResponseObject.Builder<Void>()
                 .success(true)
                 .code("WITHDRAW_APPROVED")
-                .messages("Withdraw approved successfully")
+                .messages("Xử lý yêu cầu rút tiền thành công")
                 .build());
     }
 

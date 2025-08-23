@@ -74,6 +74,7 @@ public class RevenueServiceImpl implements RevenueService {
         return (root, query, cb) -> {
             if (query != null) {
                 query.distinct(true);
+                query.orderBy(cb.desc(root.get("updatedDate")));
             }
 
             List<Predicate> predicates = new ArrayList<>();
