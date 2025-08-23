@@ -44,7 +44,7 @@ public class ProductController {
                 .success(true)
                 .code("SUCCESS")
                 .content(result)
-                .messages("Product created successfully")
+                .messages("Tạo sản phẩm thành công")
                 .build());
     }
 
@@ -58,7 +58,7 @@ public class ProductController {
                 .success(true)
                 .code("SUCCESS")
                 .content(result)
-                .messages("Product updated successfully")
+                .messages("Cập nhật sản phẩm thành công")
                 .build());
     }
 
@@ -69,7 +69,7 @@ public class ProductController {
         return ResponseEntity.ok(new ResponseObject.Builder<Void>()
                 .success(true)
                 .code("SUCCESS")
-                .messages("Product deleted successfully")
+                .messages("Xóa sản phẩm thành công")
                 .build());
     }
 
@@ -80,7 +80,7 @@ public class ProductController {
                 .success(true)
                 .code("SUCCESS")
                 .content(result)
-                .messages("Product retrieved successfully")
+                .messages("PLấy thông tin sản phẩm thành công")
                 .build());
     }
 
@@ -91,7 +91,7 @@ public class ProductController {
                 .success(true)
                 .code("SUCCESS")
                 .content(result)
-                .messages("Product retrieved successfully")
+                .messages("ấy danh sách sản phẩm thành công")
                 .build());
     }
 
@@ -113,7 +113,7 @@ public class ProductController {
                 .success(true)
                 .code("SUCCESS")
                 .unwrapPaginationWrapper(result)
-                .messages("Products retrieved successfully")
+                .messages("Lấy danh sách sản phẩm thành công")
                 .build());
     }
 
@@ -133,7 +133,7 @@ public class ProductController {
                 .success(true)
                 .code("SUCCESS")
                 .unwrapPaginationWrapper(result)
-                .messages("Products retrieved successfully")
+                .messages("Lấy danh sách sản phẩm thành công")
                 .build());
     }
 
@@ -153,7 +153,7 @@ public class ProductController {
                 .success(true)
                 .code("SUCCESS")
                 .unwrapPaginationWrapper(result)
-                .messages("Your products retrieved successfully")
+                .messages("Lấy danh sách sản phẩm thành công")
                 .build());
     }
 
@@ -170,7 +170,7 @@ public class ProductController {
                 .success(true)
                 .code("SUCCESS")
                 .unwrapPaginationWrapper(result)
-                .messages("Products found successfully")
+                .messages("ìm thấy sản phẩm thành công")
                 .build());
     }
 
@@ -187,7 +187,7 @@ public class ProductController {
                 .success(true)
                 .code("SUCCESS")
                 .unwrapPaginationWrapper(result)
-                .messages("Products found successfully")
+                .messages("ìm thấy sản phẩm thành công")
                 .build());
     }
 
@@ -203,7 +203,7 @@ public class ProductController {
                 .success(true)
                 .code("SUCCESS")
                 .content(result)
-                .messages("Filter product found successfully")
+                .messages("Lọc sản phẩm thành công")
                 .build());
     }
 
@@ -220,7 +220,7 @@ public class ProductController {
                 .success(true)
                 .code("SUCCESS")
                 .content(result)
-                .messages("Filter product found successfully")
+                .messages("Lọc sản phẩm thành công")
                 .build());
     }
 
@@ -240,7 +240,7 @@ public class ProductController {
                 .success(true)
                 .code("SUCCESS")
                 .unwrapPaginationWrapper(result)
-                .messages("Products in category retrieved successfully")
+                .messages("Lấy danh sách sản phẩm theo danh mục thành công")
                 .build());
     }
 
@@ -252,7 +252,7 @@ public class ProductController {
                 .success(true)
                 .code("SUCCESS")
                 .content(result)
-                .messages("Products in category retrieved successfully")
+                .messages("Lấy danh sách sản phẩm theo danh mục thành công")
                 .build());
     }
 
@@ -263,7 +263,7 @@ public class ProductController {
         return ResponseEntity.ok(new ResponseObject.Builder<Void>()
                 .success(true)
                 .code("SUCCESS")
-                .messages("Product verified successfully")
+                .messages("Duyệt sản phẩm thành công")
                 .build());
     }
 
@@ -274,7 +274,7 @@ public class ProductController {
         return ResponseEntity.ok(new ResponseObject.Builder<Void>()
                 .success(true)
                 .code("SUCCESS")
-                .messages("Product unverified successfully")
+                .messages("Hủy duyệt sản phẩm thành công")
                 .build());
     }
 
@@ -291,7 +291,7 @@ public class ProductController {
                 .success(true)
                 .code("SUCCESS")
                 .unwrapPaginationWrapper(result)
-                .messages("Products found successfully")
+                .messages("Lấy thông tin sản phẩm thành công")
                 .build());
     }
     @GetMapping("home-stats")
@@ -301,7 +301,7 @@ public class ProductController {
                 .success(true)
                 .code("SUCCESS")
                 .content(result)
-                .messages("fetch stats home successfully")
+                .messages("Lấy thống kê trang chủ thành công")
                 .build());
 
     }
@@ -312,7 +312,7 @@ public class ProductController {
         return ResponseEntity.ok(new ResponseObject.Builder<Void>()
                 .success(true)
                 .code("SUCCESS")
-                .messages("Update product status successfully")
+                .messages("Cập nhật trạng thái sản phẩm thành công")
                 .build());
 
     }
@@ -323,7 +323,7 @@ public class ProductController {
         return ResponseEntity.ok(new ResponseObject.Builder<Void>()
                 .success(true)
                 .code("SUCCESS")
-                .messages("Update product quantity successfully")
+                .messages("Cập nhật số lượng sản phẩm thành công")
                 .build());
     }
 
@@ -334,7 +334,7 @@ public class ProductController {
                 .success(true)
                 .code("SUCCESS")
                 .content(random)
-                .messages("Update product quantity successfully")
+                .messages("Lấy sản phẩm thành công")
                 .build());
     }
 

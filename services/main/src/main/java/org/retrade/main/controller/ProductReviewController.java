@@ -30,7 +30,7 @@ public class ProductReviewController {
                 .success(true)
                 .code("SUCCESS")
                 .content(result)
-                .messages("Create product review success")
+                .messages("Tạo đánh giá sản phẩm thành công")
                 .build());
     }
 
@@ -48,7 +48,7 @@ public class ProductReviewController {
                 .success(true)
                 .code("SUCCESS")
                 .unwrapPaginationWrapper(result)
-                .messages("Get product review success")
+                .messages("Lấy danh sách đánh giá sản phẩm thành công")
                 .build());
     }
 
@@ -66,7 +66,7 @@ public class ProductReviewController {
                 .success(true)
                 .code("SUCCESS")
                 .unwrapPaginationWrapper(result)
-                .messages("get product review success")
+                .messages("Lấy danh sách đánh giá sản phẩm thành công")
                 .build());
     }
     @GetMapping("{id}")
@@ -76,7 +76,7 @@ public class ProductReviewController {
                 .success(true)
                 .code("SUCCESS")
                 .content(result)
-                .messages("Get product details success")
+                .messages("Lấy chi tiết đánh giá sản phẩm thành công")
                 .build());
 
     }
@@ -89,7 +89,7 @@ public class ProductReviewController {
                 .success(true)
                 .code("SUCCESS")
                 .content(result)
-                .messages("Update product review success")
+                .messages("Cập nhật đánh giá sản phẩm thành công")
                 .build());
     }
     @DeleteMapping("{id}")
@@ -99,7 +99,7 @@ public class ProductReviewController {
                 .success(true)
                 .code("SUCCESS")
                 .content(result)
-                .messages("Delete product review success")
+                .messages("Xóa đánh giá sản phẩm thành công")
                 .build());
     }
     @GetMapping("seller/{sellerId}")
@@ -116,7 +116,7 @@ public class ProductReviewController {
                 .success(true)
                 .code("SUCCESS")
                 .unwrapPaginationWrapper(result)
-                .messages("Get product review success")
+                .messages("Lấy đánh giá sản phẩm thành công")
                 .build());
     }
     @PatchMapping("{id}/create-reply")
@@ -126,7 +126,7 @@ public class ProductReviewController {
                 .success(true)
                 .code("SUCCESS")
                 .content(result)
-                .messages("Reply product review success")
+                .messages("Phản hồi đánh giá sản phẩm thành công")
                 .build());
     }
 
@@ -137,7 +137,7 @@ public class ProductReviewController {
                 .success(true)
                 .code("SUCCESS")
                 .content(result)
-                .messages("Update reply product review success")
+                .messages("Cập nhật phản hồi đánh giá thành công")
                 .build());
     }
     @GetMapping("stats")
@@ -147,7 +147,7 @@ public class ProductReviewController {
                 .success(true)
                 .code("SUCCESS")
                 .content(result)
-                .messages("Get stats seller review success")
+                .messages("Lấy thống kê đánh giá cửa hàng thành công")
                 .build());
 
     }
@@ -168,7 +168,7 @@ public class ProductReviewController {
                 .success(true)
                 .code("SUCCESS")
                 .unwrapPaginationWrapper(result)
-                .messages("Get product review success")
+                .messages("Lấy đánh giá sản phẩm thành công")
                 .build());
     }
 
@@ -179,7 +179,7 @@ public class ProductReviewController {
                 .success(true)
                 .code("SUCCESS")
                 .content(result)
-                .messages("Get count review success")
+                .messages("Lấy tổng số đánh giá sản phẩm thành công")
                 .build());
     }
     @GetMapping("no-review")
@@ -196,7 +196,7 @@ public class ProductReviewController {
                 .success(true)
                 .code("SUCCESS")
                 .unwrapPaginationWrapper(result)
-                .messages("Get product no review success")
+                .messages("Lấy danh sách sản phẩm chưa đánh giá thành công")
                 .build());
     }
 
@@ -214,7 +214,7 @@ public class ProductReviewController {
                 .success(true)
                 .code("SUCCESS")
                 .unwrapPaginationWrapper(result)
-                .messages("Get product no review success")
+                .messages("Lấy danh sách sản phẩm chưa đánh giá thành công")
                 .build());
     }
 

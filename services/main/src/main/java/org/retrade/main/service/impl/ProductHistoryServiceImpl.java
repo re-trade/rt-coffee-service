@@ -64,7 +64,7 @@ public class ProductHistoryServiceImpl implements ProductHistoryService {
         var account = authUtils.getUserAccountFromAuthentication();
         validateProductSeller(account);
         var seller = account.getSeller();
-        var orderItem = orderItemRepository.findById(request.getOrderItemId()).orElseThrow(() -> new ValidationException("Order item not found"));
+        var orderItem = orderItemRepository.findById(request.getOrderItemId()).orElseThrow(() -> new ValidationException("Không tìm thấy sản phẩm trong đơn hàng"));
         validateProductRetrade(orderItem, account, request);
         var productEntity = orderItem.getProduct();
         var retradeProduct = duplicateProduct(productEntity, seller, request);
@@ -83,7 +83,7 @@ public class ProductHistoryServiceImpl implements ProductHistoryService {
                     .retradeRecordedId(resultRecord.getId())
                     .build();
         } catch (Exception ex) {
-            throw new ActionFailedException("Failed to create retrade product", ex);
+            throw new ActionFailedException("Tạo sản phẩm trao đổi lại thất bại", ex);
         }
     }
 
@@ -91,13 +91,13 @@ public class ProductHistoryServiceImpl implements ProductHistoryService {
         var sellerEntity = accountEntity.getSeller();
         var role = authUtils.getRolesFromAuthUser();
         if (!role.contains("ROLE_SELLER")) {
-            throw new ValidationException("User is not a seller of have been baned, please register seller or contact with Admin");
+            throw new ValidationException("Người dùng không phải là người bán hoặc đã bị cấm, vui lòng đăng ký bán hàng hoặc liên hệ với Quản trị viên");
         }
         if (sellerEntity == null) {
-            throw new ValidationException("User is not a seller, please register seller or contact with Admin");
+            throw new ValidationException("Người dùng không phải là người bán hoặc đã bị cấm, vui lòng đăng ký bán hàng hoặc liên hệ với Quản trị viên");
         }
         if (sellerEntity.getVerified() == false) {
-            throw new ValidationException("User is not verified. Please verify your account before retrading products.");
+            throw new ValidationException("Người dùng chưa được xác minh. Vui lòng xác minh tài khoản của bạn trước khi trao đổi lại sản phẩm");
         }
     }
 
@@ -108,18 +108,18 @@ public class ProductHistoryServiceImpl implements ProductHistoryService {
         var orderComboSeller = orderCombo.getSeller();
         var seller = accountEntity.getSeller();
         if (orderComboSeller.getId().equals(seller.getId())) {
-            throw new ValidationException("Order item belongs to the same seller");
+            throw new ValidationException("Sản phẩm trong đơn hàng thuộc cùng một người bán");
         }
         if (!orderEntity.getCustomer().getId().equals(customerEntity.getId())) {
-            throw new ValidationException("Order item does not belong to customer");
+            throw new ValidationException("Sản phẩm trong đơn hàng không thuộc về khách hàng");
         }
-        var validStatusEntity = orderStatusRepository.findByCode(OrderStatusCodes.COMPLETED).orElseThrow(() -> new ValidationException("Order status not found"));
+        var validStatusEntity = orderStatusRepository.findByCode(OrderStatusCodes.COMPLETED).orElseThrow(() -> new ValidationException("OKhông tìm thấy trạng thái đơn hàng"));
         if (!orderCombo.getOrderStatus().getId().equals(validStatusEntity.getId())) {
-            throw new ValidationException("Order combo is not in completed status");
+            throw new ValidationException("Đơn hàng chưa ở trạng thái hoàn thành");
         }
         var buyerId = orderItemEntity.getOrder().getCustomer().getId();
         if (!buyerId.equals(accountEntity.getCustomer().getId())) {
-            throw new ValidationException("Order item does not belong to customer");
+            throw new ValidationException("Sản phẩm trong đơn hàng không thuộc về khách hàng");
         }
         var totalBought = orderItemEntity.getQuantity();
         Integer alreadyRetrade = reTradeRecordRepository.sumQuantityByOrderItemId(request.getOrderItemId());
@@ -128,10 +128,10 @@ public class ProductHistoryServiceImpl implements ProductHistoryService {
         }
         int available = totalBought - alreadyRetrade;
         if (available <= 0) {
-            throw new ValidationException("No more products available to retrade");
+            throw new ValidationException("Không còn sản phẩm nào có thể trao đổi lại");
         }
         if (request.getQuantity() > available) {
-            throw new ValidationException("Requested quantity exceeds available quantity");
+            throw new ValidationException("Số lượng yêu cầu vượt quá số lượng có thể trao đổi lại");
         }
     }
 
@@ -156,7 +156,7 @@ public class ProductHistoryServiceImpl implements ProductHistoryService {
                 .quantity(productEntity.getQuantity());
         if (request.getPrice() != null) {
             if (request.getPrice().compareTo(productEntity.getCurrentPrice()) > 0) {
-                throw new ValidationException("Requested price is greater than current price");
+                throw new ValidationException("Giá yêu cầu cao hơn giá hiện tại");
             }
             if (request.getShortDescription() != null && !request.getShortDescription().isBlank()) {
                 productBuilder.shortDescription(request.getShortDescription());

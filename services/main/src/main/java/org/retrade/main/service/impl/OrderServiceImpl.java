@@ -80,7 +80,7 @@ public class OrderServiceImpl implements OrderService {
             orderDestinationEntity.setOrder(savedOrder);
             orderDestination = orderDestinationRepository.save(orderDestinationEntity);
         } catch (Exception e) {
-            throw new ActionFailedException("Failed to save order destination", e);
+            throw new ActionFailedException("Lưu thông tin địa chỉ giao hàng thất bại", e);
         }
         List<OrderComboEntity> orderCombos = createOrderCombos(productsBySeller, orderDestination, request.getItems());
 
@@ -93,12 +93,12 @@ public class OrderServiceImpl implements OrderService {
     public OrderResponse getOrderById(String orderId) {
         var account = authUtils.getUserAccountFromAuthentication();
         if (account.getCustomer() == null) {
-            throw new ValidationException("User is not a customer");
+            throw new ValidationException("Người dùng không phải là khách hàng");
         }
         OrderEntity order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new ValidationException("Order not found with ID: " + orderId));
+                .orElseThrow(() -> new ValidationException("Không tìm thấy đơn hàng với ID: " + orderId));
         if (!order.getCustomer().getId().equals(account.getCustomer().getId())) {
-            throw new ValidationException("You are not the owner");
+            throw new ValidationException("Bạn không phải là chủ sở hữu của tài khoản này");
         }
         return mapToOrderResponse(order);
     }
@@ -106,7 +106,7 @@ public class OrderServiceImpl implements OrderService {
     @Override
     public List<OrderResponse> getOrdersByCustomer(String customerId) {
         CustomerEntity customer = customerRepository.findById(customerId)
-                .orElseThrow(() -> new ValidationException("Customer not found with ID: " + customerId));
+                .orElseThrow(() -> new ValidationException("Không tìm thấy khách hàng với ID: " + customerId));
 
         List<OrderEntity> orders = orderRepository.findByCustomer(customer);
         return orders.stream()
@@ -120,7 +120,7 @@ public class OrderServiceImpl implements OrderService {
         var account = authUtils.getUserAccountFromAuthentication();
         var customerEntity = account.getCustomer();
         if (customerEntity == null) {
-            throw new ValidationException("User is not a customer");
+            throw new ValidationException("Người dùng không phải là khách hàng");
         }
         return orderComboRepository.query(queryWrapper, (param) -> (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
@@ -200,10 +200,10 @@ public class OrderServiceImpl implements OrderService {
     @Transactional(rollbackFor = {ActionFailedException.class, Exception.class})
     public OrderResponse updateOrderStatus(String orderId, String statusCode, String notes) {
         OrderEntity order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new ValidationException("Order not found with ID: " + orderId));
+                .orElseThrow(() -> new ValidationException("Không tìm thấy đơn hàng với ID: " + orderId));
         var customerEntity = order.getCustomer();
         OrderStatusEntity newStatus = orderStatusRepository.findByCode(statusCode)
-                .orElseThrow(() -> new ValidationException("Order status not found: " + statusCode));
+                .orElseThrow(() -> new ValidationException("Không tìm thấy trạng thái đơn hàng: " + statusCode));
 
         List<OrderComboEntity> orderCombos = orderComboRepository.findByOrderDestination(order.getOrderDestination());
         for (OrderComboEntity combo : orderCombos) {
@@ -217,10 +217,10 @@ public class OrderServiceImpl implements OrderService {
     @Transactional(rollbackFor = {ActionFailedException.class, Exception.class})
     public void cancelOrder(String orderId, String reason) {
         OrderEntity order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new ValidationException("Order not found with ID: " + orderId));
+                .orElseThrow(() -> new ValidationException("Không tìm thấy đơn hàng với ID: " + orderId));
         var customerEntity = order.getCustomer();
         OrderStatusEntity cancelledStatus = orderStatusRepository.findByCode("CANCELLED")
-                .orElseThrow(() -> new ValidationException("Cancelled order status not found"));
+                .orElseThrow(() -> new ValidationException("Không tìm thấy trạng thái đơn hàng đã hủy"));
 
         List<OrderComboEntity> orderCombos = orderComboRepository.findByOrderDestination(order.getOrderDestination());
         for (OrderComboEntity combo : orderCombos) {
@@ -234,19 +234,19 @@ public class OrderServiceImpl implements OrderService {
     public void cancelOrderCustomer(CancelOrderRequest request) {
         var account = authUtils.getUserAccountFromAuthentication();
         if (account.getCustomer() == null) {
-            throw new ValidationException("User is not a customer");
+            throw new ValidationException("Tài khoản của bạn không thuộc loại khách hàng");
         }
         var customerEntity = account.getCustomer();
         var validStatus = Set.of(OrderStatusCodes.PENDING, OrderStatusCodes.PAYMENT_CONFIRMATION);
-        var orderComboEntity = orderComboRepository.findById(request.orderComboId()).orElseThrow(() -> new ValidationException("Order combo not found with ID: " + request.orderComboId() + " for customer: " + customerEntity.getId()));
+        var orderComboEntity = orderComboRepository.findById(request.orderComboId()).orElseThrow(() -> new ValidationException("Không tìm thấy đơn hàng với ID: " + request.orderComboId() + " for customer: " + customerEntity.getId()));
         if (!validStatus.contains(orderComboEntity.getOrderStatus().getCode())) {
-            throw new ValidationException("Order combo status not valid for cancellation: " + orderComboEntity.getOrderStatus().getCode());
+            throw new ValidationException("Trạng thái của đơn hàng không hợp lệ để hủy: " + orderComboEntity.getOrderStatus().getCode());
         }
         if (!orderComboEntity.getOrderDestination().getOrder().getCustomer().getId().equals(customerEntity.getId())) {
-            throw new ValidationException("You are not the owner");
+            throw new ValidationException("Bạn không phải là chủ sở hữu");
         }
         OrderStatusEntity cancelledStatus = orderStatusRepository.findByCode(OrderStatusCodes.CANCELLED)
-                .orElseThrow(() -> new ValidationException("Cancelled order status not found"));
+                .orElseThrow(() -> new ValidationException("Không tìm thấy trạng thái đơn hàng đã hủy"));
         orderComboEntity.setCancelledReason(request.reason());
         orderComboEntity.setOrderStatus(cancelledStatus);
         orderComboEntity.setReasonCreatedDate(Timestamp.valueOf(LocalDateTime.now()));
@@ -277,11 +277,11 @@ public class OrderServiceImpl implements OrderService {
         var account = authUtils.getUserAccountFromAuthentication();
         var seller = account.getSeller();
         if (seller == null) {
-            throw new ValidationException("Account is not seller");
+            throw new ValidationException("Tài khoản không phải là người bán");
         }
         var orderCombo = orderComboRepository.findByIdAndSeller(request.orderComboId(), seller).orElseThrow(() -> new ValidationException("There is not your order combo"));
         OrderStatusEntity cancelledStatus = orderStatusRepository.findByCode(OrderStatusCodes.CANCELLED)
-                .orElseThrow(() -> new ValidationException("Cancelled order status not found"));
+                .orElseThrow(() -> new ValidationException("Không tìm thấy trạng thái đơn hàng đã hủy"));
 
         orderCombo.setCancelledReason(request.reason());
         orderCombo.setOrderStatus(cancelledStatus);
@@ -311,17 +311,17 @@ public class OrderServiceImpl implements OrderService {
     public void confirmDelivery(String id) {
         var account = authUtils.getUserAccountFromAuthentication();
         if (account.getCustomer() == null) {
-            throw new ValidationException("User is not a customer");
+            throw new ValidationException("Tài khoản không phải là khách hàng");
         }
         var customerEntity = account.getCustomer();
         var orderComboEntity = getOrderComboFromCustomerById(id, customerEntity);
         if (!OrderStatusCodes.DELIVERED.equals(orderComboEntity.getOrderStatus().getCode())) {
             throw new ValidationException(
-                    "Order combo status not valid for confirm delivery: " + orderComboEntity.getOrderStatus().getCode()
+                    "Trạng thái của đơn hàng không hợp lệ để xác nhận giao hàng: " + orderComboEntity.getOrderStatus().getCode()
             );
         }
         OrderStatusEntity completedStatus = orderStatusRepository.findByCode(OrderStatusCodes.RETRIEVED)
-                .orElseThrow(() -> new ValidationException("Completed order status not found"));
+                .orElseThrow(() -> new ValidationException("Không tìm thấy trạng thái đơn hàng đã hoàn tất"));
         orderComboEntity.setOrderStatus(completedStatus);
         try {
             orderComboRepository.save(orderComboEntity);
@@ -338,17 +338,17 @@ public class OrderServiceImpl implements OrderService {
     public void completedOrder(String id) {
         var account = authUtils.getUserAccountFromAuthentication();
         if (account.getCustomer() == null) {
-            throw new ValidationException("User is not a customer");
+            throw new ValidationException("Tài khoản không phải là khách hàng");
         }
         var customerEntity = account.getCustomer();
         var orderComboEntity = getOrderComboFromCustomerById(id, customerEntity);
         if (!OrderStatusCodes.RETRIEVED.equals(orderComboEntity.getOrderStatus().getCode())) {
             throw new ValidationException(
-                    "Order combo status not valid for completed: " + orderComboEntity.getOrderStatus().getCode()
+                    "Trạng thái của đơn hàng không hợp lệ để hoàn tất: " + orderComboEntity.getOrderStatus().getCode()
             );
         }
         OrderStatusEntity completedStatus = orderStatusRepository.findByCode(OrderStatusCodes.COMPLETED)
-                .orElseThrow(() -> new ValidationException("Completed order status not found"));
+                .orElseThrow(() -> new ValidationException("Không tìm thấy trạng thái đơn hàng đã hoàn tất"));
         orderComboEntity.setOrderStatus(completedStatus);
         BigDecimal totalAmount = orderComboEntity.getGrandPrice();
         PlatformFeeTierEntity tier = platformFeeTierRepository.findMatchingTier(totalAmount)
@@ -384,7 +384,7 @@ public class OrderServiceImpl implements OrderService {
         var account = authUtils.getUserAccountFromAuthentication();
         var seller = account.getSeller();
         if (seller == null) {
-            throw new ValidationException("User is not a seller");
+            throw new ValidationException("Tài khoản không phải là người bán");
         }
         return orderComboRepository.query(queryFieldWrapper, (param) -> (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
@@ -407,11 +407,11 @@ public class OrderServiceImpl implements OrderService {
         var combo = getOrderComboById(comboId);
         var seller = account.getSeller();
         if (seller == null) {
-            throw new ValidationException("User is not a seller");
+            throw new ValidationException("Tài khoản không phải là người bán");
         }
         var orderSeller = combo.getSeller();
         if (!seller.getId().equals(orderSeller.getId())) {
-            throw new ValidationException("You are not the owner");
+            throw new ValidationException("Bạn không phải là chủ sở hữu tài khoản");
         }
         return wrapCustomerOrderComboResponse(combo);
     }
@@ -423,11 +423,11 @@ public class OrderServiceImpl implements OrderService {
         var combo = getOrderComboById(comboId);
         var customer = account.getCustomer();
         if (customer == null) {
-            throw new ValidationException("User is not a customer");
+            throw new ValidationException("Tài khoản không phải là khách hàng");
         }
         var comboCustomer = combo.getOrderDestination().getOrder().getCustomer();
         if (!customer.getId().equals(comboCustomer.getId())) {
-            throw new ValidationException("You are not the owner");
+            throw new ValidationException("Bạn không phải là chủ sở hữu tài khoản");
         }
         return wrapCustomerOrderComboResponse(combo);
     }
@@ -479,7 +479,7 @@ public class OrderServiceImpl implements OrderService {
         var account = authUtils.getUserAccountFromAuthentication();
         var seller = account.getSeller();
         if (seller == null) {
-            throw new ValidationException("Seller profile not found");
+            throw new ValidationException("Không tìm thấy hồ sơ người bán");
         }
 
         return orderRepository.query(queryWrapper, (param) -> (root, query, criteriaBuilder) -> {
@@ -526,7 +526,7 @@ public class OrderServiceImpl implements OrderService {
         var account = authUtils.getUserAccountFromAuthentication();
         var seller = account.getSeller();
         if (seller == null) {
-            throw new ValidationException("User is not a seller");
+            throw new ValidationException("Tài khoản không phải là khách hàng");
         }
         var search = queryWrapper.search().toString();
         QueryFieldWrapper keyword = queryWrapper.search().remove("keyword");
@@ -594,7 +594,7 @@ public class OrderServiceImpl implements OrderService {
         var account = authUtils.getUserAccountFromAuthentication();
         var customerEntity = account.getCustomer();
         if (customerEntity == null) {
-            throw new ValidationException("User is not a customer");
+            throw new ValidationException("Tài khoản không phải là khách hàng");
         }
 
         List<OrderComboEntity> orderComboEntities = orderComboRepository.findAll((root, query, criteriaBuilder) -> {
@@ -638,25 +638,25 @@ public class OrderServiceImpl implements OrderService {
 
     private OrderComboEntity getOrderComboById(String comboId) {
         return orderComboRepository.findById(comboId)
-                .orElseThrow(() -> new ValidationException("Order combo not found with ID: " + comboId));
+                .orElseThrow(() -> new ValidationException("Không tìm thấy đơn hàng với ID: " + comboId));
     }
 
     private CustomerEntity getCurrentCustomerAccount() {
         var account = authUtils.getUserAccountFromAuthentication();
         var customerEntity = account.getCustomer();
         if (customerEntity == null) {
-            throw new ValidationException("User is not a customer");
+            throw new ValidationException("Người dùng không phải là khách hàng");
         }
         return customerEntity;
     }
 
     private void validateCreateOrderRequest(CreateOrderRequest request) {
         if (request.getItems().isEmpty()) {
-            throw new ValidationException("Product list cannot be empty");
+            throw new ValidationException("Danh sách sản phẩm không được để trống");
         }
 
         if (request.getItems().size() > 100) {
-            throw new ValidationException("Cannot order more than 100 different products at once");
+            throw new ValidationException("Không thể đặt hơn 100 sản phẩm khác nhau trong một lần");
         }
     }
 
@@ -669,10 +669,10 @@ public class OrderServiceImpl implements OrderService {
             if (productOpt.isPresent()) {
                 ProductEntity product = productOpt.get();
                 if (!product.getVerified()) {
-                    throw new ValidationException("Product " + productId + " is not verified and cannot be ordered");
+                    throw new ValidationException("Sản phẩm với ID: " + productId + " chưa được xác minh");
                 }
                 if (product.getQuantity() < item.getQuantity()) {
-                    throw new ValidationException("Product " + productId + " has insufficient stock");
+                    throw new ValidationException("Sản phẩm với ID: " + productId + " không đủ số lượng");
                 }
                 products.add(product);
             } else {
@@ -681,7 +681,7 @@ public class OrderServiceImpl implements OrderService {
         }
 
         if (!notFoundProducts.isEmpty()) {
-            throw new ValidationException("Products not found: " + String.join(", ", notFoundProducts));
+            throw new ValidationException("Không tìm thấy sản phẩm: " + String.join(", ", notFoundProducts));
         }
 
         return products;
@@ -715,7 +715,7 @@ public class OrderServiceImpl implements OrderService {
 
     private List<OrderComboEntity> createOrderCombos(Map<SellerEntity, List<ProductEntity>> productsBySeller, OrderDestinationEntity orderDestination, List<OrderItemRequest> items) {
         OrderStatusEntity pendingStatus = orderStatusRepository.findByCode("PENDING")
-                .orElseThrow(() -> new ValidationException("Pending order status not found"));
+                .orElseThrow(() -> new ValidationException("Không tìm thấy trạng thái đơn hàng đang chờ"));
 
         List<OrderComboEntity> orderCombos = new ArrayList<>();
 
@@ -734,7 +734,7 @@ public class OrderServiceImpl implements OrderService {
         try {
             return orderComboRepository.saveAll(orderCombos);
         } catch (Exception ex) {
-            throw new ActionFailedException("Failed to save order combos", ex);
+            throw new ActionFailedException("Không thể lưu thông tin gói đơn hàng", ex);
         }
     }
 
@@ -749,7 +749,7 @@ public class OrderServiceImpl implements OrderService {
 
             var quantity = requestItemMap.get(product.getId());
             if (quantity == null) {
-                throw new ValidationException("Ordered quantity not found for product: " + product.getId());
+                throw new ValidationException("Không tìm thấy số lượng đặt cho sản phẩm: " + product.getId());
             }
             OrderItemEntity orderItem = OrderItemEntity.builder()
                     .order(order)
@@ -1027,10 +1027,10 @@ public class OrderServiceImpl implements OrderService {
         for (ProductEntity product : products) {
             Integer orderedQuantity = orderedQuantities.get(product.getId());
             if (orderedQuantity == null) {
-                throw new ValidationException("Product ID not found in request items: " + product.getId());
+                throw new ValidationException("Không tìm thấy sản phẩm với mã: " + product.getId());
             }
             if (product.getQuantity() < orderedQuantity) {
-                throw new ValidationException("Insufficient stock for product: " + product.getName());
+                throw new ValidationException("Không đủ tồn kho cho sản phẩm: " + product.getName());
             }
             product.setQuantity(product.getQuantity() - orderedQuantity);
         }
@@ -1128,11 +1128,11 @@ public class OrderServiceImpl implements OrderService {
     private OrderComboEntity getOrderComboFromCustomerById (String id, CustomerEntity customerEntity) {
         var orderComboEntity = orderComboRepository.findById(id)
                 .orElseThrow(() -> new ValidationException(
-                        "Order combo not found with ID: " + id + " for customer: " + customerEntity.getId()
+                        "Không tìm thấy gói đơn hàng với ID: " + id + " cho khách hàng: " + customerEntity.getId()
                 ));
         if (!orderComboEntity.getOrderDestination().getOrder().getCustomer().getId()
                 .equals(customerEntity.getId())) {
-            throw new ValidationException("You are not the owner");
+            throw new ValidationException("Bạn không phải chủ sở hữu");
         }
         return orderComboEntity;
     }

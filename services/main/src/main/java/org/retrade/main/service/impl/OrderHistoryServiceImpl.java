@@ -54,7 +54,7 @@ public class OrderHistoryServiceImpl implements OrderHistoryService {
     @Override
     public OrderHistoryResponse getDetailsOrderHistory(String id) {
         OrderHistoryEntity orderHistoryEntity = orderHistoryRepository.findById(id).orElseThrow(
-                ()-> new ValidationException("Order history not found")
+                ()-> new ValidationException("Không tìm thấy lịch sử đơn hàng")
         );
         return mapEntityToResponse(orderHistoryEntity);
     }

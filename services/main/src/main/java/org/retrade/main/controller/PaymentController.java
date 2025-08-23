@@ -39,13 +39,13 @@ public class PaymentController {
         return paymentService.initPayment(paymentInsertRequest, httpServletRequest)
                 .map(url -> ResponseEntity.ok(new ResponseObject.Builder<String>()
                         .code("SUCCESS")
-                        .messages("Payment URL generated successfully")
+                        .messages("Đã tạo URL thanh toán thành công")
                         .success(true)
                         .content(url)
                         .build()))
                 .orElseGet(() -> ResponseEntity.ok(new ResponseObject.Builder<String>()
                         .code("SUCCESS")
-                        .messages("No payment URL generated")
+                        .messages("Không có URL thanh toán được tạo")
                         .success(true)
                         .content("")
                         .build()));
@@ -120,7 +120,7 @@ public class PaymentController {
                 .success(true)
                 .code("SUCCESS")
                 .unwrapPaginationWrapper(result)
-                .messages("Methods retrieved successfully")
+                .messages("Lấy danh sách phương thức thanh toán thành công")
                 .build());
     }
 
@@ -140,7 +140,7 @@ public class PaymentController {
                 .success(true)
                 .code("SUCCESS")
                 .unwrapPaginationWrapper(result)
-                .messages("Get Payment History successfully")
+                .messages("Lấy lịch sử thanh toán thành công")
                 .build());
     }
 
@@ -151,7 +151,7 @@ public class PaymentController {
                 .success(true)
                 .code("SUCCESS")
                 .content(result)
-                .messages("Get Payment Check successfully")
+                .messages("Kiểm tra trạng thái thanh toán thành công")
                 .build());
     }
 }

@@ -218,6 +218,7 @@ public class WalletServiceImpl implements WalletService {
                 .bankUrl(bank.getLogo())
                 .processedDate(processedDate)
                 .createdDate(withdrawRequestEntity.getCreatedDate().toLocalDateTime())
+                .accountNumber(withdrawRequestEntity.getBankAccount())
                 .build();
     }
 
