@@ -2,11 +2,9 @@ package org.retrade.main.service;
 
 import org.retrade.common.model.dto.request.QueryWrapper;
 import org.retrade.common.model.dto.response.PaginationWrapper;
+import org.retrade.main.model.dto.request.WithdrawApproveRequest;
 import org.retrade.main.model.dto.request.WithdrawRequest;
-import org.retrade.main.model.dto.response.AccountWalletResponse;
-import org.retrade.main.model.dto.response.BankResponse;
-import org.retrade.main.model.dto.response.DecodedFile;
-import org.retrade.main.model.dto.response.WithdrawRequestBaseResponse;
+import org.retrade.main.model.dto.response.*;
 
 import java.util.List;
 
@@ -15,9 +13,9 @@ public interface WalletService {
 
     void withdrawRequest(WithdrawRequest request);
 
-    void approveWithdrawRequest(String withdrawRequestId);
+    void approveWithdrawRequest(WithdrawApproveRequest request);
 
-    void cancelWithdrawRequest(String withdrawRequestId);
+    void removeWithdrawRequest(String id);
 
     PaginationWrapper<List<BankResponse>> getBankList(QueryWrapper queryWrapper);
 
@@ -28,4 +26,6 @@ public interface WalletService {
     BankResponse getBankByBin(String id);
 
     DecodedFile getQrCodeByWithdrawRequestId(String withdrawRequestId);
+
+    WithdrawRequestDetailResponse getWithdrawRequestDetail(String withdrawRequestId);
 }
