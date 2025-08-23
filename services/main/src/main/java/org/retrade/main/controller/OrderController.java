@@ -50,7 +50,7 @@ public class OrderController {
                         .success(true)
                         .code("ORDER_CREATED")
                         .content(orderResponse)
-                        .messages("Order created successfully")
+                        .messages("Đơn hàng đã được tạo thành công")
                         .build());
     }
 
@@ -73,7 +73,7 @@ public class OrderController {
                 .success(true)
                 .code("SUCCESS")
                 .content(orderResponse)
-                .messages("Order retrieved successfully")
+                .messages("Chi tiết đơn hàng đã được lấy thành công")
                 .build());
     }
 
@@ -87,7 +87,7 @@ public class OrderController {
                 .success(true)
                 .code("SUCCESS")
                 .unwrapPaginationWrapper(result)
-                .messages("Order status retrieved successfully")
+                .messages("Trạng thái đơn hàng đã được lấy thành công")
                 .build());
     }
 
@@ -110,7 +110,7 @@ public class OrderController {
                 .success(true)
                 .code("SUCCESS")
                 .content(orders)
-                .messages("Orders retrieved successfully")
+                .messages("Chi tiết đơn hàng đã được lấy thành công")
                 .build());
     }
 
@@ -138,7 +138,7 @@ public class OrderController {
                 .success(true)
                 .code("SUCCESS")
                 .unwrapPaginationWrapper(result)
-                .messages("Orders retrieved successfully")
+                .messages("Chi tiết đơn hàng đã được lấy thành công")
                 .build());
     }
 
@@ -160,7 +160,7 @@ public class OrderController {
                 .success(true)
                 .code("SUCCESS")
                 .unwrapPaginationWrapper(result)
-                .messages("Top sellers retrieved successfully")
+                .messages("Top người bán đã được lấy thành công")
                 .build());
     }
 
@@ -182,7 +182,7 @@ public class OrderController {
                 .success(true)
                 .code("SUCCESS")
                 .unwrapPaginationWrapper(result)
-                .messages("Top customers by sellers retrieved successfully")
+                .messages("Top khách hàng theo người bán đã được lấy thành công")
                 .build());
     }
 
@@ -210,7 +210,7 @@ public class OrderController {
                 .success(true)
                 .code("SUCCESS")
                 .content(orderResponse)
-                .messages("Order status updated successfully")
+                .messages("Trạng thái đơn hàng đã được cập nhật thành công")
                 .build());
     }
 
@@ -234,7 +234,7 @@ public class OrderController {
         return ResponseEntity.ok(new ResponseObject.Builder<Void>()
                 .success(true)
                 .code("SUCCESS")
-                .messages("Order cancelled successfully")
+                .messages("Đơn hàng đã được hủy thành công")
                 .build());
     }
 
@@ -248,7 +248,7 @@ public class OrderController {
                 .success(true)
                 .code("SUCCESS")
                 .unwrapPaginationWrapper(orders)
-                .messages("Orders retrieved successfully")
+                .messages("Danh sách đơn hàng đã được lấy thành công")
                 .build());
     }
 
@@ -261,7 +261,7 @@ public class OrderController {
                 .success(true)
                 .code("SUCCESS")
                 .content(order)
-                .messages("Orders retrieved successfully")
+                .messages("Danh sách đơn hàng đã được lấy thành công")
                 .build());
     }
 
@@ -273,7 +273,7 @@ public class OrderController {
                 .success(true)
                 .code("SUCCESS")
                 .content(order)
-                .messages("Orders retrieved successfully")
+                .messages("Danh sách đơn hàng đã được lấy thành công")
                 .build());
     }
 
@@ -287,7 +287,7 @@ public class OrderController {
                 .success(true)
                 .code("SUCCESS")
                 .unwrapPaginationWrapper(orders)
-                .messages("Orders retrieved successfully")
+                .messages("Danh sách đơn hàng đã được lấy thành công")
                 .build());
     }
 
@@ -307,7 +307,7 @@ public class OrderController {
                 .success(true)
                 .code("SUCCESS")
                 .unwrapPaginationWrapper(orders)
-                .messages("Orders retrieved successfully")
+                .messages("Danh sách đơn hàng đã được lấy thành công")
                 .build());
     }
 
@@ -325,7 +325,7 @@ public class OrderController {
         return ResponseEntity.ok(new ResponseObject.Builder<Void>()
                 .success(true)
                 .code("SUCCESS")
-                .messages("Order cancelled successfully")
+                .messages("Đơn hàng đã được hủy thành công")
                 .build());
     }
 
@@ -343,7 +343,7 @@ public class OrderController {
         return ResponseEntity.ok(new ResponseObject.Builder<Void>()
                 .success(true)
                 .code("SUCCESS")
-                .messages("Order completed successfully")
+                .messages("Đơn hàng đã được hoàn tất thành công")
                 .build());
     }
 
@@ -355,7 +355,7 @@ public class OrderController {
         return ResponseEntity.ok(new ResponseObject.Builder<Void>()
                 .success(true)
                 .code("SUCCESS")
-                .messages("Order completed successfully")
+                .messages("Đơn hàng đã được hoàn tất thành công")
                 .build());
     }
 
@@ -368,7 +368,7 @@ public class OrderController {
         return ResponseEntity.ok(new ResponseObject.Builder<Void>()
                 .success(true)
                 .code("SUCCESS")
-                .messages("Order cancelled successfully")
+                .messages("Đơn hàng đã được hủy thành công")
                 .build());
     }
 
@@ -379,7 +379,7 @@ public class OrderController {
         return ResponseEntity.ok(new ResponseObject.Builder<OrderStatsResponse>()
                 .success(true)
                 .code("SUCCESS")
-                .messages("Get order stats successfully")
+                .messages("Thống kê đơn hàng đã được lấy thành công")
                 .content(stats)
                 .build());
     }

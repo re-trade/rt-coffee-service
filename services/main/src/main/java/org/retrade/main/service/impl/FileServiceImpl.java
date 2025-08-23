@@ -55,7 +55,7 @@ public class FileServiceImpl implements FileService {
             );
             return fileName;
         } catch (Exception e) {
-            throw new ActionFailedException("Upload failed: " + e.getMessage(), e);
+            throw new ActionFailedException("Tải tệp lên thất bại: " + e.getMessage(), e);
         }
     }
 
@@ -63,9 +63,9 @@ public class FileServiceImpl implements FileService {
     public DecodedFile getSellerIdentityCard(String sellerId, IdentityCardTypeEnum type) {
         var roles = authUtils.getRolesFromAuthUser();
         if(!roles.contains("ROLE_ADMIN")) {
-            throw new ValidationException("User does not have permission to get seller identity card");
+            throw new ValidationException("Người dùng không có quyền truy cập giấy tờ tùy thân của người bán");
         }
-        var seller = sellerRepository.findById(sellerId).orElseThrow(() -> new ValidationException("Seller not found"));
+        var seller = sellerRepository.findById(sellerId).orElseThrow(() -> new ValidationException("Không tìm thấy người bán"));
         String fileUrl = getIdentityFileUrl(type, seller);
         var file = downloadEncryptedFileWithUrl(fileUrl);
         try (InputStream inputStream = new FileInputStream(file)) {
@@ -76,7 +76,7 @@ public class FileServiceImpl implements FileService {
             }
             return new DecodedFile(buffer, mimeType);
         } catch (IOException e) {
-            throw new RuntimeException("Failed to download or decrypt file: " + e.getMessage(), e);
+            throw new RuntimeException("Không thể tải xuống hoặc giải mã tệp: " + e.getMessage(), e);
         }
     }
 
@@ -85,17 +85,17 @@ public class FileServiceImpl implements FileService {
         switch (type) {
             case FRONT -> {
                 if ("example".equals(seller.getFrontSideIdentityCard())) {
-                    throw new ValidationException("Seller does not have front side identity card");
+                    throw new ValidationException("Người bán chưa cung cấp ảnh mặt trước giấy tờ tùy thân");
                 }
                 fileUrl = seller.getFrontSideIdentityCard();
             }
             case BACK -> {
                 if ("example".equals(seller.getBackSideIdentityCard())) {
-                    throw new ValidationException("Seller does not have back side identity card");
+                    throw new ValidationException("Người bán chưa cung cấp ảnh mặt sau giấy tờ tùy thân");
                 }
                 fileUrl = seller.getBackSideIdentityCard();
             }
-            default -> throw new ValidationException("Unsupported identity card type");
+            default -> throw new ValidationException("Loại giấy tờ tùy thân không được hỗ trợ");
         }
         return fileUrl;
     }
@@ -121,7 +121,7 @@ public class FileServiceImpl implements FileService {
         }  catch (ServerException | InsufficientDataException | ErrorResponseException | InternalException |
                   IOException | NoSuchAlgorithmException | InvalidKeyException | InvalidResponseException |
                   XmlParserException e) {
-            throw new RuntimeException("Failed to download or decrypt file: " + e.getMessage(), e);
+            throw new RuntimeException("Không thể tải xuống hoặc giải mã tệp: " + e.getMessage(), e);
         } catch (GeneralSecurityException e) {
             throw new RuntimeException(e);
         }

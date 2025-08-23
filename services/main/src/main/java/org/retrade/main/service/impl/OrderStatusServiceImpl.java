@@ -59,7 +59,7 @@ public class OrderStatusServiceImpl implements OrderStatusService {
 
         Optional<OrderComboEntity> orderComboEntity = orderComboRepository.findByIdAndSeller(orderComboId, sellerEntity);
         if (orderComboEntity.isEmpty()) {
-            throw new ValidationException("Order combo not found for ID: " + orderComboId);
+            throw new ValidationException("Không tìm thấy gói đơn hàng với mã: " + orderComboId);
         }
 
         String currentStatus = orderComboEntity.get().getOrderStatus().getCode();
@@ -71,7 +71,7 @@ public class OrderStatusServiceImpl implements OrderStatusService {
         for (String statusCode : nextStatusCodes) {
             Optional<OrderStatusEntity> statusEntity = orderStatusRepository.findByCode(statusCode);
             if (statusEntity.isEmpty()) {
-                throw new ValidationException("Order status not found for code: " + statusCode);
+                throw new ValidationException("Không tìm thấy trạng thái đơn hàng cho mã: " + statusCode);
             }
             responses.add(mapEntityToResponse(statusEntity.get()));
         }
