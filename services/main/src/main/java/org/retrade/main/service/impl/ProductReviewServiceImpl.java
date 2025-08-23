@@ -39,27 +39,27 @@ public class ProductReviewServiceImpl implements ProductReviewService {
     @Override
     public ProductReviewResponse createProductReview(CreateProductReviewRequest request) {
         if (request.getVote() <= 0) {
-            throw new ValidationException("Vote should be greater than 0");
+            throw new ValidationException("Số sao phải lớn hơn 0");
         }
         var customer = getCustomer();
         OrderComboEntity orderComboEntity = orderComboRepository.findById(request.getOrderId()).orElseThrow(
-                () -> new ValidationException("Order combo not found")
+                () -> new ValidationException("Không tìm thấy đơn hàng")
         );
         var checkMyOrder = orderComboRepository.existsByOrderDestination_Order_CustomerAndId(customer, orderComboEntity.getId());
         if (!checkMyOrder) {
-            throw new ValidationException("This not your order");
+            throw new ValidationException("Đây không phải đơn hàng của bạn");
         }
         ProductEntity productEntity = productRepository.findById(request.getProductId()).orElseThrow(
-                () -> new ValidationException("Product not found")
+                () -> new ValidationException("Không tìm thấy sản phẩm")
         );
         List<ProductReviewEntity> existingReviews = productReviewRepository.findByOrderCombo(orderComboEntity);
         if (!existingReviews.isEmpty()) {
-            throw new ValidationException("Product review already exists for this order");
+            throw new ValidationException("Đơn hàng này đã có đánh giá sản phẩm");
         }
         boolean containsProduct = orderComboEntity.getOrderItems().stream()
                 .anyMatch(orderItem -> orderItem.getProduct().getId().equals(productEntity.getId()));
         if (!containsProduct) {
-            throw new ValidationException("Order does not contain product id: " + request.getProductId());
+            throw new ValidationException("Đơn hàng không chứa sản phẩm có ID: " + request.getProductId());
         }
         SellerEntity sellerEntity = productEntity.getSeller();
         ProductReviewEntity productReviewEntity = new ProductReviewEntity();
@@ -79,7 +79,7 @@ public class ProductReviewServiceImpl implements ProductReviewService {
             updateRatingShop(sellerEntity);
             return maptoProductReviewResponse(productReviewEntity);
         } catch (Exception e) {
-            throw new ActionFailedException("Product review could not be saved " + e.getMessage());
+            throw new ActionFailedException("Không thể lưu đánh giá sản phẩm " + e.getMessage());
         }
 
     }
@@ -87,7 +87,7 @@ public class ProductReviewServiceImpl implements ProductReviewService {
     @Override
     public PaginationWrapper<List<ProductReviewResponse>> getProductReviewByProductId(String productId, QueryWrapper queryWrapper) {
         ProductEntity productEntity = productRepository.findById(productId).orElseThrow(
-                () -> new ValidationException("Product not found")
+                () -> new ValidationException("Không tìm thấy sản phẩm")
         );
 
         return productReviewRepository.query(queryWrapper, (param) -> (root, query, criteriaBuilder) -> {
@@ -115,7 +115,7 @@ public class ProductReviewServiceImpl implements ProductReviewService {
     @Override
     public ProductReviewResponse getProductReviewDetails(String id) {
         ProductReviewEntity productReviewEntity = productReviewRepository.findById(id).orElseThrow(
-                () -> new ValidationException("Product review not found")
+                () -> new ValidationException("Không tìm thấy đánh giá sản phẩm")
         );
         return maptoProductReviewResponse(productReviewEntity);
     }
@@ -125,10 +125,10 @@ public class ProductReviewServiceImpl implements ProductReviewService {
         var customer = getCustomer();
 
         var productReviewEntity = productReviewRepository.findById(id).orElseThrow(
-                () -> new ValidationException("Product review not found")
+                () -> new ValidationException("Không tìm thấy đánh giá sản phẩm")
         );
         if (!customer.getId().equals(productReviewEntity.getCustomer().getId())) {
-            throw new ValidationException("Customer is not the same");
+            throw new ValidationException("Khách hàng không khớp");
         }
         productReviewEntity.setVote(request.getVote());
         productReviewEntity.setContent(request.getContent());
@@ -139,7 +139,7 @@ public class ProductReviewServiceImpl implements ProductReviewService {
             updateRatingShop(productReviewEntity.getSeller());
             return maptoProductReviewResponse(productReviewEntity);
         } catch (Exception e) {
-            throw new ValidationException("Product review could not be saved " + e.getMessage());
+            throw new ValidationException("Không thể lưu đánh giá sản phẩm " + e.getMessage());
         }
 
     }
@@ -158,10 +158,10 @@ public class ProductReviewServiceImpl implements ProductReviewService {
     public ProductReviewResponse deleteProductReview(String id) {
         var customer = getCustomer();
         var productReviewEntity = productReviewRepository.findById(id).orElseThrow(
-                () -> new ValidationException("Product review not found")
+                () -> new ValidationException("Không tìm thấy đánh giá sản phẩm")
         );
         if (!customer.getId().equals(productReviewEntity.getCustomer().getId())) {
-            throw new ValidationException("Customer is not the same");
+            throw new ValidationException("Khách hàng không khớp");
         }
         productReviewEntity.setStatus(false);
         try {
@@ -170,7 +170,7 @@ public class ProductReviewServiceImpl implements ProductReviewService {
             updateRatingShop(productReviewEntity.getSeller());
             return maptoProductReviewResponse(productReviewEntity);
         } catch (Exception e) {
-            throw new ValidationException("Product review could not be delete " + e.getMessage());
+            throw new ValidationException("Không thể xóa đánh giá sản phẩm " + e.getMessage());
         }
 
     }
@@ -230,7 +230,7 @@ public class ProductReviewServiceImpl implements ProductReviewService {
     @Override
     public Long totalReviewByProductId(String productId) {
         ProductEntity productEntity = productRepository.findById(productId).orElseThrow(
-                () -> new ValidationException("Product not found")
+                () -> new ValidationException("Không tìm thấy sản phẩm")
         );
         return productReviewRepository.countByProductAndStatusTrue(productEntity);
     }
@@ -239,7 +239,7 @@ public class ProductReviewServiceImpl implements ProductReviewService {
     public PaginationWrapper<List<ProductOrderNoReview>> getAllProductNoReviewByCustomer(QueryWrapper queryWrapper) {
         var customer = getCustomer();
         if (customer == null) {
-            throw new ValidationException("Customer not found");
+            throw new ValidationException("Không tìm thấy khách hàng");
         }
 
         Page<OrderItemEntity> pageResult = orderItemRepository.query(queryWrapper, (param) -> (root, query, criteriaBuilder) -> {
@@ -283,7 +283,7 @@ public class ProductReviewServiceImpl implements ProductReviewService {
     public PaginationWrapper<List<ProductReviewResponse>> getAllProductReviewByCustomer(QueryWrapper queryWrapper) {
         var customer = getCustomer();
         if (customer == null) {
-            throw new ValidationException("Customer not found");
+            throw new ValidationException("Không tìm thấy khách hàng");
         }
         var reviews = productReviewRepository.findProductReviewsByCustomerAndStatusTrue(customer,queryWrapper.pagination());
         List<ProductReviewResponse> productReviewResponses = reviews.getContent()
@@ -347,7 +347,7 @@ public class ProductReviewServiceImpl implements ProductReviewService {
     public PaginationWrapper<List<ProductReviewResponse>> getProductReviewBySellerId(String sellerId, QueryWrapper queryWrapper) {
 
         SellerEntity sellerEntity = sellerRepository.findById(sellerId)
-                .orElseThrow(() -> new ValidationException("Seller not found"));
+                .orElseThrow(() -> new ValidationException("SKhông tìm thấy ngời bán"));
 
         List<ProductReviewEntity> productReviews = productReviewRepository.findBySeller(sellerEntity);
         List<ProductReviewResponse> reviewResponses = productReviews.stream()
@@ -366,7 +366,7 @@ public class ProductReviewServiceImpl implements ProductReviewService {
         try {
             productRepository.save(productEntity);
         } catch (Exception e) {
-            throw new ActionFailedException("Product review could not be saved " + e.getMessage());
+            throw new ActionFailedException("Không thể lưu đánh giá sản phẩm " + e.getMessage());
         }
 
     }
@@ -379,17 +379,17 @@ public class ProductReviewServiceImpl implements ProductReviewService {
         try {
             sellerRepository.save(sellerEntity);
         } catch (Exception e) {
-            throw new ActionFailedException("Seller review could not be saved " + e.getMessage());
+            throw new ActionFailedException("Không thể lưu đánh giá người bán " + e.getMessage());
         }
     }
 
     @Override
     public ProductReviewResponse createReplyProductReview(String id, String content) {
         ProductReviewEntity productReview = productReviewRepository.findById(id).orElseThrow(
-                () -> new ValidationException("Product review not found"));
+                () -> new ValidationException("Không tìm thấy đánh giá sản phẩm"));
         var seller = getSeller();
         if (!seller.equals(productReview.getSeller())) {
-            throw new ValidationException("Seller is not the same");
+            throw new ValidationException("Người bán không khớp");
         }
         productReview.setReplyContent(content);
         productReview.setReplyCreatedDate(Timestamp.valueOf(LocalDateTime.now()));
@@ -404,10 +404,10 @@ public class ProductReviewServiceImpl implements ProductReviewService {
     @Override
     public ProductReviewResponse updateReplyProductReview(String id, String content) {
         ProductReviewEntity productReview = productReviewRepository.findById(id).orElseThrow(
-                () -> new ValidationException("Product review not found"));
+                () -> new ValidationException("Không thể lưu đánh giá sản phẩm"));
         var seller = getSeller();
         if (!seller.equals(productReview.getSeller())) {
-            throw new ValidationException("Seller is not the same");
+            throw new ValidationException("Người bán không khớp");
         }
         productReview.setReplyContent(content);
         productReview.setReplyUpdatedDate(Timestamp.valueOf(LocalDateTime.now()));
@@ -415,21 +415,21 @@ public class ProductReviewServiceImpl implements ProductReviewService {
             productReviewRepository.save(productReview);
             return maptoProductReviewResponse(productReview);
         } catch (Exception e) {
-            throw new ValidationException("Product review could not be saved " + e.getMessage());
+            throw new ValidationException("Không thể lưu đánh giá sản phẩm " + e.getMessage());
         }
     }
 
     @Override
     public PaginationWrapper<List<ProductReviewResponse>> getAllProductReviewsBySellerAndSearch(Double vote,String isReply, QueryWrapper queryWrapper) {
         if (queryWrapper == null || queryWrapper.pagination() == null) {
-            throw new ValidationException("QueryWrapper or pagination cannot be null");
+            throw new ValidationException("Từ khóa hoặc phân trang không được để trống");
         }
 
         SellerEntity seller = getSeller();
         QueryFieldWrapper keyword = queryWrapper.search().remove("keyword");
 
         if (vote != null && (vote <= 0 || vote > 5)) {
-            throw new ValidationException("Vote must be between 0 and 5, exclusive of 0");
+            throw new ValidationException("Số sao phải nằm trong khoảng từ 1 đến 5");
         }
 
         return productReviewRepository.query(queryWrapper, (param) -> (root, query, cb) -> {
