@@ -26,7 +26,7 @@ public class OrderHistoryController {
                 .success(true)
                 .code("SUCCESS")
                 .content(result)
-                .messages("Orders status retrieved successfully")
+                .messages("Trạng thái đơn hàng đã được lấy thành công")
                 .build());
     }
 
@@ -37,7 +37,7 @@ public class OrderHistoryController {
                 .success(true)
                 .code("SUCCESS")
                 .content(result)
-                .messages("Orders status retrieved successfully")
+                .messages("Lịch sử đơn hàng đã được lấy thành công")
                 .build());
     }
 
@@ -48,7 +48,7 @@ public class OrderHistoryController {
                 .success(true)
                 .code("SUCCESS")
                 .content(result)
-                .messages("Orders status retrieved successfully")
+                .messages("Tạo lịch sử đơn hàng thành công")
                 .build());
     }
     @PutMapping("{id}")
@@ -58,7 +58,7 @@ public class OrderHistoryController {
                 .success(true)
                 .code("SUCCESS")
                 .content(result)
-                .messages("Orders status retrieved successfully")
+                .messages("Cập nhật lịch sử đơn hàng thành công")
                 .build());
     }
 }

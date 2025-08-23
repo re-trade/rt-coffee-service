@@ -28,7 +28,7 @@ public class OrderStatusController {
                 .success(true)
                 .code("SUCCESS")
                 .content(result)
-                .messages("Active order statuses retrieved successfully")
+                .messages("Trạng thái đơn hàng đang hoạt động đã được lấy thành công")
                 .build());
     }
 
@@ -40,7 +40,7 @@ public class OrderStatusController {
                 .success(true)
                 .code("SUCCESS")
                 .content(result)
-                .messages("Available statuses for seller retrieved successfully")
+                .messages("Các trạng thái khả dụng cho người bán đã được lấy thành công")
                 .build());
     }
 
@@ -52,7 +52,7 @@ public class OrderStatusController {
                 .success(true)
                 .code("SUCCESS")
                 .content(result)
-                .messages("Next order statuses retrieved successfully")
+                .messages("Các trạng thái tiếp theo của đơn hàng đã được lấy thành công")
                 .build());
     }
 }
