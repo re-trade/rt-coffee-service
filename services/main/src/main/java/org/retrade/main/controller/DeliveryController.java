@@ -30,7 +30,7 @@ public class DeliveryController {
                 .success(true)
                 .code("SUCCESS")
                 .content(response)
-                .messages("Order retrieved successfully")
+                .messages("Lấy đơn hàng thành công")
                 .build());
     }
 }

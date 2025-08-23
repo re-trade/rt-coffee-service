@@ -31,7 +31,7 @@ public class DashboardController {
                 .success(true)
                 .code("SELLER_DASHBOARD_RETRIEVED")
                 .content(result)
-                .messages("Seller Dashboard retrieved successfully")
+                .messages("Lấy dữ liệu thống kê người bán thành công")
                 .build());
     }
 
@@ -42,7 +42,7 @@ public class DashboardController {
                 .success(true)
                 .code("SELLER_DASHBOARD_RETRIEVED")
                 .content(result)
-                .messages("Seller Dashboard retrieved successfully")
+                .messages("Lấy dữ liệu thống kê người bán thành công")
                 .build());
     }
 
@@ -53,7 +53,7 @@ public class DashboardController {
                 .success(true)
                 .code("SELLER_DASHBOARD_RETRIEVED")
                 .content(result)
-                .messages("Seller Dashboard retrieved successfully")
+                .messages("Lấy dữ liệu thống kê người bán thành công")
                 .build());
     }
 
@@ -65,7 +65,7 @@ public class DashboardController {
                 .success(true)
                 .code("SELLER_DASHBOARD_RETRIEVED")
                 .content(result)
-                .messages("Seller Dashboard retrieved successfully")
+                .messages("Lấy dữ liệu thống kê người bán thành công")
                 .build());
     }
 
@@ -76,7 +76,7 @@ public class DashboardController {
                 .success(true)
                 .code("SELLER_DASHBOARD_RETRIEVED")
                 .content(result)
-                .messages("Seller Dashboard retrieved successfully")
+                .messages("Lấy dữ liệu thống kê người bán thành công")
                 .build());
     }
 
@@ -87,7 +87,7 @@ public class DashboardController {
                 .success(true)
                 .code("SELLER_DASHBOARD_RETRIEVED")
                 .content(result)
-                .messages("Seller Dashboard retrieved successfully")
+                .messages("Lấy dữ liệu thống kê người bán thành công")
                 .build());
     }
 
@@ -98,7 +98,7 @@ public class DashboardController {
                 .success(true)
                 .code("SELLER_DASHBOARD_RETRIEVED")
                 .content(result)
-                .messages("Seller Dashboard retrieved successfully")
+                .messages("Lấy dữ liệu thống kê người bán thành công")
                 .build());
     }
 
@@ -110,7 +110,7 @@ public class DashboardController {
                 .success(true)
                 .code("ADMIN_DASHBOARD_RETRIEVED")
                 .content(result)
-                .messages("Admin Dashboard retrieved successfully")
+                .messages("Lấy dữ liệu thống kê quản trị thành công")
                 .build());
     }
 
@@ -121,7 +121,7 @@ public class DashboardController {
                 .success(true)
                 .code("ADMIN_DASHBOARD_RETRIEVED")
                 .content(result)
-                .messages("Admin Dashboard retrieved successfully")
+                .messages("Lấy dữ liệu thống kê quản trị thành công")
                 .build());
     }
 
@@ -132,7 +132,7 @@ public class DashboardController {
                 .success(true)
                 .code("ADMIN_DASHBOARD_RETRIEVED")
                 .content(result)
-                .messages("Admin Dashboard retrieved successfully")
+                .messages("Lấy dữ liệu thống kê quản trị thành công")
                 .build());
     }
 
