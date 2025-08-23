@@ -34,7 +34,7 @@ public class ProductHistoryController {
                 .success(true)
                 .code("SUCCESS")
                 .unwrapPaginationWrapper(response)
-                .messages("Product history return successfully")
+                .messages("Trả về lịch sử sản phẩm thành công")
                 .build());
     }
 
@@ -45,7 +45,7 @@ public class ProductHistoryController {
                         .success(true)
                         .code("SUCCESS")
                         .content(result)
-                        .messages("Retrade return successfully")
+                        .messages("Chuyển sản phẩm từ đơn hàng về kho thành công")
                 .build());
     }
 }

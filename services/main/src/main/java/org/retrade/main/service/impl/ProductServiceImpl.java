@@ -70,7 +70,7 @@ public class ProductServiceImpl implements ProductService {
         var seller = account.getSeller();
 
         if (seller == null) {
-            throw new ValidationException("Seller profile not found");
+            throw new ValidationException("Không tìm thấy hồ sơ người bán");
         }
         var status = ProductStatusEnum.INIT;
         if(request.getStatus() != null && request.getStatus() == ProductStatusEnum.DRAFT) {
@@ -100,7 +100,7 @@ public class ProductServiceImpl implements ProductService {
         if (request.getStatus() != null) {
             var enumSet = Set.of(ProductStatusEnum.DRAFT, ProductStatusEnum.INIT);
             if (!enumSet.contains(request.getStatus())) {
-                throw new ValidationException("Invalid product status");
+                throw new ValidationException("Trạng thái sản phẩm không hợp lệ");
             }
             product.setStatus(request.getStatus());
         }
@@ -109,7 +109,7 @@ public class ProductServiceImpl implements ProductService {
             saveProductDocument(savedProduct);
             return mapToProductResponse(savedProduct);
         } catch (Exception ex) {
-            throw new ActionFailedException("Failed to create product", ex);
+            throw new ActionFailedException("Tạo sản phẩm thất bại", ex);
         }
     }
 
@@ -120,10 +120,10 @@ public class ProductServiceImpl implements ProductService {
         var account = authUtils.getUserAccountFromAuthentication();
         var seller = account.getSeller();
         if (seller == null) {
-            throw new ValidationException("Seller profile not found");
+            throw new ValidationException("Không tìm thấy hồ sơ người bán");
         }
         if (!product.getSeller().getId().equals(seller.getId())) {
-            throw new ValidationException("You can only update your own products");
+            throw new ValidationException("Bạn chỉ có thể cập nhật sản phẩm của chính mình");
         }
 
         var newCategories = convertCategoryIdsToEntities(request.getCategoryIds());
@@ -152,7 +152,7 @@ public class ProductServiceImpl implements ProductService {
             saveProductDocument(updatedProduct, id);
             return mapToProductResponse(updatedProduct);
         } catch (Exception ex) {
-            throw new ActionFailedException("Failed to update product", ex);
+            throw new ActionFailedException("Cập nhật sản phẩm thất bại", ex);
         }
     }
 
@@ -174,12 +174,12 @@ public class ProductServiceImpl implements ProductService {
     public ProductResponse updateProductQuantity(UpdateProductQuantityRequest request) {
         var account = authUtils.getUserAccountFromAuthentication();
         if (account.getSeller() == null) {
-            throw new ValidationException("Seller profile not found");
+            throw new ValidationException("Không tìm thấy hồ sơ người bán");
         }
         var seller = account.getSeller();
         var product = productRepository.findByIdAndSeller(request.productId(), seller).orElseThrow(() -> new ValidationException("Product not found"));
         if (product.getParentProduct() != null) {
-            throw new ValidationException("Can't update quantity for retrade product");
+            throw new ValidationException("Không thể cập nhật số lượng cho sản phẩm trao đổi lại");
         }
         product.setQuantity(request.quantity());
         try {
@@ -187,7 +187,7 @@ public class ProductServiceImpl implements ProductService {
             saveProductDocument(result, result.getId());
             return mapToProductResponse(result);
         } catch (Exception ex) {
-            throw new ActionFailedException("Failed to update product quantity", ex);
+            throw new ActionFailedException("Cập nhật số lượng sản phẩm thất bại", ex);
         }
     }
 
@@ -203,14 +203,14 @@ public class ProductServiceImpl implements ProductService {
 
         var account = authUtils.getUserAccountFromAuthentication();
         if (account.getSeller() == null) {
-            throw new ValidationException("Seller profile not found");
+            throw new ValidationException("Không tìm thấy hồ sơ người bán");
         }
         var seller = account.getSeller();
-        var product = productRepository.findByIdAndSeller(request.productId(), seller).orElseThrow(() -> new ValidationException("Product not found"));
+        var product = productRepository.findByIdAndSeller(request.productId(), seller).orElseThrow(() -> new ValidationException("Không tìm thấy sản phẩm"));
         var allowedNextStates = SELLER_ALLOWED_TRANSITIONS.getOrDefault(product.getStatus(), Set.of());
         if (!allowedNextStates.contains(request.status())) {
             throw new ValidationException(String.format(
-                    "Invalid status change from %s to %s for seller",
+                    "Người bán không thể thay đổi trạng thái từ %s sang %s",
                     product.getStatus(), request.status()
             ));
         }
@@ -222,7 +222,7 @@ public class ProductServiceImpl implements ProductService {
             var result = productRepository.save(product);
             saveProductDocument(result, result.getId());
         } catch (Exception ex) {
-            throw new ActionFailedException("Failed to update product status", ex);
+            throw new ActionFailedException("Cập nhật trạng thái sản phẩm thất bại", ex);
         }
     }
 
@@ -232,15 +232,15 @@ public class ProductServiceImpl implements ProductService {
         var product = getProductEntityById(id);
         var account = authUtils.getUserAccountFromAuthentication();
         var seller = sellerRepository.findByAccount(account)
-                .orElseThrow(() -> new ValidationException("Seller profile not found"));
+                .orElseThrow(() -> new ValidationException("Không tìm thấy hồ sơ người bán"));
         if (!product.getSeller().getId().equals(seller.getId())) {
-            throw new ValidationException("You can only delete your own products");
+            throw new ValidationException("Bạn chỉ có thể xóa sản phẩm của chính mình");
         }
         try {
             productRepository.delete(product);
             productSearchRepository.deleteById(id);
         } catch (Exception ex) {
-            throw new ActionFailedException("Failed to delete product", ex);
+            throw new ActionFailedException("Xóa sản phẩm thất bại", ex);
         }
     }
 
@@ -274,7 +274,7 @@ public class ProductServiceImpl implements ProductService {
         var search = queryWrapper.search();
         var pagination = queryWrapper.pagination();
         if (search == null || search.isEmpty() || !search.containsKey("id")) {
-            throw new ValidationException("Missing required parameter: id");
+            throw new ValidationException("Thiếu tham số bắt buộc: id");
         }
         QueryFieldWrapper id = search.remove("id");
         List<String> productIds = null;
@@ -286,7 +286,7 @@ public class ProductServiceImpl implements ProductService {
                     @SuppressWarnings("unchecked")
                     Collection<Object> idCollection = (Collection<Object>) id.getValue();
                     if (idCollection.isEmpty()) {
-                        throw new ValidationException("The 'IN' condition requires at least one food ID.");
+                        throw new ValidationException("Điều kiện 'IN' yêu cầu ít nhất một mã sản phẩm");
                     }
                     productIds = productRecommendGrpcClient.getSimilarProductByProductIds(
                             idCollection.stream().map(Object::toString).collect(Collectors.toSet()),
@@ -294,7 +294,7 @@ public class ProductServiceImpl implements ProductService {
                             pagination.getPageSize());
                     break;
                     default:
-                    throw new ValidationException("Invalid condition operator: " + id.getOperator());
+                    throw new ValidationException("Toán tử điều kiện không hợp lệ " + id.getOperator());
         }
         List<String> finalProductIds = productIds;
         return productRepository.query(queryWrapper, (param) -> (root, query, criteriaBuilder) -> {
@@ -317,7 +317,7 @@ public class ProductServiceImpl implements ProductService {
     @Override
     public PaginationWrapper<List<ProductResponse>> getProductsBySeller(String sellerId, QueryWrapper queryWrapper) {
         var seller = sellerRepository.findById(sellerId)
-                .orElseThrow(() -> new ValidationException("Seller not found"));
+                .orElseThrow(() -> new ValidationException("Không tìm thấy người bán"));
         return getProductsBySeller(seller, queryWrapper);
     }
 
@@ -326,7 +326,7 @@ public class ProductServiceImpl implements ProductService {
         var account = authUtils.getUserAccountFromAuthentication();
         var seller = account.getSeller();
         if (seller == null) {
-            throw new ValidationException("Seller profile not found");
+            throw new ValidationException("Không tìm thấy hồ sơ người bán");
         }
         return getProductsBySeller(seller, queryWrapper);
     }
@@ -382,7 +382,7 @@ public class ProductServiceImpl implements ProductService {
     public void verifyProduct(String id) {
         var product = getProductEntityById(id);
         if (product.getStatus() != ProductStatusEnum.INIT) {
-            throw new ValidationException("Product is not in INIT status");
+            throw new ValidationException("Sản phẩm không ở trạng thái khởi tạo (INIT)");
         }
         product.setVerified(true);
         product.setStatus(ProductStatusEnum.ACTIVE);
@@ -390,7 +390,7 @@ public class ProductServiceImpl implements ProductService {
             var result = productRepository.save(product);
             saveProductDocument(result, result.getId());
         } catch (Exception ex) {
-            throw new ActionFailedException("Failed to verify product", ex);
+            throw new ActionFailedException("Xác thực sản phẩm thất bại", ex);
         }
     }
 
@@ -399,14 +399,14 @@ public class ProductServiceImpl implements ProductService {
     public void unverifyProduct(String id) {
         var product = getProductEntityById(id);
         if (product.getStatus() != ProductStatusEnum.INIT) {
-            throw new ValidationException("Product is not in INIT status");
+            throw new ValidationException("Sản phẩm không ở trạng thái khởi tạo (INIT)");
         }
         product.setStatus(ProductStatusEnum.INACTIVE);
         product.setVerified(false);
         try {
             productRepository.save(product);
         } catch (Exception ex) {
-            throw new ActionFailedException("Failed to unverify product", ex);
+            throw new ActionFailedException("Hủy xác thực sản phẩm thất bại", ex);
         }
     }
 
@@ -423,7 +423,7 @@ public class ProductServiceImpl implements ProductService {
     public FieldAdvanceSearch sellerFiledAdvanceSearch(QueryWrapper queryWrapper) {
         var account = authUtils.getUserAccountFromAuthentication();
         if (account.getSeller() == null) {
-            throw new ValidationException("Seller profile not found");
+            throw new ValidationException("Không tìm thấy hồ sơ người bán");
         }
 
         var seller = account.getSeller();
@@ -530,19 +530,19 @@ public class ProductServiceImpl implements ProductService {
     private void validateReTradeUpdate(ProductEntity oldProduct, UpdateProductRequest request, Set<CategoryEntity> newCategories) {
         if (oldProduct.getParentProduct() != null) {
             if (!Objects.equals(oldProduct.getName(), request.getName())) {
-                throw new ValidationException("Cannot change name for resale product");
+                throw new ValidationException("Không thể thay đổi tên cho sản phẩm ký gửi");
             }
             if (!Objects.equals(oldProduct.getBrand().getId(), request.getBrandId())) {
-                throw new ValidationException("Cannot change brand for resale product");
+                throw new ValidationException("Không thể thay đổi thương hiệu cho sản phẩm ký gửi");
             }
             if (!Objects.equals(oldProduct.getModel(), request.getModel())) {
-                throw new ValidationException("Cannot change model for resale product");
+                throw new ValidationException("Không thể thay đổi mẫu mã cho sản phẩm ký gửi");
             }
             if (!Objects.equals(oldProduct.getCategories(), newCategories)) {
-                throw new ValidationException("Cannot change categories for resale product");
+                throw new ValidationException("Không thể thay đổi danh mục cho sản phẩm ký gửi");
             }
             if (!Objects.equals(oldProduct.getQuantity(), request.getQuantity())) {
-                throw new ValidationException("Cannot change quantity for resale product");
+                throw new ValidationException("Không thể thay đổi số lượng cho sản phẩm ký gửi");
             }
         }
     }
@@ -642,7 +642,7 @@ public class ProductServiceImpl implements ProductService {
 
     private ProductEntity getProductEntityById(String id) {
         return productRepository.findById(id)
-                .orElseThrow(() -> new ValidationException("Product not found with id: " + id));
+                .orElseThrow(() -> new ValidationException("Không tìm thấy sản phẩm với mã: " + id));
     }
 
     private ProductResponse mapToProductResponse(ProductEntity product) {
@@ -961,11 +961,11 @@ public class ProductServiceImpl implements ProductService {
 
     private void validateCategories(Set<String> categoryIds) {
         if (categoryIds == null || categoryIds.isEmpty()) {
-            throw new ValidationException("Invalid categories");
+            throw new ValidationException("Danh mục không hợp lệ");
         }
         var categoryCount = categoryRepository.countDistinctByIdIn(categoryIds);
         if (categoryCount != categoryIds.size()) {
-            throw new ValidationException("Invalid categories");
+            throw new ValidationException("Danh mục không hợp lệ");
         }
     }
 
@@ -981,13 +981,13 @@ public class ProductServiceImpl implements ProductService {
 
     private Set<CategoryEntity> convertCategoryIdsToEntities(Set<String> categoryIds) {
         if (categoryIds == null || categoryIds.isEmpty()) {
-            throw new ValidationException("Invalid categories");
+            throw new ValidationException("Danh mục không hợp lệ");
         }
         return categoryRepository.findByIdIn(categoryIds);
     }
 
     private BrandEntity convertBrandIdToEntity(String id) {
-        return brandEntityRepository.findById(id).orElseThrow(() -> new ValidationException("Brand not found with id: " + id));
+        return brandEntityRepository.findById(id).orElseThrow(() -> new ValidationException("Không tìm thấy thương hiệu với mã: " + id));
     }
 
     private PaginationWrapper<List<ProductResponse>> getProductsBySeller(SellerEntity seller, QueryWrapper queryWrapper) {
@@ -1036,7 +1036,7 @@ public class ProductServiceImpl implements ProductService {
     }
 
     private void saveProductDocument(ProductEntity productEntity, String id) {
-        var productDoc = productSearchRepository.findById(id).orElseThrow(() -> new ValidationException("Product not found with id: " + id));
+        var productDoc = productSearchRepository.findById(id).orElseThrow(() -> new ValidationException("Không tìm thấy sản phẩm với mã: " + id));
         productDoc.setName(productEntity.getName());
         productDoc.setSellerId(productEntity.getSeller().getId());
         productDoc.setShortDescription(productEntity.getShortDescription());

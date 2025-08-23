@@ -23,7 +23,7 @@ public class ProductPriceHistoryServiceImpl implements ProductPriceHistoryServic
     public List<ProductPriceHistoryResponse>  getProductPriceHistoryList(String productId) {
         List<ProductPriceHistoryEntity> historyList = productPriceHistoryRepository.findByProduct_Id(productId);
         if (historyList.isEmpty()) {
-            throw new ValidationException("Product not exist");
+            throw new ValidationException("Sản phẩm không tồn tại");
         }
         try {
             return historyList.stream()
@@ -35,7 +35,7 @@ public class ProductPriceHistoryServiceImpl implements ProductPriceHistoryServic
                     )
                     .collect(Collectors.toList());
         } catch (Exception ex) {
-            throw new ActionFailedException("Failed to get product price history");
+            throw new ActionFailedException("Lấy lịch sử giá sản phẩm thất bại");
         }
     }
 }
