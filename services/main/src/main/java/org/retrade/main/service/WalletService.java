@@ -15,6 +15,8 @@ public interface WalletService {
 
     void approveWithdrawRequest(WithdrawApproveRequest request);
 
+    void removeWithdrawRequest(String id);
+
     PaginationWrapper<List<BankResponse>> getBankList(QueryWrapper queryWrapper);
 
     PaginationWrapper<List<WithdrawRequestBaseResponse>> getWithdrawRequestList(QueryWrapper queryWrapper);

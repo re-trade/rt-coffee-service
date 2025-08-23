@@ -122,6 +122,24 @@ public class WalletServiceImpl implements WalletService {
     }
 
     @Override
+    @Transactional
+    public void removeWithdrawRequest(String id) {
+        var account = authUtils.getUserAccountFromAuthentication();
+        var withdraw = withdrawRepository.findById(id).orElseThrow(() -> new ValidationException("Không tìm thấy yêu cầu rút tiền"));
+        if (withdraw.getStatus() != WithdrawStatusEnum.PENDING) {
+            throw new ValidationException("Trạng thái yêu cầu rút tiền không phải là ĐANG CHỜ");
+        }
+        if (!withdraw.getAccount().getId().equals(account.getId())) {
+            throw new ValidationException("Yêu cầu rút tiền này không thuộc về tài khoản của bạn");
+        }
+        try {
+            withdrawRepository.delete(withdraw);
+        } catch (Exception ex) {
+            throw new ActionFailedException("Có lỗi xảy ra khi xóa yêu cầu rút tiền", ex);
+        }
+    }
+
+    @Override
     public PaginationWrapper<List<BankResponse>> getBankList(QueryWrapper queryWrapper) {
         var result = vietQrBankRepository.search(queryWrapper);
         var list = result.map(this::wrapBankResponse).stream().toList();
@@ -135,6 +153,10 @@ public class WalletServiceImpl implements WalletService {
     public PaginationWrapper<List<WithdrawRequestBaseResponse>> getWithdrawRequestList(QueryWrapper queryWrapper) {
         return withdrawRepository.query(queryWrapper, (param) -> (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
+            if (query != null) {
+                query.orderBy(criteriaBuilder.asc(root.get("status")));
+                query.orderBy(criteriaBuilder.desc(root.get("updatedDate")));
+            }
             return getPredicate(param, root, criteriaBuilder, predicates);
         }, (items)  -> {
             var map = vietQrBankRepository.getBankMap();

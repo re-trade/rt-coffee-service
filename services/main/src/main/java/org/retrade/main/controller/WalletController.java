@@ -49,6 +49,18 @@ public class WalletController {
                 .build());
     }
 
+    @DeleteMapping("withdraw/{id}")
+    @PreAuthorize("hasRole('ROLE_CUSTOMER')")
+    public ResponseEntity<ResponseObject<WithdrawRequestDetailResponse>> removeWithdrawRequest(@PathVariable String id) {
+        var response = walletService.getWithdrawRequestDetail(id);
+        return ResponseEntity.ok(new ResponseObject.Builder<WithdrawRequestDetailResponse>()
+                .success(true)
+                .code("WITHDRAW_REMOVED")
+                .content(response)
+                .messages("Withdraw removed successfully")
+                .build());
+    }
+
     @PostMapping("withdraw/review")
     public ResponseEntity<ResponseObject<Void>> withdrawReview(@RequestBody WithdrawApproveRequest withdrawApproveRequest) {
         walletService.approveWithdrawRequest(withdrawApproveRequest);
