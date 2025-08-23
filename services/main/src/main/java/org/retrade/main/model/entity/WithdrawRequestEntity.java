@@ -38,6 +38,8 @@ public class WithdrawRequestEntity extends BaseSQLEntity {
     private String qrCodeUrl;
     @Column(name = "notes", columnDefinition = "TEXT")
     private String notes;
+    @Column(name = "cancel_reason", length = 255)
+    private String cancelReason;
     @Column(name = "prove_image_url", length = 255)
     private String proveImageUrl;
 }

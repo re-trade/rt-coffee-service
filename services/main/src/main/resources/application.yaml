@@ -176,3 +176,9 @@ minio:
   access-key: ${MINIO_ACCESS_KEY:}
   secret-key: ${MINIO_SECRET_KEY:}
   bucket-name: ${MINIO_BUCKET_NAME:retrade}
+
+withdraw:
+  min-withdraw: ${WITHDRAW_MIN:3000}
+  max-withdraw: ${WITHDRAW_MAX:2000000}
+  daily-limit: ${WITHDRAW_DAILY_LIMIT:2000000}
+  max-pending-request: ${WITHDRAW_MAX_PENDING_REQUEST:5}

@@ -9,16 +9,13 @@ import org.retrade.common.model.dto.request.QueryWrapper;
 import org.retrade.common.model.dto.response.PaginationWrapper;
 import org.retrade.common.model.exception.ActionFailedException;
 import org.retrade.common.model.exception.ValidationException;
-import org.retrade.main.model.constant.TransactionTypeEnum;
+import org.retrade.main.config.common.WithdrawConfig;
 import org.retrade.main.model.constant.WithdrawStatusEnum;
 import org.retrade.main.model.dto.request.VietQrGenerateRequest;
 import org.retrade.main.model.dto.request.WithdrawApproveRequest;
 import org.retrade.main.model.dto.request.WithdrawRequest;
 import org.retrade.main.model.dto.response.*;
-import org.retrade.main.model.entity.AccountEntity;
-import org.retrade.main.model.entity.TransactionEntity;
-import org.retrade.main.model.entity.VietQrBankEntity;
-import org.retrade.main.model.entity.WithdrawRequestEntity;
+import org.retrade.main.model.entity.*;
 import org.retrade.main.model.message.SocketNotificationMessage;
 import org.retrade.main.repository.jpa.*;
 import org.retrade.main.repository.redis.VietQrBankRepository;
@@ -28,9 +25,13 @@ import org.retrade.main.service.WalletService;
 import org.retrade.main.util.AuthUtils;
 import org.retrade.main.util.HashUtils;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.sql.Timestamp;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.*;
 
 @Service
@@ -43,6 +44,7 @@ public class WalletServiceImpl implements WalletService {
     private final WithdrawRepository withdrawRepository;
     private final VietQrBankRepository vietQrBankRepository;
     private final WalletTransactionRepository walletTransactionRepository;
+    private final WithdrawConfig withdrawConfig;
     private final MessageProducerService messageProducerService;
     private final VietQRService vietQRService;
 
@@ -56,16 +58,14 @@ public class WalletServiceImpl implements WalletService {
     @Override
     public void withdrawRequest(WithdrawRequest request) {
         var account = authUtils.getUserAccountFromAuthentication();
-        if (request.getAmount().compareTo(account.getBalance()) > 0) {
-            throw new ValidationException("Insufficient balance");
-        }
-        var bankInfo = customerBankInfoRepository.findById(request.getBankProfileId()).orElseThrow(() -> new ValidationException("Bank profile not found"));
+        var bankInfo = validateWithdrawRequest(request, account);
         var withdraw = WithdrawRequestEntity.builder()
                 .account(account)
                 .amount(request.getAmount())
                 .status(WithdrawStatusEnum.PENDING)
                 .bankAccount(bankInfo.getAccountNumber())
                 .bankBin(bankInfo.getBankBin())
+                .notes(request.getContent())
                 .userBankName(bankInfo.getUserBankName())
                 .build();
 
@@ -87,6 +87,7 @@ public class WalletServiceImpl implements WalletService {
     }
 
     @Override
+    @Transactional(rollbackFor = {ValidationException.class, ActionFailedException.class})
     public void approveWithdrawRequest(WithdrawApproveRequest request) {
         var withdraw = withdrawRepository.findById(request.getWithdrawId()).orElseThrow(() -> new ValidationException("Withdraw request not found"));
         var account = withdraw.getAccount();
@@ -97,18 +98,27 @@ public class WalletServiceImpl implements WalletService {
             if (account.getBalance().compareTo(withdraw.getAmount()) < 0) {
                 throw new ValidationException("Insufficient balance");
             }
+            withdraw.setStatus(WithdrawStatusEnum.COMPLETED);
+            withdraw.setProcessedDate(new Timestamp(System.currentTimeMillis()));
             updateBalance(account.getBalance().subtract(withdraw.getAmount()), account);
-            var tx = TransactionEntity.builder()
+            var transaction = WalletTransactionEntity.builder()
                     .account(account)
                     .amount(withdraw.getAmount().negate())
-                    .type(TransactionTypeEnum.WITHDRAW)
+                    .note("Withdraw request approved")
                     .build();
-            transactionRepository.save(tx);
+            walletTransactionRepository.save(transaction);
+
         } else {
             withdraw.setStatus(WithdrawStatusEnum.REJECTED);
             withdraw.setProcessedDate(new Timestamp(System.currentTimeMillis()));
-            withdraw.setNotes(request.getRejectReason());
+            withdraw.setCancelReason(request.getRejectReason());
         }
+        try {
+            withdrawRepository.save(withdraw);
+        } catch (Exception ex) {
+            throw new ActionFailedException("Have a problem when approve withdraw request", ex);
+        }
+
     }
 
     @Override
@@ -245,6 +255,7 @@ public class WalletServiceImpl implements WalletService {
                 .status(withdrawRequestEntity.getStatus())
                 .username(account.getUsername())
                 .bankName(bank.getName())
+                .cancelReason(withdrawRequestEntity.getCancelReason())
                 .bankUrl(bank.getLogo())
                 .bankBin(withdrawRequestEntity.getBankBin());
         if (customer != null) {
@@ -267,5 +278,34 @@ public class WalletServiceImpl implements WalletService {
                     .accountId(accountEntity.getId())
                     .balance(accountEntity.getBalance())
                     .build();
+    }
+
+    private CustomerBankInfoEntity validateWithdrawRequest(WithdrawRequest request, AccountEntity account) {
+        LocalDate today = LocalDate.now();
+        LocalDateTime startOfDay = today.atStartOfDay();
+        LocalDateTime endOfDay = today.atTime(LocalTime.MAX);
+        if (request.getAmount().compareTo(account.getBalance()) > 0) {
+            throw new ValidationException("Số dư không đủ");
+        }
+        if (request.getAmount().compareTo(withdrawConfig.getMinWithdraw()) < 0) {
+            throw new ValidationException("Số tiền rút tối thiểu là " + withdrawConfig.getMinWithdraw());
+        }
+        if (request.getAmount().compareTo(withdrawConfig.getMaxWithdraw()) > 0) {
+            throw new ValidationException("Số tiền rút tối đa mỗi lần là " + withdrawConfig.getMaxWithdraw());
+        }
+        var bankInfo = customerBankInfoRepository.findById(request.getBankProfileId())
+                .orElseThrow(() -> new ValidationException("Không tìm thấy tài khoản ngân hàng"));
+        BigDecimal todayTotal = withdrawRepository.sumAmountByAccountAndDate(account.getId(), startOfDay, endOfDay, WithdrawStatusEnum.REJECTED);
+        if (todayTotal.add(request.getAmount()).compareTo(withdrawConfig.getDailyLimit()) > 0) {
+            throw new ValidationException("Vượt quá hạn mức rút tiền trong ngày");
+        }
+        long pendingCount = withdrawRepository.countByAccountAndStatus(account.getId(), WithdrawStatusEnum.PENDING);
+        if (pendingCount >= withdrawConfig.getMaxPendingRequest()) {
+            throw new ValidationException("Bạn đã có quá nhiều yêu cầu rút tiền đang chờ xử lý");
+        }
+        if (request.getContent() != null && request.getContent().length() > 255) {
+            throw new ValidationException("Nội dung rút tiền quá dài");
+        }
+        return bankInfo;
     }
 }
