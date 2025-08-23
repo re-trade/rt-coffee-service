@@ -32,14 +32,14 @@ public class DeliveryServiceImpl implements DeliveryService {
         var account = authUtils.getUserAccountFromAuthentication();
         var seller = account.getSeller();
         if (seller == null) {
-            throw new ValidationException("Account is not a seller");
+            throw new ValidationException("Tài khoản này không phải là người bán");
         }
         var orderCombo = orderComboRepository.findById(request.getOrderComboId()).orElseThrow(() -> new ValidationException("Not found order combo with this id"));
         if (!orderCombo.getSeller().getId().equals(seller.getId())) {
-            throw new ValidationException("Account is not a seller of this order combo");
+            throw new ValidationException("Tài khoản này không phải là người bán của đơn hàng này");
         }
         if (!orderCombo.getOrderStatus().getCode().equals(OrderStatusCodes.PREPARING)){
-            throw new ValidationException("Order combo is not in PREPARING status");
+            throw new ValidationException("Đơn hàng ghép không ở trạng thái ĐANG CHUẨN BỊ");
         }
         OrderComboDeliveryEntity.OrderComboDeliveryEntityBuilder builder = OrderComboDeliveryEntity.builder();
         builder.orderCombo(orderCombo);
@@ -52,7 +52,7 @@ public class DeliveryServiceImpl implements DeliveryService {
             var result = orderComboDeliveryRepository.save(builder.build());
             return wrapDeliveryResponse(result);
         }catch (Exception ex) {
-            throw new ActionFailedException("Have a problem when sign delivery", ex);
+            throw new ActionFailedException("Có lỗi xảy ra khi xác nhận giao hàng", ex);
         }
     }
 

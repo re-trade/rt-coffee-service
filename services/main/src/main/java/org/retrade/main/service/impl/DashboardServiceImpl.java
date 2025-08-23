@@ -40,11 +40,11 @@ public class DashboardServiceImpl implements DashboardService {
     public List<DashboardMetricResponse> getSellerDashboardMetric(LocalDateTime fromDate, LocalDateTime toDate) {
         var account = authUtils.getUserAccountFromAuthentication();
         if (account.getSeller() == null) {
-            throw new ValidationException("Seller is not found");
+            throw new ValidationException("Người bán không tồn tại");
         }
         var seller = account.getSeller();
         var orderStatus = orderStatusRepository.findByCode(OrderStatusCodes.COMPLETED)
-                .orElseThrow(() -> new ValidationException("Order status not found"));
+                .orElseThrow(() -> new ValidationException("Không tìm thấy trạng thái đơn hàng"));
 
         long totalProduct = productRepository.countBySeller(seller);
         BigDecimal currentRevenue = orderComboRepository.getTotalGrandPriceBySellerAndStatusAndDateRange(
@@ -106,7 +106,7 @@ public class DashboardServiceImpl implements DashboardService {
     public List<RevenuePerMonthResponse> getRevenuePerMonth(int year) {
         var account = authUtils.getUserAccountFromAuthentication();
         if (account.getSeller() == null) {
-            throw new ValidationException("Seller is not found");
+            throw new ValidationException("Người bán không tồn tại");
         }
         var seller = account.getSeller();
         var rawResult =  orderComboRepository.getRevenuePerMonth(seller, year);
@@ -127,7 +127,7 @@ public class DashboardServiceImpl implements DashboardService {
     public List<OrderStatusCountResponse> getOrderStatusCounts() {
         var account = authUtils.getUserAccountFromAuthentication();
         if (account.getSeller() == null) {
-            throw new ValidationException("Seller is not found");
+            throw new ValidationException("Người bán không tồn tại");
         }
         var seller = account.getSeller();
         var result =  orderComboRepository.getOrderStatusCounts(seller);
@@ -141,7 +141,7 @@ public class DashboardServiceImpl implements DashboardService {
     public List<RecentOrderResponse> getRecentOrders(int limit) {
         var account = authUtils.getUserAccountFromAuthentication();
         if (account.getSeller() == null) {
-            throw new ValidationException("Seller is not found");
+            throw new ValidationException("Người bán không tồn tại");
         }
         var seller = account.getSeller();
         var result =  orderComboRepository.getRecentOrders(seller, PageRequest.of(0, limit));
@@ -157,7 +157,7 @@ public class DashboardServiceImpl implements DashboardService {
     public List<TopSellingProductResponse> getBestSellerProducts() {
         var account = authUtils.getUserAccountFromAuthentication();
         if (account.getSeller() == null) {
-            throw new ValidationException("Seller is not found");
+            throw new ValidationException("Người bán không tồn tại");
         }
         var seller = account.getSeller();
         var response = orderItemRepository.getBestSellerProducts(seller);
@@ -172,7 +172,7 @@ public class DashboardServiceImpl implements DashboardService {
     public SellerProductBaseMetricResponse getSellerProductMetric() {
         var account = authUtils.getUserAccountFromAuthentication();
         if (account.getSeller() == null) {
-            throw new ValidationException("Seller is not found");
+            throw new ValidationException("Người bán không tồn tại");
         }
         var seller = account.getSeller();
         var totalPrice = productRepository.calculateTotalProductPriceBySeller(seller);
@@ -191,7 +191,7 @@ public class DashboardServiceImpl implements DashboardService {
     public SellerOrderBaseMetricResponse getSellerOrderMetric() {
         var account = authUtils.getUserAccountFromAuthentication();
         if (account.getSeller() == null) {
-            throw new ValidationException("Seller is not found");
+            throw new ValidationException("Người bán không tồn tại");
         }
         var seller = account.getSeller();
         var orderStatus = orderStatusRepository.findByCode(OrderStatusCodes.COMPLETED).orElseThrow(() -> new ValidationException("Order status not found"));
