@@ -54,8 +54,8 @@ public class PaymentServiceImpl implements PaymentService {
     @Override
     @Transactional(rollbackFor = {ActionFailedException.class, ValidationException.class, Exception.class})
     public Optional<String> initPayment(PaymentInitRequest paymentInitRequest, HttpServletRequest httpServletRequest) {
-        var orderEntity = orderRepository.findById(paymentInitRequest.getOrderId()).orElseThrow(() -> new ValidationException("Order not found"));
-        var paymentMethodEntity = paymentMethodRepository.findById(paymentInitRequest.getPaymentMethodId()).orElseThrow(() -> new ValidationException("Payment method not found"));
+        var orderEntity = orderRepository.findById(paymentInitRequest.getOrderId()).orElseThrow(() -> new ValidationException("Không tìm thấy đơn hàng"));
+        var paymentMethodEntity = paymentMethodRepository.findById(paymentInitRequest.getPaymentMethodId()).orElseThrow(() -> new ValidationException("Không tìm thấy phương thức thanh toán"));
         var paymentCode = RandomUtils.generatePaymentCode();
         var payment = PaymentHistoryEntity.builder()
                 .order(orderEntity)
@@ -68,7 +68,7 @@ public class PaymentServiceImpl implements PaymentService {
         try {
             paymentHistoryRepository.save(payment);
         } catch (Exception ex) {
-            throw new ValidationException("Have a problem when init payment", ex);
+            throw new ValidationException("Có lỗi xảy ra khi khởi tạo thanh toán", ex);
         }
         var paymentHandler = getPaymentHandler(paymentMethodEntity);
         if (paymentHandler.isPresent()) {
@@ -90,7 +90,7 @@ public class PaymentServiceImpl implements PaymentService {
     public PaymentProviderCallbackWrapper handlePaymentCallback(HttpServletRequest request, String methodCode) {
         try {
             var paymentHandler = getPaymentHandler(methodCode.toUpperCase())
-                    .orElseThrow(() -> new ValidationException("This payment method is currently not supported"));
+                    .orElseThrow(() -> new ValidationException("Phương thức thanh toán này hiện không được hỗ trợ"));
 
             var paymentCallback = paymentHandler.capturePayment(request);
             return getPaymentProviderCallbackWrapper(methodCode, paymentCallback);
@@ -99,7 +99,7 @@ public class PaymentServiceImpl implements PaymentService {
             return handleErrorCallback(methodCode, e.getMessage());
         } catch (Exception ex) {
             TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
-            return handleErrorCallback(methodCode, "Something went wrong with our third-party payment method");
+            return handleErrorCallback(methodCode, "Có lỗi xảy ra với phương thức thanh toán bên thứ ba ");
         }
     }
 
@@ -108,7 +108,7 @@ public class PaymentServiceImpl implements PaymentService {
     public PaymentProviderCallbackWrapper handleIPNWebhookCallback(HttpServletRequest request, String methodCode) {
         try {
             var paymentHandler = getPaymentHandler(methodCode.toUpperCase())
-                    .orElseThrow(() -> new ValidationException("This payment method is currently not supported"));
+                    .orElseThrow(() -> new ValidationException("Phương thức thanh toán này hiện không được hỗ trợ"));
 
             var paymentCallback = paymentHandler.captureWebhook(request);
             return getPaymentProviderCallbackWrapper(methodCode, paymentCallback);
@@ -117,7 +117,7 @@ public class PaymentServiceImpl implements PaymentService {
             return handleErrorCallback(methodCode, e.getMessage());
         } catch (Exception ex) {
             TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
-            return handleErrorCallback(methodCode, "Something went wrong with our third-party payment method");
+            return handleErrorCallback(methodCode, "Có lỗi xảy ra với phương thức thanh toán bên thứ ba");
         }
     }
 
@@ -138,7 +138,7 @@ public class PaymentServiceImpl implements PaymentService {
     @Override
     public PaginationWrapper<List<PaymentHistoryResponse>> getPaymentHistoriesByCustomerId(String customerId, QueryWrapper queryWrapper) {
         var customer = customerRepository.findById(customerId)
-                .orElseThrow(() -> new ValidationException("Seller not found"));
+                .orElseThrow(() -> new ValidationException("Không tìm thấy người bán"));
         return getPaymentHistoriesByCustomer(customer, queryWrapper);
     }
 
@@ -154,12 +154,12 @@ public class PaymentServiceImpl implements PaymentService {
         var account = authUtils.getUserAccountFromAuthentication();
         var customerEntity = account.getCustomer();
         if (customerEntity == null) {
-            throw new ValidationException("User is not a customer");
+            throw new ValidationException("Người dùng không phải khách hàng");
         }
         if (!orderComboRepository.existsById(orderComboId)) {
-            throw new ValidationException("Order combo not found");
+            throw new ValidationException("Không tìm thấy gói đơn hàng");
         }
-        var orderEntity = orderRepository.findOrderByOrderComboId(orderComboId).orElseThrow(() -> new ValidationException("Order not found"));
+        var orderEntity = orderRepository.findOrderByOrderComboId(orderComboId).orElseThrow(() -> new ValidationException("Không tìm thấy đơn hàng"));
         var paymentHistory = paymentHistoryRepository.findByOrder(orderEntity);
 
         Map<String, List<PaymentHistoryEntity>> grouped = paymentHistory.stream()
@@ -215,7 +215,7 @@ public class PaymentServiceImpl implements PaymentService {
         var account = authUtils.getUserAccountFromAuthentication();
         var customerEntity = account.getCustomer();
         if (customerEntity == null) {
-            throw new ValidationException("User is not a customer");
+            throw new ValidationException("Người dùng không phải khách hàng");
         }
         return customerEntity;
     }
@@ -234,13 +234,13 @@ public class PaymentServiceImpl implements PaymentService {
 
     private PaymentProviderCallbackWrapper getPaymentProviderCallbackWrapper(String methodCode, PaymentAPICallback paymentCallback) {
         var paymentEntity = paymentHistoryRepository.findByPaymentCode(String.valueOf(paymentCallback.getId()))
-                .orElseThrow(() -> new ValidationException("Not found payment with this id"));
+                .orElseThrow(() -> new ValidationException("Không tìm thấy thanh toán tới mã này"));
         paymentEntity.setPaymentTime(LocalDateTime.now());
         var order = paymentEntity.getOrder();
         if (paymentCallback.isStatus()) {
             paymentEntity.setPaymentStatus(PaymentStatusEnum.PAID);
             var orderStatus = orderStatusRepository.findByCode("PAYMENT_CONFIRMATION")
-                    .orElseThrow(() -> new ValidationException("Not found order status"));
+                    .orElseThrow(() -> new ValidationException("Không tìm thấy trạng thái đơn hàng\""));
             var orderCombos = orderComboRepository.findByOrderItems_Order_Id(order.getId());
             orderCombos.forEach(orderCombo -> {
                 orderCombo.setOrderStatus(orderStatus);
@@ -254,12 +254,12 @@ public class PaymentServiceImpl implements PaymentService {
             paymentHistoryRepository.save(paymentEntity);
             orderRepository.save(order);
         } catch (Exception ex) {
-            throw new ActionFailedException("Failed to update payment/order: " + ex.getMessage());
+            throw new ActionFailedException("Cập nhật thanh toán/đơn hàng thất bại:" + ex.getMessage());
         }
         if (paymentCallback.isStatus()) {
             return handleSuccessCallback(methodCode);
         }
-        return handleErrorCallback(methodCode, "Payment has been cancelled");
+        return handleErrorCallback(methodCode, "Thanh toán đã bị hủy");
     }
 
     private void restoreProductQuantities(OrderEntity order) {
@@ -309,7 +309,7 @@ public class PaymentServiceImpl implements PaymentService {
             }
             return Optional.empty();
         } catch (Exception ex) {
-            throw new ValidationException("Payment method does not support");
+            throw new ValidationException("Phương thức thanh toán này không tồn tại");
         }
     }
 
