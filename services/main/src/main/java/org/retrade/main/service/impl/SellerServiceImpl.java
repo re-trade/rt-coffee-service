@@ -64,8 +64,7 @@ public class SellerServiceImpl implements SellerService {
             throw new ValidationException("Tài khoản này phải là một người mua để có thể thành người bán");
         }
         if (accountEntity.getSeller() != null) {
-            String.format("Tài khoản này đã đăng kí người bán từ trước. Tên người bán là: %s", accountEntity.getSeller().getShopName());
-            throw new ValidationException("Tài khoản này đã đăng kí người bán từ trước");
+            throw new ValidationException(String.format("Tài khoản này đã đăng kí người bán từ trước. Tên người bán là: %s", accountEntity.getSeller().getShopName()));
         }
         var sellerEntity = SellerEntity.builder()
                 .shopName(request.getShopName())
