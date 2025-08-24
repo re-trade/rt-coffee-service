@@ -337,6 +337,7 @@ public class ReportSellerServiceImpl implements ReportSellerService {
         }
         var allowedStatus = Set.of(
                 OrderStatusCodes.DELIVERED,
+                OrderStatusCodes.RETRIEVED,
                 OrderStatusCodes.COMPLETED,
                 OrderStatusCodes.RETURN_REQUESTED,
                 OrderStatusCodes.RETURN_APPROVED,
@@ -412,6 +413,8 @@ public class ReportSellerServiceImpl implements ReportSellerService {
         return ReportSellerResponse.builder()
                 .id(reportSellerEntity.getId())
                 .sellerId(seller.getId())
+                .sellerName(seller.getShopName())
+                .sellerAvatarUrl(seller.getAvatarUrl())
                 .typeReport(reportSellerEntity.getTypeReport())
                 .content(reportSellerEntity.getContent())
                 .createdAt(reportSellerEntity.getCreatedDate().toLocalDateTime())

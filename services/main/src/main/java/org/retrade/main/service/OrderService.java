@@ -44,6 +44,8 @@ public interface OrderService {
 
     PaginationWrapper<List<SellerOrderComboResponse>>  getAllOrderCombosBySeller(QueryWrapper queryWrapper, String orderStatus);
 
+    PaginationWrapper<List<CustomerOrderComboResponse>> getOrderComboCustomerCanReport(QueryWrapper queryWrapper);
+
     PaginationWrapper<List<OrderStatusResponse>> getOrderStatusesTemplate(QueryWrapper queryWrapper);
 
     void cancelOrderCustomer(CancelOrderRequest request);

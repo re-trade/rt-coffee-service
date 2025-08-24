@@ -158,7 +158,19 @@ public class ReportSellerController {
                 .success(true)
                 .code("SUCCESS")
                 .content(result)
-                .messages("Get all report seller successfully")
+                .messages("Get report seller successfully")
+                .build());
+    }
+
+    @GetMapping("{id}/customer")
+    @PreAuthorize("hasRole('ROLE_CUSTOMER')")
+    public ResponseEntity<ResponseObject<ReportSellerResponse>> getCustomerReportDetail(@PathVariable String id) {
+        var result = reportSellerService.getReportDetail(id);
+        return ResponseEntity.ok(new ResponseObject.Builder<ReportSellerResponse>()
+                .success(true)
+                .code("SUCCESS")
+                .content(result)
+                .messages("Get report seller successfully")
                 .build());
     }
 

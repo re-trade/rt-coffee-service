@@ -181,7 +181,7 @@ public class SellerServiceImpl implements SellerService {
             throw new ValidationException("Can't remove seller profile when account is a seller");
         }
         try {
-            sellerRepository.delete(seller);
+            sellerRepository.deleteById(seller.getId());
         } catch (Exception ex) {
             throw new ActionFailedException("Failed to remove seller profile", ex);
         }
