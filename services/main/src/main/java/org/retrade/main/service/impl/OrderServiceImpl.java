@@ -132,47 +132,7 @@ public class OrderServiceImpl implements OrderService {
             var customerJoin = orderJoin.join("customer", JoinType.INNER);
 
             predicates.add(criteriaBuilder.equal(customerJoin.get("id"), customerEntity.getId()));
-            var keyword = param.remove("keyword");
-            var orderStatusId = param.remove("orderStatusId");
-            if (keyword != null && !keyword.getValue().toString().trim().isEmpty()) {
-                var value = keyword.getValue().toString().trim().toLowerCase();
-                var pattern = String.format("%%%s%%", value);
-                var orderItemJoin = root.joinSet("orderItems", JoinType.LEFT);
-                var sellerJoin = root.join("seller", JoinType.INNER);
-                Predicate sellerNamePredicate = criteriaBuilder.like(
-                        criteriaBuilder.lower(sellerJoin.get("shopName")), pattern
-                );
-                Predicate sellerDescriptionPredicate = criteriaBuilder.like(
-                        criteriaBuilder.lower(sellerJoin.get("description")), pattern
-                );
-                Predicate noItemsPredicate = criteriaBuilder.isEmpty(root.get("orderItems"));
-
-                Predicate productNamePredicate = criteriaBuilder.like(
-                        criteriaBuilder.lower(orderItemJoin.get("productName")), pattern
-                );
-                predicates.add(criteriaBuilder.or(
-                        productNamePredicate,
-                        sellerNamePredicate,
-                        sellerDescriptionPredicate,
-                        noItemsPredicate
-                ));
-            }
-            if (orderStatusId != null) {
-                var orderStatusJoin = root.join("orderStatus", JoinType.INNER);
-                switch (orderStatusId.getOperator()) {
-                    case QueryOperatorEnum.EQ -> {
-                        predicates.add(criteriaBuilder.equal(orderStatusJoin.get("id"), orderStatusId.getValue()));
-                    }
-                    case QueryOperatorEnum.IN -> {
-                        Object value = orderStatusId.getValue();
-                        if (value instanceof List<?>) {
-                            var idList = ((List<?>) value).stream().map(Object::toString).toList();
-                            predicates.add(orderStatusJoin.get("id").in(idList));
-                        }
-                    }
-                }
-            }
-            return getOrderComboPredicate(param, root, criteriaBuilder, predicates);
+            return getCustomerOrderComboPredicate(param, root, criteriaBuilder, predicates);
         }, (items) -> {
             var list = items.map(this::wrapCustomerOrderComboResponse).stream().toList();
             return new PaginationWrapper.Builder<List<CustomerOrderComboResponse>>()
@@ -569,6 +529,43 @@ public class OrderServiceImpl implements OrderService {
         }, (items) -> {
             var list = items.map(this::wrapSellerOrderComboResponse).stream().toList();
             return new PaginationWrapper.Builder<List<SellerOrderComboResponse>>()
+                    .setPaginationInfo(items)
+                    .setData(list)
+                    .build();
+        });
+    }
+
+    @Override
+    public PaginationWrapper<List<CustomerOrderComboResponse>> getOrderComboCustomerCanReport(QueryWrapper queryWrapper) {
+        var account = authUtils.getUserAccountFromAuthentication();
+        if (account.getCustomer() == null) {
+            throw new ValidationException("Tài khoản không phải là khách hàng");
+        }
+        var customer = account.getCustomer();
+        return orderComboRepository.query(queryWrapper, (param) -> ((root, query, criteriaBuilder) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            var destinationJoin = root.join("orderDestination", JoinType.INNER);
+            var orderJoin = destinationJoin.join("order", JoinType.INNER);
+            predicates.add(criteriaBuilder.equal(orderJoin.get("customer"), customer));
+            var sellerId = param.remove("sellerId");
+            if (sellerId != null) {
+                var value = sellerId.getValue().toString();
+                predicates.add(criteriaBuilder.equal(root.get("seller").get("id"), value));
+            }
+            var allowedStatus = Set.of(
+                    OrderStatusCodes.DELIVERED,
+                    OrderStatusCodes.RETRIEVED,
+                    OrderStatusCodes.COMPLETED,
+                    OrderStatusCodes.RETURN_REQUESTED,
+                    OrderStatusCodes.RETURN_APPROVED,
+                    OrderStatusCodes.RETURN_REJECTED,
+                    OrderStatusCodes.RETURNED
+            );
+            predicates.add(root.get("orderStatus").get("code").in(allowedStatus));
+            return getCustomerOrderComboPredicate(param, root, criteriaBuilder, predicates);
+        }), (items) -> {
+            var list = items.map(this::wrapCustomerOrderComboResponse).stream().toList();
+            return new PaginationWrapper.Builder<List<CustomerOrderComboResponse>>()
                     .setPaginationInfo(items)
                     .setData(list)
                     .build();
@@ -1136,4 +1133,50 @@ public class OrderServiceImpl implements OrderService {
         }
         return orderComboEntity;
     }
+
+    private Predicate getCustomerOrderComboPredicate(Map<String, QueryFieldWrapper> param, Root<OrderComboEntity> root, CriteriaBuilder criteriaBuilder, List<Predicate> predicates) {
+        var keyword = param.remove("keyword");
+        var orderStatusId = param.remove("orderStatusId");
+        if (keyword != null && !keyword.getValue().toString().trim().isEmpty()) {
+            var value = keyword.getValue().toString().trim().toLowerCase();
+            var pattern = String.format("%%%s%%", value);
+            var orderItemJoin = root.joinSet("orderItems", JoinType.LEFT);
+            var sellerJoin = root.join("seller", JoinType.INNER);
+            Predicate sellerNamePredicate = criteriaBuilder.like(
+                    criteriaBuilder.lower(sellerJoin.get("shopName")), pattern
+            );
+            Predicate sellerDescriptionPredicate = criteriaBuilder.like(
+                    criteriaBuilder.lower(sellerJoin.get("description")), pattern
+            );
+            Predicate noItemsPredicate = criteriaBuilder.isEmpty(root.get("orderItems"));
+
+            Predicate productNamePredicate = criteriaBuilder.like(
+                    criteriaBuilder.lower(orderItemJoin.get("productName")), pattern
+            );
+            predicates.add(criteriaBuilder.or(
+                    productNamePredicate,
+                    sellerNamePredicate,
+                    sellerDescriptionPredicate,
+                    noItemsPredicate
+            ));
+        }
+        if (orderStatusId != null) {
+            var orderStatusJoin = root.join("orderStatus", JoinType.INNER);
+            switch (orderStatusId.getOperator()) {
+                case QueryOperatorEnum.EQ -> {
+                    predicates.add(criteriaBuilder.equal(orderStatusJoin.get("id"), orderStatusId.getValue()));
+                }
+                case QueryOperatorEnum.IN -> {
+                    Object value = orderStatusId.getValue();
+                    if (value instanceof List<?>) {
+                        var idList = ((List<?>) value).stream().map(Object::toString).toList();
+                        predicates.add(orderStatusJoin.get("id").in(idList));
+                    }
+                }
+            }
+        }
+        return getOrderComboPredicate(param, root, criteriaBuilder, predicates);
+    }
+
+
 }

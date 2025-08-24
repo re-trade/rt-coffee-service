@@ -252,6 +252,21 @@ public class OrderController {
                 .build());
     }
 
+    @PreAuthorize("hasRole('ROLE_CUSTOMER')")
+    @GetMapping("customer/combo/can-report")
+    public ResponseEntity<ResponseObject<List<CustomerOrderComboResponse>>> getOrderComboByCustomerCanReport(@RequestParam(required = false, name = "q") String q,
+                                                                                                     @PageableDefault(size = 10) Pageable pageable) {
+        var queryWrapper = new QueryWrapper.QueryWrapperBuilder()
+                .search(q).wrapSort(pageable).build();
+        var orders = orderService.getOrderComboCustomerCanReport(queryWrapper);
+        return ResponseEntity.ok(new ResponseObject.Builder<List<CustomerOrderComboResponse>>()
+                .success(true)
+                .code("SUCCESS")
+                .unwrapPaginationWrapper(orders)
+                .messages("Danh sách đơn hàng đã được lấy thành công")
+                .build());
+    }
+
 
     @PreAuthorize("hasRole('ROLE_CUSTOMER')")
     @GetMapping("customer/combo/{id}")

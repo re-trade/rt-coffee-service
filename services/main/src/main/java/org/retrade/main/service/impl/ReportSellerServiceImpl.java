@@ -337,6 +337,7 @@ public class ReportSellerServiceImpl implements ReportSellerService {
         }
         var allowedStatus = Set.of(
                 OrderStatusCodes.DELIVERED,
+                OrderStatusCodes.RETRIEVED,
                 OrderStatusCodes.COMPLETED,
                 OrderStatusCodes.RETURN_REQUESTED,
                 OrderStatusCodes.RETURN_APPROVED,
