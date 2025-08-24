@@ -57,14 +57,14 @@ public class SellerServiceImpl implements SellerService {
     @Override
     public SellerRegisterResponse createSeller(SellerRegisterRequest request) {
         if (sellerRepository.existsByIdentityNumberIgnoreCase(request.getIdentityNumber())) {
-            throw new ValidationException("This identity is existed");
+            throw new ValidationException("Mã định danh cá nhân đã tồn tại trên hệ thống, xin liên lạc với Admin để xử lí nếu có sai sót");
         }
         var accountEntity = authUtils.getUserAccountFromAuthentication();
         if (accountEntity.getCustomer() == null) {
-            throw new ValidationException("Account must be a customer to create a seller");
+            throw new ValidationException("Tài khoản này phải là một người mua để có thể thành người bán");
         }
         if (accountEntity.getSeller() != null) {
-            throw new ValidationException("Account already has a seller");
+            throw new ValidationException(String.format("Tài khoản này đã đăng kí người bán từ trước. Tên người bán là: %s", accountEntity.getSeller().getShopName()));
         }
         var sellerEntity = SellerEntity.builder()
                 .shopName(request.getShopName())
@@ -88,7 +88,7 @@ public class SellerServiceImpl implements SellerService {
             var result = sellerRepository.save(sellerEntity);
             return wrapSellerRegisterResponse(result);
         } catch (Exception ex) {
-            throw new ActionFailedException("Failed to create seller", ex);
+            throw new ActionFailedException("Lỗi khi đăng kí thành người bán", ex);
         }
     }
 

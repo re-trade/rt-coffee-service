@@ -42,7 +42,7 @@ public class SellerController {
                 .success(true)
                 .code("SUCCESS")
                 .content(result)
-                .messages("Register Seller Successfully")
+                .messages("Khởi tạo thông tin người bán thành công")
                 .build());
     }
 
@@ -69,7 +69,7 @@ public class SellerController {
                 .success(true)
                 .code("SUCCESS")
                 .content(result)
-                .messages("CCCD Seller Submit Successfully")
+                .messages("Gửi thông tin căn cước công dân thành công")
                 .build());
     }
 
