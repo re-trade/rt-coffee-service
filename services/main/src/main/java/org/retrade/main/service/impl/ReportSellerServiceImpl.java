@@ -413,6 +413,8 @@ public class ReportSellerServiceImpl implements ReportSellerService {
         return ReportSellerResponse.builder()
                 .id(reportSellerEntity.getId())
                 .sellerId(seller.getId())
+                .sellerName(seller.getShopName())
+                .sellerAvatarUrl(seller.getAvatarUrl())
                 .typeReport(reportSellerEntity.getTypeReport())
                 .content(reportSellerEntity.getContent())
                 .createdAt(reportSellerEntity.getCreatedDate().toLocalDateTime())
