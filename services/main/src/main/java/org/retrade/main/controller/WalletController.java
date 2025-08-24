@@ -51,12 +51,11 @@ public class WalletController {
 
     @DeleteMapping("withdraw/{id}")
     @PreAuthorize("hasRole('ROLE_CUSTOMER')")
-    public ResponseEntity<ResponseObject<WithdrawRequestDetailResponse>> removeWithdrawRequest(@PathVariable String id) {
-        var response = walletService.getWithdrawRequestDetail(id);
-        return ResponseEntity.ok(new ResponseObject.Builder<WithdrawRequestDetailResponse>()
+    public ResponseEntity<ResponseObject<Void>> removeWithdrawRequest(@PathVariable String id) {
+        walletService.removeWithdrawRequest(id);
+        return ResponseEntity.ok(new ResponseObject.Builder<Void>()
                 .success(true)
                 .code("WITHDRAW_REMOVED")
-                .content(response)
                 .messages("Yêu cầu rút tiền đã được xóa thành công.")
                 .build());
     }

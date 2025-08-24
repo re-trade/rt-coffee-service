@@ -138,7 +138,7 @@ public class WalletServiceImpl implements WalletService {
             throw new ValidationException("Yêu cầu rút tiền này không thuộc về tài khoản của bạn");
         }
         try {
-            withdrawRepository.deleteById(withdraw.getId());
+            withdrawRepository.delete(withdraw);
         } catch (Exception ex) {
             throw new ActionFailedException("Có lỗi xảy ra khi xóa yêu cầu rút tiền", ex);
         }
