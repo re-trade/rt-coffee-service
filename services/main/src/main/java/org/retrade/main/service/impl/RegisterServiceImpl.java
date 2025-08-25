@@ -40,7 +40,7 @@ public class RegisterServiceImpl implements RegisterService {
     public CustomerAccountRegisterResponse customerRegister(CustomerAccountRegisterRequest request) {
         validateCustomerRegisterRequest(request);
         var roleCustomer = roleRepository.findByCode("ROLE_CUSTOMER")
-                .orElseThrow(() -> new ValidationException("Role not found"));
+                .orElseThrow(() -> new ValidationException("Không tìm thấy vai trò"));
         var customerAccount = AccountEntity.builder()
                 .username(request.getUsername())
                 .email(request.getEmail())
@@ -73,7 +73,7 @@ public class RegisterServiceImpl implements RegisterService {
             sendRegistrationMessages(result);
             return wrapAccountRegisterResponse(result);
         } catch (Exception ex) {
-            throw new ActionFailedException("Failed to register account", ex);
+            throw new ActionFailedException("Đăng ký tài khoản thất bại", ex);
         }
     }
 
@@ -81,10 +81,10 @@ public class RegisterServiceImpl implements RegisterService {
         var accountCheck = accountRepository.existsByUsername(request.getUsername());
         var emailCheck = accountRepository.existsByEmail(request.getEmail());
         if (accountCheck) {
-            throw new ValidationException("Username already exists");
+            throw new ValidationException("Tên đăng nhập đã tồn tại");
         }
         if (emailCheck) {
-            throw new ValidationException("Email already exists");
+            throw new ValidationException("Email đã tồn tại");
         }
     }
 
@@ -132,7 +132,7 @@ public class RegisterServiceImpl implements RegisterService {
             messageProducerService.sendEmailNotification(emailMessage);
             log.info("Registration messages sent for user: {}", accountEntity.getUsername());
         } catch (Exception e) {
-            log.error("Failed to send registration messages for user: {}", accountEntity.getUsername(), e);
+            log.error("Gửi thông báo đăng ký thất bại cho người dùng: {}", accountEntity.getUsername(), e);
         }
     }
 }

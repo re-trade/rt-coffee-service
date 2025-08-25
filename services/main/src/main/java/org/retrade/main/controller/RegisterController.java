@@ -33,7 +33,7 @@ public class RegisterController {
                         .success(true)
                         .code("SUCCESS")
                         .content(result)
-                        .messages("Create account successfully")
+                        .messages("Tạo tài khoản thành công")
                 .build());
     }
 }
