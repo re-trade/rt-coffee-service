@@ -39,7 +39,7 @@ public class VietQRServiceImpl implements VietQRService {
         if (body != null && "00".equals(body.getCode())) {
             return body.getData().getQrDataURL();
         } else {
-            throw new ActionFailedException("Failed to generate QR: " + (body != null ? body.getDesc() : "Unknown error"));
+            throw new ActionFailedException("Tạo mã QR thất bại: " + (body != null ? body.getDesc() : "Unknown error"));
         }
     }
 }

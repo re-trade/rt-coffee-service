@@ -16,7 +16,7 @@ public class UserDetailServiceImpl implements UserDetailsService {
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         if (username == null) {
-            throw new UsernameNotFoundException("Username cannot be null");
+            throw new UsernameNotFoundException("Tên đăng nhập không được để trống");
         }
         var account = accountRepository.findByUsername(username).orElseThrow(() -> new UsernameNotFoundException(username));
         return User.builder()
