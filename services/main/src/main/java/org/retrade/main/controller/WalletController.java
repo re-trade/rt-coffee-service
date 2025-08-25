@@ -45,7 +45,7 @@ public class WalletController {
                 .success(true)
                 .code("WITHDRAW_RETRIEVED")
                 .content(response)
-                .messages("Withdraw get successfully")
+                .messages("Lấy yêu cầu rút tiền thành công")
                 .build());
     }
 
@@ -77,7 +77,7 @@ public class WalletController {
                 .success(true)
                 .code("WALLET_RETRIEVED")
                 .content(result)
-                .messages("Wallet retrieved successfully")
+                .messages("Lấy thông tin ví thành công")
                 .build());
     }
 
@@ -90,7 +90,7 @@ public class WalletController {
         return ResponseEntity.ok(new ResponseObject.Builder<List<WithdrawRequestBaseResponse>>()
                 .code("WITHDRAW_HISTORY_RETRIEVED")
                 .success(true)
-                .messages("Withdraw history retrieved successfully")
+                .messages("Lịch sử rút tiền đã được lấy thành công")
                 .unwrapPaginationWrapper(result)
                 .build());
     }
@@ -104,7 +104,7 @@ public class WalletController {
         return ResponseEntity.ok(new ResponseObject.Builder<List<WithdrawRequestBaseResponse>>()
                 .code("WITHDRAW_HISTORY_RETRIEVED")
                 .success(true)
-                .messages("Withdraw history retrieved successfully")
+                .messages("Lịch sử rút tiền đã được lấy thành công")
                 .unwrapPaginationWrapper(result)
                 .build());
     }
@@ -119,7 +119,7 @@ public class WalletController {
                 .success(true)
                 .code("BANK_RETRIEVED")
                 .unwrapPaginationWrapper(result)
-                .messages("Bank retrieved successfully")
+                .messages("Thông tin ngân hàng đã được lấy thành công")
                 .build());
     }
 
@@ -130,7 +130,7 @@ public class WalletController {
                 .success(true)
                 .code("BANK_RETRIEVED")
                 .content(result)
-                .messages("Bank retrieved successfully")
+                .messages("Thông tin ngân hàng đã được lấy thành công")
                 .build());
     }
 

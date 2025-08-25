@@ -40,7 +40,7 @@ public class RevenueController {
                 .success(true)
                 .code("SUCCESS")
                 .unwrapPaginationWrapper(result)
-                .messages("Your products revenue successfully")
+                .messages("Lấy doanh thu sản phẩm thành công")
                 .build());
     }
 
@@ -52,7 +52,7 @@ public class RevenueController {
                 .success(true)
                 .code("SUCCESS")
                 .content(result)
-                .messages("Get stats seller revenue success")
+                .messages("Lấy thống kê doanh thu người bán thành công")
                 .build());
 
     }

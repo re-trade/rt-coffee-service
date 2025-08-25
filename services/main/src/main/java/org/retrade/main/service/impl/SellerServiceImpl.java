@@ -97,7 +97,7 @@ public class SellerServiceImpl implements SellerService {
     public void approveSeller(ApproveSellerRequest request) {
         var roles = authUtils.getRolesFromAuthUser();
         if (!roles.contains("ROLE_ADMIN")) {
-            throw new ValidationException("User does not have permission to approve seller");
+            throw new ValidationException("Người dùng không có quyền phê duyệt người bán");
         }
         var sellerEntity = sellerRepository.findById(request.getSellerId()).orElseThrow(() -> new ValidationException("No such seller existed seller"));
         validateApproveSeller(sellerEntity, request.getForced());
@@ -115,7 +115,7 @@ public class SellerServiceImpl implements SellerService {
         try {
             sellerRepository.save(sellerEntity);
         } catch (Exception ex) {
-            throw new ActionFailedException("Failed to approve seller", ex);
+            throw new ActionFailedException("Chấp nhận người bán thất bại", ex);
         }
         if (request.getApprove()) {
             sendSellerMessageEvent(sellerEntity);
@@ -170,20 +170,20 @@ public class SellerServiceImpl implements SellerService {
     public void removeSellerProfileInit() {
         var account = authUtils.getUserAccountFromAuthentication();
         if (account.getSeller() == null) {
-            throw new ValidationException("Account is not a seller");
+            throw new ValidationException("Tài khoản không l người bán");
         }
         var seller = account.getSeller();
         if (seller.getIdentityVerified() != IdentityVerifiedStatusEnum.INIT) {
-            throw new ValidationException("Can't remove seller profile when identity is not init");
+            throw new ValidationException("Không thể xóa hồ sơ người bán khi danh tính chưa được khởi tạo");
         }
         var roles = AuthUtils.convertAccountToRole(account);
         if (roles.contains("ROLE_SELLER")) {
-            throw new ValidationException("Can't remove seller profile when account is a seller");
+            throw new ValidationException("Không thể xóa hồ sơ người bán khi tài khoản đang là người bán");
         }
         try {
             sellerRepository.deleteById(seller.getId());
         } catch (Exception ex) {
-            throw new ActionFailedException("Failed to remove seller profile", ex);
+            throw new ActionFailedException("Xóa thông tin người bán thất bại", ex);
         }
     }
 
@@ -191,7 +191,7 @@ public class SellerServiceImpl implements SellerService {
     public SellerRegisterResponse cccdSubmit(String front, String back) {
         var sellerEntity = getSellerEntity(front, back);
         if (sellerEntity.getIdentityVerified() == IdentityVerifiedStatusEnum.VERIFIED && sellerEntity.getVerified()) {
-            throw new ValidationException("Seller already verified");
+            throw new ValidationException("Người bán đã được xác minh");
         }
         sellerEntity.setIdentityVerified(IdentityVerifiedStatusEnum.WAITING);
         try {
@@ -205,7 +205,7 @@ public class SellerServiceImpl implements SellerService {
             messageProducerService.sendCCCDForVerified(messageWrapper);
             return wrapSellerRegisterResponse(result);
         } catch (Exception ex) {
-            throw new ActionFailedException("Failed to create seller", ex);
+            throw new ActionFailedException("Tạo người bán thất bại", ex);
         }
     }
 
@@ -213,10 +213,10 @@ public class SellerServiceImpl implements SellerService {
     private SellerEntity getSellerEntity(String front, String back) {
         var accountEntity = authUtils.getUserAccountFromAuthentication();
         if (accountEntity.getCustomer() == null) {
-            throw new ValidationException("Account must be a customer to create a seller");
+            throw new ValidationException("Tài khoản phải là khách hàng để có thể tạo hồ sơ người bán");
         }
         if (accountEntity.getSeller() == null) {
-            throw new ValidationException("Seller is not exist");
+            throw new ValidationException("Người bán không tồn tại");
         }
         var sellerEntity = accountEntity.getSeller();
         sellerEntity.setFrontSideIdentityCard(front);
@@ -229,7 +229,7 @@ public class SellerServiceImpl implements SellerService {
         var accountEntity = authUtils.getUserAccountFromAuthentication();
         var sellerEntity = accountEntity.getSeller();
         if (sellerEntity == null) {
-            throw new ValidationException("Account is not a seller");
+            throw new ValidationException("Tài khoản không phải người bán");
         }
         sellerEntity.setAvatarUrl(request.getAvatarUrl());
         sellerEntity.setBackground(request.getBackground());
@@ -246,7 +246,7 @@ public class SellerServiceImpl implements SellerService {
             updateProductSellerInformation(result);
             return wrapSellerResponse(result);
         } catch (Exception ex) {
-            throw new ActionFailedException("Failed to create seller", ex);
+            throw new ActionFailedException("Tạo người bán thất bại", ex);
         }
     }
 
@@ -259,7 +259,7 @@ public class SellerServiceImpl implements SellerService {
         try {
             sellerRepository.save(seller);
         } catch (Exception ex) {
-            throw new ActionFailedException("Failed to update", ex);
+            throw new ActionFailedException("Cập nhật thất bại", ex);
         }
     }
 
@@ -276,7 +276,7 @@ public class SellerServiceImpl implements SellerService {
     @Override
     public SellerResponse getSellerDetails(String id) {
         SellerEntity  seller = sellerRepository.findById(id).orElseThrow(
-                () -> new ValidationException("No such seller existed seller")
+                () -> new ValidationException("Người bán không tồn tại")
         );
         return wrapSellerResponse(seller);
     }
@@ -302,7 +302,7 @@ public class SellerServiceImpl implements SellerService {
     public SellerResponse getMySellers() {
         var accountEntity = authUtils.getUserAccountFromAuthentication();
         if (accountEntity.getSeller() == null) {
-            throw new ValidationException("Seller is not exist");
+            throw new ValidationException("Người bán không tồn tại");
         }
         return wrapSellerResponse(accountEntity.getSeller());
     }
@@ -311,10 +311,10 @@ public class SellerServiceImpl implements SellerService {
     public SellerResponse banSeller(String sellerId) {
         var roles = authUtils.getRolesFromAuthUser();
         if (!roles.contains("ROLE_ADMIN")) {
-            throw new ValidationException("User does not have permission to approve seller");
+            throw new ValidationException("Người dùng không có quyền phê duyệt người bán");
         }
         SellerEntity seller = sellerRepository.findById(sellerId)
-                .orElseThrow(() -> new ValidationException("Seller not found with ID: " + sellerId));
+                .orElseThrow(() -> new ValidationException("Không tìm thấy người bán với mã : " + sellerId));
         seller.setVerified(false);
         sellerRepository.save(seller);
         return wrapSellerResponse(seller);
@@ -324,10 +324,10 @@ public class SellerServiceImpl implements SellerService {
     public SellerResponse unbanSeller(String sellerId) {
         var roles = authUtils.getRolesFromAuthUser();
         if (!roles.contains("ROLE_ADMIN")) {
-            throw new ValidationException("User does not have permission to approve seller");
+            throw new ValidationException("Người dùng không có quyền phê duyệt người bán");
         }
         SellerEntity seller = sellerRepository.findById(sellerId)
-                .orElseThrow(() -> new ValidationException("Seller not found with ID: " + sellerId));
+                .orElseThrow(() -> new ValidationException("Không tìm thấy người bán với mã: " + sellerId));
         seller.setVerified(true);
         sellerRepository.save(seller);
         return wrapSellerResponse(seller);
@@ -349,7 +349,7 @@ public class SellerServiceImpl implements SellerService {
                     .build();
             messageProducerService.sendSocketNotification(notification);
         } catch (Exception ex) {
-            log.error("Failed to send seller message event", ex);
+            log.error("Không thể gửi sự kiện tin nhắn của người bán", ex);
         }
     }
 
@@ -387,7 +387,7 @@ public class SellerServiceImpl implements SellerService {
         try {
             accountRoleRepository.save(accountRole);
         }catch (Exception ex) {
-            throw new ActionFailedException("Failed to sign seller role to user", ex);
+            throw new ActionFailedException("Gán vai trò người bán cho người dùng thất bại", ex);
         }
     }
 
@@ -396,13 +396,13 @@ public class SellerServiceImpl implements SellerService {
             return;
         }
         if (sellerEntity.getVerified()) {
-            throw new ValidationException("Seller already verified");
+            throw new ValidationException("Người bán đã được xác mình");
         }
         if (sellerEntity.getBackSideIdentityCard().equals("example") || sellerEntity.getFrontSideIdentityCard().equals("example")) {
-            throw new ValidationException("Seller has not uploaded identity card");
+            throw new ValidationException("Người bán chưa tải lên giấy tờ tùy thân");
         }
         if (sellerEntity.getIdentityVerified() != IdentityVerifiedStatusEnum.WAITING) {
-            throw new ValidationException("Seller identity verification status is not waiting");
+            throw new ValidationException("Trạng thái xác minh danh tính người bán không phải là đang chờ");
         }
     }
 
