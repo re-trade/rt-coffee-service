@@ -35,7 +35,7 @@ public class RevenueServiceImpl implements RevenueService {
     public PaginationWrapper<List<RevenueResponse>> getMyRevenue(QueryWrapper queryWrapper) {
         SellerEntity seller = getSeller();
         if (seller == null) {
-            throw new ValidationException("User is not a seller");
+            throw new ValidationException("Người dùng không phải là người bán");
         }
         QueryFieldWrapper keyword = queryWrapper.search().remove("keyword");
         QueryFieldWrapper orderStatus = queryWrapper.search().remove("orderStatus");
@@ -57,7 +57,7 @@ public class RevenueServiceImpl implements RevenueService {
     public RevenueStatResponse getStatsRevenue() {
         var seller = getSeller();
         OrderStatusEntity orderStatus = orderStatusRepository.findByCode(OrderStatusCodes.COMPLETED).orElseThrow(
-                () -> new ValidationException("order status not found")
+                () -> new ValidationException("Không tìm thấy trạng thái đơn hàng")
         );
         var totalPrice = orderComboRepository.getTotalPriceAfterFeeBySellerAndStatus(seller, orderStatus);
         var totalOrder = orderComboRepository.countOrdersBySellerAndStatus(seller, orderStatus);
