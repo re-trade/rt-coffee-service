@@ -37,7 +37,7 @@ public class ReportSellerController {
                 .success(true)
                 .code("SUCCESS")
                 .content(result)
-                .messages("Report seller created successfully")
+                .messages("Tạo báo cáo người bán thành công")
                 .build());
     }
 
@@ -55,7 +55,7 @@ public class ReportSellerController {
                 .success(true)
                 .code("SUCCESS")
                         .unwrapPaginationWrapper(result)
-                .messages("Get all report seller successfully")
+                .messages("Lấy danh sách báo cáo thành công")
                 .build());
     }
 
@@ -75,7 +75,7 @@ public class ReportSellerController {
                 .success(true)
                 .code("SUCCESS")
                 .unwrapPaginationWrapper(result)
-                .messages("Get all report seller successfully")
+                .messages("Lấy danh sách báo cáo thành công")
                 .build());
     }
 
@@ -100,7 +100,7 @@ public class ReportSellerController {
                         .success(true)
                         .code("SUCCESS")
                         .unwrapPaginationWrapper(result)
-                        .messages("Get all report by seller id successfully")
+                        .messages("Lấy danh sách báo cáo theo người bán thành công")
                         .build()
         );
     }
@@ -122,7 +122,7 @@ public class ReportSellerController {
                         .success(true)
                         .code("SUCCESS")
                         .unwrapPaginationWrapper(result)
-                        .messages("Get all report by seller me successfully")
+                        .messages("Lấy danh sách báo cáo của tôi (người bán) thành công.")
                         .build()
         );
     }
@@ -144,7 +144,7 @@ public class ReportSellerController {
                         .success(true)
                         .code("SUCCESS")
                         .unwrapPaginationWrapper(result)
-                        .messages("Get all report by seller me successfully")
+                        .messages("Lấy danh sách báo cáo của tôi (người mua) thành công.")
                         .build()
         );
     }
@@ -158,7 +158,7 @@ public class ReportSellerController {
                 .success(true)
                 .code("SUCCESS")
                 .content(result)
-                .messages("Get report seller successfully")
+                .messages("Lấy thông tin báo cáo thành công")
                 .build());
     }
 
@@ -170,7 +170,7 @@ public class ReportSellerController {
                 .success(true)
                 .code("SUCCESS")
                 .content(result)
-                .messages("Get report seller successfully")
+                .messages("Lấy thông tin báo cáo thành công")
                 .build());
     }
 
@@ -182,7 +182,7 @@ public class ReportSellerController {
                 .success(true)
                 .code("SUCCESS")
                 .content(result)
-                .messages("Accept report seller successfully")
+                .messages("Chấp nhận báo cáo thành công")
                 .build());
     }
 
@@ -194,7 +194,7 @@ public class ReportSellerController {
                 .success(true)
                 .code("SUCCESS")
                 .content(result)
-                .messages("Reject report seller successfully")
+                .messages("Từ chối báo cáo thành công")
                 .build());
     }
 
@@ -207,7 +207,7 @@ public class ReportSellerController {
                 .success(true)
                 .code("SUCCESS")
                 .content(result)
-                .messages("Accept report seller successfully")
+                .messages("Chấp nhận báo cáo thành công")
                 .build());
     }
 
@@ -219,7 +219,7 @@ public class ReportSellerController {
                 .success(true)
                 .code("SUCCESS")
                 .content(result)
-                .messages("Seller send evidence successfully")
+                .messages("Gửi báo cáo thành công")
                 .build());
     }
 
@@ -231,7 +231,7 @@ public class ReportSellerController {
                 .success(true)
                 .code("SUCCESS")
                 .content(result)
-                .messages("Customer send evidence successfully")
+                .messages("Gửi báo cáo thành công")
                 .build());
     }
 
@@ -243,7 +243,7 @@ public class ReportSellerController {
                 .success(true)
                 .code("SUCCESS")
                 .content(result)
-                .messages("Admin send evidence successfully")
+                .messages("Gửi báo cáo thành công")
                 .build());
     }
 }
