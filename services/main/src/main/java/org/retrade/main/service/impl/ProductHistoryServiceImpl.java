@@ -153,21 +153,21 @@ public class ProductHistoryServiceImpl implements ProductHistoryService {
                 .status(ProductStatusEnum.DRAFT)
                 .verified(false)
                 .seller(seller)
-                .quantity(productEntity.getQuantity());
+                .quantity(request.getQuantity());
         if (request.getPrice() != null) {
             if (request.getPrice().compareTo(productEntity.getCurrentPrice()) > 0) {
                 throw new ValidationException("Giá yêu cầu cao hơn giá hiện tại");
             }
-            if (request.getShortDescription() != null && !request.getShortDescription().isBlank()) {
-                productBuilder.shortDescription(request.getShortDescription());
-            }
-            if (request.getDescription() != null && !request.getDescription().isBlank()) {
-                productBuilder.description(request.getDescription());
-            }
-            if (request.getThumbnail() != null && !request.getThumbnail().isBlank()) {
-                productBuilder.thumbnail(request.getThumbnail());
-            }
             productBuilder.currentPrice(request.getPrice());
+        }
+        if (request.getShortDescription() != null && !request.getShortDescription().isBlank()) {
+            productBuilder.shortDescription(request.getShortDescription());
+        }
+        if (request.getDescription() != null && !request.getDescription().isBlank()) {
+            productBuilder.description(request.getDescription());
+        }
+        if (request.getThumbnail() != null && !request.getThumbnail().isBlank()) {
+            productBuilder.thumbnail(request.getThumbnail());
         }
         return productBuilder.build();
     }
