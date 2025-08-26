@@ -60,6 +60,16 @@ public class NotificationController {
         );
     }
 
+    @PatchMapping("read")
+    public ResponseEntity<ResponseObject<Void>> markAllAsRead() {
+        notificationService.markAllNotificationAsRead();
+        return ResponseEntity.ok(new ResponseObject.Builder<Void>()
+                .success(true)
+                .code("SUCCESS")
+                .messages("Notification mark successfully")
+                .build());
+    }
+
     @PostMapping("test")
     public ResponseEntity<ResponseObject<Void>> testNotification () {
         notificationService.testGlobalNotification();

@@ -6,9 +6,12 @@ import org.retrade.feedback_notification.model.entity.NotificationEntity;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
+import java.util.Set;
 
 @Repository
 public interface NotificationRepository extends BaseJpaRepository<NotificationEntity, String> {
 
     Optional<NotificationEntity> findByIdAndAccount(String id, AccountEntity account);
+
+    Set<NotificationEntity> findByAccountAndRead(AccountEntity account, boolean read);
 }
