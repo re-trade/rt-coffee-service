@@ -136,6 +136,10 @@ public class ProductHistoryServiceImpl implements ProductHistoryService {
     }
 
     private ProductEntity duplicateProduct(ProductEntity productEntity, SellerEntity seller, CreateRetradeRequest request) {
+        var status = ProductStatusEnum.INIT;
+        if(request.getStatus() != null &&  ProductStatusEnum.DRAFT.equals(request.getStatus())) {
+            status = ProductStatusEnum.DRAFT;
+        }
         var productBuilder =  ProductEntity.builder()
                 .name(productEntity.getName())
                 .thumbnail(productEntity.getThumbnail())
@@ -150,7 +154,7 @@ public class ProductHistoryServiceImpl implements ProductHistoryService {
                 .model(productEntity.getModel())
                 .categories(new HashSet<>(productEntity.getCategories()))
                 .tags(productEntity.getTags())
-                .status(ProductStatusEnum.DRAFT)
+                .status(status)
                 .verified(false)
                 .seller(seller)
                 .quantity(productEntity.getQuantity());
