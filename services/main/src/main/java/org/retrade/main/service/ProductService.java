@@ -6,10 +6,7 @@ import org.retrade.main.model.dto.request.CreateProductRequest;
 import org.retrade.main.model.dto.request.UpdateProductQuantityRequest;
 import org.retrade.main.model.dto.request.UpdateProductRequest;
 import org.retrade.main.model.dto.request.UpdateProductStatusRequest;
-import org.retrade.main.model.dto.response.FieldAdvanceSearch;
-import org.retrade.main.model.dto.response.ProductHomeStatsResponse;
-import org.retrade.main.model.dto.response.ProductResponse;
-import org.retrade.main.model.dto.response.RandomProductIdResponse;
+import org.retrade.main.model.dto.response.*;
 
 import java.util.List;
 
@@ -47,7 +44,6 @@ public interface ProductService {
 
     void unverifyProduct(String id);
 
-
     FieldAdvanceSearch filedAdvanceSearch(QueryWrapper queryWrapper);
 
     FieldAdvanceSearch sellerFiledAdvanceSearch(QueryWrapper queryWrapper);
@@ -55,4 +51,8 @@ public interface ProductService {
     PaginationWrapper<List<ProductResponse>> searchProductBestSelling(QueryWrapper queryWrapper);
 
     ProductHomeStatsResponse getStatsHome();
+
+    PaginationWrapper<List<ProductResponse>> getProductsCanRetrade(QueryWrapper queryWrapper);
+
+    ProductRetradeBaseResponse getProductRetradeDetail(String id);
 }
