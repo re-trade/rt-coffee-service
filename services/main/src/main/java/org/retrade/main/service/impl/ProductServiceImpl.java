@@ -498,14 +498,14 @@ public class ProductServiceImpl implements ProductService {
 
             var subquery = query.subquery(Long.class);
             var rrRoot = subquery.from(ReTradeRecordEntity.class);
-            var retradeSum = criteriaBuilder.coalesce(criteriaBuilder.sum(rrRoot.get("quantity")), 0L);
-            subquery.select(retradeSum);
-            subquery.where(criteriaBuilder.equal(rrRoot.get("product").get("id"), root.get("id")));
+            subquery.select(criteriaBuilder.coalesce(criteriaBuilder.sum(rrRoot.get("quantity")), 0L));
+            subquery.where(criteriaBuilder.equal(rrRoot.get("orderItem").get("id"), orderItemJoin.get("id")));
 
-            var difference = criteriaBuilder.diff(orderSum, subquery.getSelection());
-
-            query.groupBy(root.get("id"));
-            query.having(criteriaBuilder.gt(difference, 0));
+            query.groupBy(root.get("id"), orderItemJoin.get("id"));
+            query.having(criteriaBuilder.gt(
+                    orderSum,
+                    subquery.getSelection()
+            ));
 
             return getPredicate(param, root, criteriaBuilder, predicates);
         }), (items) -> {
