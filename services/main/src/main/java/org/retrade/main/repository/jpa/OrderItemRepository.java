@@ -84,6 +84,7 @@ public interface OrderItemRepository extends BaseJpaRepository<OrderItemEntity, 
         oi.orderCombo.seller.id,
         oi.orderCombo.seller.shopName,
         oi.orderCombo.seller.avatarUrl
+    HAVING (oi.quantity - COALESCE(SUM(r.quantity), 0)) > 0
     """)
     Set<OrderItemRetradeProjection> findOrderItemRetradeProjectionsByProduct(@Param("product") ProductEntity product, @Param("customer") CustomerEntity customer, @Param("orderStatus") String orderStatus);
 

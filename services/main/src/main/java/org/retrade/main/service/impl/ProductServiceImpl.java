@@ -494,16 +494,19 @@ public class ProductServiceImpl implements ProductService {
             var orderJoin = orderItemJoin.join("order", JoinType.INNER);
             predicates.add(criteriaBuilder.equal(orderJoin.get("customer"), customer));
             predicates.add(criteriaBuilder.equal(orderComboJoin.get("orderStatus").get("code"), OrderStatusCodes.COMPLETED));
-            var subquery = query.subquery(Integer.class);
+            var orderSum = criteriaBuilder.coalesce(criteriaBuilder.sum(orderItemJoin.get("quantity")), 0);
+
+            var subquery = query.subquery(Long.class);
             var rrRoot = subquery.from(ReTradeRecordEntity.class);
-            subquery.select(criteriaBuilder.coalesce(criteriaBuilder.sum(rrRoot.get("quantity")), 0));
-            subquery.where(
-                    criteriaBuilder.equal(rrRoot.get("orderItem"), orderItemJoin),
-                    criteriaBuilder.equal(rrRoot.get("product"), root)
-            );
-            predicates.add(
-                    criteriaBuilder.greaterThan(orderItemJoin.get("quantity"), subquery)
-            );
+            var retradeSum = criteriaBuilder.coalesce(criteriaBuilder.sum(rrRoot.get("quantity")), 0L);
+            subquery.select(retradeSum);
+            subquery.where(criteriaBuilder.equal(rrRoot.get("product").get("id"), root.get("id")));
+
+            var difference = criteriaBuilder.diff(orderSum, subquery.getSelection());
+
+            query.groupBy(root.get("id"));
+            query.having(criteriaBuilder.gt(difference, 0));
+
             return getPredicate(param, root, criteriaBuilder, predicates);
         }), (items) -> {
             var list = items.map(this::mapToProductResponse).stream().toList();
