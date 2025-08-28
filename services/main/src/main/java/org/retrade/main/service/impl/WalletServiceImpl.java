@@ -87,7 +87,7 @@ public class WalletServiceImpl implements WalletService {
             sendSocketNotification(result);
             log.info("Withdraw request created: {}", result.getId());
         } catch (Exception ex) {
-            throw new ActionFailedException("Have a problem when save withdraw request", ex);
+            throw new ActionFailedException("Đã xảy ra lỗi khi lưu yêu cầu rút tiền", ex);
         }
     }
 
@@ -97,11 +97,11 @@ public class WalletServiceImpl implements WalletService {
         var withdraw = withdrawRepository.findById(request.getWithdrawId()).orElseThrow(() -> new ValidationException("Withdraw request not found"));
         var account = withdraw.getAccount();
         if (withdraw.getStatus() != WithdrawStatusEnum.PENDING) {
-            throw new ValidationException("Withdraw status is not PENDING");
+            throw new ValidationException("Trạng thái yêu cầu rút tiền phải là ĐANG CHỜ");
         }
         if (request.getApproved()) {
             if (account.getBalance().compareTo(withdraw.getAmount()) < 0) {
-                throw new ValidationException("Insufficient balance");
+                throw new ValidationException("Số dư không đủ");
             }
             withdraw.setStatus(WithdrawStatusEnum.COMPLETED);
             withdraw.setProcessedDate(new Timestamp(System.currentTimeMillis()));
@@ -109,7 +109,7 @@ public class WalletServiceImpl implements WalletService {
             var transaction = WalletTransactionEntity.builder()
                     .account(account)
                     .amount(withdraw.getAmount().negate())
-                    .note("Withdraw request approved")
+                    .note("Yểu cầu rút tiền đã được chấp thuận")
                     .build();
             walletTransactionRepository.save(transaction);
 
@@ -122,7 +122,7 @@ public class WalletServiceImpl implements WalletService {
             var result = withdrawRepository.save(withdraw);
             sendSocketNotification(result);
         } catch (Exception ex) {
-            throw new ActionFailedException("Have a problem when approve withdraw request", ex);
+            throw new ActionFailedException("Có lỗi xảy ra khi duyệt yêu cầu rút tiền", ex);
         }
     }
 
@@ -198,17 +198,17 @@ public class WalletServiceImpl implements WalletService {
         if (result.isPresent()) {
             return wrapBankResponse(result.get());
         }
-        throw new ValidationException("Bank not found for ID: " + id);
+        throw new ValidationException("Không tìm thấy ngân hàng với ID: " + id);
     }
 
     @Override
     public DecodedFile getQrCodeByWithdrawRequestId(String withdrawRequestId) {
         var withdraw = withdrawRepository.findById(withdrawRequestId).orElseThrow(() -> new ValidationException("Withdraw request not found"));
         if (withdraw.getQrCodeUrl() == null) {
-            throw new ValidationException("QR code not found for withdraw request ID: " + withdrawRequestId);
+            throw new ValidationException("Không tìm thấy mã QR cho yêu cầu rút tiền: " + withdrawRequestId);
         }
         if (withdraw.getStatus() != WithdrawStatusEnum.PENDING) {
-            throw new ValidationException("QR code not found for withdraw request ID: " + withdrawRequestId + " because status is " + withdraw.getStatus());
+            throw new ValidationException("Không tìm thấy mã QR cho yêu cầu rút tiền: " + withdrawRequestId + " because status is " + withdraw.getStatus());
         }
         return HashUtils.decodeDataUrl(withdraw.getQrCodeUrl());
     }
@@ -242,7 +242,7 @@ public class WalletServiceImpl implements WalletService {
         try {
             accountRepository.save(account);
         } catch (Exception ex) {
-            throw new ActionFailedException("Have a problem when update balance", ex);
+            throw new ActionFailedException("Có lỗi xảy ra khi cập nhật số dư tài khoản", ex);
         }
     }
 

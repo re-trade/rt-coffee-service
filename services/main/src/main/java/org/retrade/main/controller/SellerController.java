@@ -53,7 +53,7 @@ public class SellerController {
         return ResponseEntity.ok(new ResponseObject.Builder<Void>()
                 .success(true)
                 .code("SUCCESS")
-                .messages("Remove Seller Profile Successfully")
+                .messages("Xóa thông tin người bán thành công")
                 .build());
     }
 
@@ -79,7 +79,7 @@ public class SellerController {
         return  ResponseEntity.ok(new ResponseObject.Builder<SellerResponse>()
                 .success(true)
                 .code("SUCCESS")
-                .messages("Profile Seller get Successfully")
+                .messages("Lấy hồ sơ người bán thành công")
                 .content(result)
                 .build());
     }
@@ -97,7 +97,7 @@ public class SellerController {
                         .unwrapPaginationWrapper(result)
                         .success(true)
                         .code("SUCCESS")
-                        .messages("Get Sellers Successfully")
+                        .messages("Lấy danh sách  người bán thành công")
                         .build());
     }
 
@@ -107,7 +107,7 @@ public class SellerController {
         return ResponseEntity.ok(new ResponseObject.Builder<SellerResponse>()
                 .success(true)
                 .code("SUCCESS")
-                .messages("Profile Seller Save Successfully")
+                .messages("Cập nhật hồ sơ người bán thành công")
                 .content(result)
                 .build());
     }
@@ -120,7 +120,7 @@ public class SellerController {
         return ResponseEntity.ok(new ResponseObject.Builder<Void>()
                 .success(true)
                 .code("SUCCESS")
-                .messages("Approve Seller Submit Successfully")
+                .messages("Phê duyệt yêu cầu người bán thành công")
                 .build());
     }
     @GetMapping("{id}")
@@ -130,7 +130,7 @@ public class SellerController {
         return  ResponseEntity.ok(new ResponseObject.Builder<SellerResponse>()
                 .success(true)
                 .code("SUCCESS")
-                .messages("Profile Seller get Successfully")
+                .messages("Lấy hồ sơ người bán thành công")
                 .content(result)
                 .build());
     }
@@ -144,7 +144,7 @@ public class SellerController {
         return ResponseEntity.ok(new ResponseObject.Builder<SellerResponse>()
                 .success(true)
                 .code("SUCCESS")
-                .messages("ban seller with" + id + "successfully")
+                .messages("Cấm người bán với id" + id + "thành công")
                 .build());
     }
 
@@ -155,7 +155,7 @@ public class SellerController {
         return ResponseEntity.ok(new ResponseObject.Builder<SellerResponse>()
                 .success(true)
                 .code("SUCCESS")
-                .messages("ban seller with" + id + " successfully")
+                .messages("Bỏ cấm người bán với id" + id + " thành công")
                 .build());
     }
 
@@ -166,7 +166,7 @@ public class SellerController {
                 .success(true)
                 .code("SUCCESS")
                 .content(metrics)
-                .messages("Get Seller Stats Successfully")
+                .messages("Lấy thông kê người bán thành công")
                 .build());
     }
 
@@ -186,7 +186,7 @@ public class SellerController {
                 .success(true)
                 .code("SUCCESS")
                 .content(result)
-                .messages("Get Seller Status Successfully")
+                .messages("Lấy trạng thái người bán thành công")
                 .build());
     }
 }

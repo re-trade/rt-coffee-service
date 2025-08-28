@@ -47,10 +47,10 @@ public class ReportSellerServiceImpl implements ReportSellerService {
 
         validateReportSummitRequest(request);
         OrderComboEntity orderComboEntity = orderComboRepository.findById(request.getOrderId())
-                .orElseThrow(() -> new ValidationException("Order not found with id: " + request.getOrderId()));
+                .orElseThrow(() -> new ValidationException("Không tìm thấy đơn hàng với mã: " + request.getOrderId()));
 
         ProductEntity productEntity = productRepository.findById(request.getProductId())
-                .orElseThrow(() -> new ValidationException("Product not found with id: " + request.getProductId()));
+                .orElseThrow(() -> new ValidationException("Không tìm thấy sản phẩm với mã: " + request.getProductId()));
 
         validateReportOnOrderComboStatus(orderComboEntity.getOrderStatus());
 
@@ -79,7 +79,7 @@ public class ReportSellerServiceImpl implements ReportSellerService {
             var result = reportSellerRepository.save(reportSellerEntity);
             return mapToReportSellerResponse(result);
         } catch (Exception e) {
-            throw new ActionFailedException("Failed to create report: " + e.getMessage());
+            throw new ActionFailedException("Tạo báo cáo thất bại: " + e.getMessage());
         }
     }
 
@@ -116,7 +116,7 @@ public class ReportSellerServiceImpl implements ReportSellerService {
     public PaginationWrapper<List<ReportSellerResponse>> getAllReportBySellerAuth(QueryWrapper queryWrapper) {
         var account = authUtils.getUserAccountFromAuthentication();
         if (account.getSeller() == null) {
-            throw new ValidationException("User is not a seller, please register seller or contact with Admin");
+            throw new ValidationException("Người dùng không phải là người bán, vui lòng đăng ký bán hoặc liên hệ Quản trị viên");
         }
         var seller = account.getSeller();
         return reportSellerRepository.query(queryWrapper, (param) -> (root, query, criteriaBuilder) -> {
@@ -136,7 +136,7 @@ public class ReportSellerServiceImpl implements ReportSellerService {
     public PaginationWrapper<List<ReportSellerResponse>> getAllReportByCustomerAuth(QueryWrapper queryWrapper) {
         var account = authUtils.getUserAccountFromAuthentication();
         if (account.getCustomer() == null) {
-            throw new ValidationException("User is not a customer, please register customer or contact with Admin");
+            throw new ValidationException("Người dùng không phải là người bán, vui lòng đăng ký bán hoặc liên hệ Quản trị viên");
         }
         var customer = account.getCustomer();
         return reportSellerRepository.query(queryWrapper, (param) -> (root, query, criteriaBuilder) -> {
@@ -155,7 +155,7 @@ public class ReportSellerServiceImpl implements ReportSellerService {
     @Override
     public ReportSellerResponse getReportDetail(String id) {
         ReportSellerEntity reportSellerEntity = reportSellerRepository.findById(id).orElseThrow(
-                () -> new ValidationException("Report not found with id: " + id)
+                () -> new ValidationException("Không tìm thấy báo cáo với mã: " + id)
         );
         return mapToReportSellerResponse(reportSellerEntity);
     }
@@ -163,7 +163,7 @@ public class ReportSellerServiceImpl implements ReportSellerService {
     @Override
     public ReportSellerResponse acceptReport(String reportId) {
         ReportSellerEntity reportSellerEntity = reportSellerRepository.findById(reportId).orElseThrow(
-                () -> new ValidationException("Report not found with id: " + reportId)
+                () -> new ValidationException("Không tìm thấy báo cáo với mã: " + reportId)
         );
         reportSellerEntity.setResolutionStatus(ReportSellerStatusCodes.ACCEPTED);
         reportSellerRepository.save(reportSellerEntity);
@@ -173,7 +173,7 @@ public class ReportSellerServiceImpl implements ReportSellerService {
     @Override
     public ReportSellerResponse rejectReport(String reportId) {
         ReportSellerEntity reportSellerEntity = reportSellerRepository.findById(reportId).orElseThrow(
-                () -> new ValidationException("Report not found with id: " + reportId)
+                () -> new ValidationException("Không tìm thấy báo cáo với mã: " + reportId)
         );
         reportSellerEntity.setResolutionStatus(ReportSellerStatusCodes.REJECTED);
         reportSellerRepository.save(reportSellerEntity);
@@ -184,10 +184,10 @@ public class ReportSellerServiceImpl implements ReportSellerService {
     public ReportSellerResponse processReportSeller(String id, ReportSellerProcessRequest request) {
         var account = authUtils.getUserAccountFromAuthentication();
         if (!AuthUtils.convertAccountToRole(account).contains("ROLE_ADMIN")) {
-            throw new ValidationException("User is not a admin");
+            throw new ValidationException("Người dùng không phải là quản trị viên");
         }
         var reportSellerEntity = reportSellerRepository.findById(id).orElseThrow(
-                () -> new ValidationException("Report not found with id: " + id)
+                () -> new ValidationException("Không tìm thấy báo cáo với mã: " + id)
         );
         var history  = ReportSellerHistoryEntity.builder()
                 .admin(account)
@@ -223,14 +223,14 @@ public class ReportSellerServiceImpl implements ReportSellerService {
                 switch (type) {
                     case CUSTOMER:
                         if (account.getCustomer() == null) {
-                            throw new ValidationException("User is not a customer, please register customer or contact with Admin");
+                            throw new ValidationException("Người dùng không phải là khách hàng, vui lòng đăng ký hoặc liên hệ Quản trị viên");
                         }
                         predicates.add(criteriaBuilder.equal(root.get("sender").get("id"), account.getId()));
                         predicates.add(criteriaBuilder.equal(reportSellerJoin.get("customer").get("id"), account.getCustomer().getId()));
                         break;
                     case SELLER:
                         if (account.getSeller() == null) {
-                            throw new ValidationException("User is not a seller, please register seller or contact with Admin");
+                            throw new ValidationException("Người dùng không phải là khách hàng, vui lòng đăng ký hoặc liên hệ Quản trị viên");
                         }
                         predicates.add(criteriaBuilder.equal(reportSellerJoin.get("seller").get("id"), account.getSeller().getId()));
                         break;
@@ -251,33 +251,33 @@ public class ReportSellerServiceImpl implements ReportSellerService {
         var report = reportSellerRepository.findById(reportId).orElseThrow(() -> new ValidationException("Not found report with id: " + reportId));
         var account = authUtils.getUserAccountFromAuthentication();
         if (account.getSeller() == null) {
-            throw new ValidationException("User is not a seller, please register seller or contact with Admin");
+            throw new ValidationException("Người dùng không phải là người bán, vui lòng đăng ký bán hoặc liên hệ Quản trị viên");
         }
         if (Set.of("ACCEPTED", "REJECTED").contains(report.getResolutionStatus())) {
-            throw new ValidationException("Report is already accepted or rejected");
+            throw new ValidationException("Báo cáo đã được chấp nhận hoặc từ chối trước đó");
         }
         if (!Objects.equals(report.getSeller().getId(), account.getSeller().getId())) {
-            throw new ValidationException("User is not a seller, please register seller or contact with Admin");
+            throw new ValidationException("Người dùng không phải là người bán, vui lòng đăng ký bán hoặc liên hệ Quản trị viên");
         }
         return addEvidence(report, account, request, SenderRoleEnum.SELLER);
     }
 
     @Override
     public ReportSellerEvidenceResponse addCustomerEvidence(String reportId, CreateEvidenceRequest request) {
-        var report = reportSellerRepository.findById(reportId).orElseThrow(() -> new ValidationException("Not found report with id: " + reportId));
+        var report = reportSellerRepository.findById(reportId).orElseThrow(() -> new ValidationException("NKhông tìm thấy báo cáo với mã: " + reportId));
         var account = authUtils.getUserAccountFromAuthentication();
         if (!Objects.equals(report.getCustomer().getId(), account.getCustomer().getId())) {
-            throw new ValidationException("User is not a seller, please register seller or contact with Admin");
+            throw new ValidationException("Người dùng không phải là người bán, vui lòng đăng ký bán hoặc liên hệ Quản trị viên");
         }
         return addEvidence(report, account, request, SenderRoleEnum.CUSTOMER);
     }
 
     @Override
     public ReportSellerEvidenceResponse addSystemEvidence(String reportId, CreateEvidenceRequest request) {
-        var report = reportSellerRepository.findById(reportId).orElseThrow(() -> new ValidationException("Not found report with id: " + reportId));
+        var report = reportSellerRepository.findById(reportId).orElseThrow(() -> new ValidationException("NKhông tìm thấy báo cáo với mã: " + reportId));
         var account = authUtils.getUserAccountFromAuthentication();
         if (!AuthUtils.convertAccountToRole(account).contains("ROLE_ADMIN")) {
-            throw new ValidationException("User is not a admin");
+            throw new ValidationException("Người dùng không phải là quản trị viên");
         }
         var history  = ReportSellerHistoryEntity.builder()
                 .reportSeller(report)
@@ -292,7 +292,7 @@ public class ReportSellerServiceImpl implements ReportSellerService {
 
     private ReportSellerEvidenceResponse addEvidence(ReportSellerEntity report, AccountEntity account , CreateEvidenceRequest request, SenderRoleEnum type) {
         if (Set.of("ACCEPTED", "REJECTED").contains(report.getResolutionStatus())) {
-            throw new ValidationException("Report is already accepted or rejected");
+            throw new ValidationException("\"Báo cáo đã được chấp nhận hoặc từ chối trước đó\"");
         }
         var evidenceEntity = ReportSellerEvidenceEntity.builder()
                 .reportSeller(report)
@@ -312,28 +312,28 @@ public class ReportSellerServiceImpl implements ReportSellerService {
         var sellerExisted = sellerRepository.existsById(request.getSellerId());
         var productComboExisted = orderItemRepository.existsByProduct_IdAndOrderCombo_Id(request.getProductId(), request.getOrderId());
         if (!comboExisted) {
-            throw new ValidationException("Order combo not found with id: " + request.getOrderId());
+            throw new ValidationException("Không tìm thấy gói đơn hàng với mã: " + request.getOrderId());
         }
         if (!productExisted) {
-            throw new ValidationException("Product not found with id: " + request.getProductId());
+            throw new ValidationException("Không tìm thấy sản phẩm với mã: " + request.getProductId());
         }
         if (!sellerExisted) {
-            throw new ValidationException("Seller not found with id: " + request.getSellerId());
+            throw new ValidationException("SKhông tìm thấy người bán với mã:" + request.getSellerId());
         }
         if (!productComboExisted) {
-            throw new ValidationException("Product combo not found with id: " + request.getProductId());
+            throw new ValidationException("Không tìm thấy sản phẩm với mã: " + request.getProductId());
         }
         if (request.getTypeReport() == null) {
-            throw new ValidationException("Type report is not valid");
+            throw new ValidationException("Loại báo cáo không hợp lệ");
         }
         if (request.getContent() == null) {
-            throw new ValidationException("Content is not valid");
+            throw new ValidationException("Nội dung báo cáo không hợp lệ");
         }
     }
 
     private void validateReportOnOrderComboStatus(OrderStatusEntity orderStatus) {
         if (orderStatus == null) {
-            throw new ValidationException("Order status is not valid");
+            throw new ValidationException("Trạng thái đơn hàng không hợp lệ");
         }
         var allowedStatus = Set.of(
                 OrderStatusCodes.DELIVERED,
@@ -345,7 +345,7 @@ public class ReportSellerServiceImpl implements ReportSellerService {
                 OrderStatusCodes.RETURNED
         );
         if(!allowedStatus.contains(orderStatus.getCode())) {
-            throw new ValidationException("This order is not in right status");
+            throw new ValidationException("Đơn hàng này không ở trạng thái phù hợp để báo cáo");
         }
     }
 

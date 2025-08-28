@@ -16,4 +16,5 @@ public class CreateRetradeRequest {
     private String shortDescription;
     private String description;
     private String thumbnail;
+    private String status;
 }
