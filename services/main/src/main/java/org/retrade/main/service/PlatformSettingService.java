@@ -17,9 +17,9 @@ public interface PlatformSettingService {
 
     BigDecimal findFeeRate(BigDecimal grandPrice);
 
-    PlatformFeeTierResponse upsertTier(PlatformFeeTierInsertRequest dto);
+    void upsertTier(PlatformFeeTierInsertRequest dto);
 
-    PlatformFeeTierResponse updateTier(String id, PlatformFeeTierInsertRequest dto);
+    void updateTier(String id, PlatformFeeTierInsertRequest dto);
 
     PaginationWrapper<List<PlatformFeeTierResponse>> getAllPlatformFeeTierConfig(QueryWrapper queryWrapper);
 }
