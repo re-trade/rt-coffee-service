@@ -36,6 +36,8 @@ public interface OrderService {
 
     CustomerOrderComboResponse getCustomerOrderComboById(String comboId);
 
+    CustomerOrderComboResponse getAdminOrderComboById(String comboId);
+
     List<OrderResponse> getOrdersByCurrentCustomer();
 
     PaginationWrapper<List<TopSellersResponse>> getTopSellers(QueryWrapper queryWrapper);
@@ -43,6 +45,8 @@ public interface OrderService {
     PaginationWrapper<List<TopCustomerResponse>> getTopCustomerBySeller(QueryWrapper queryWrapper);
 
     PaginationWrapper<List<SellerOrderComboResponse>>  getAllOrderCombosBySeller(QueryWrapper queryWrapper, String orderStatus);
+
+    PaginationWrapper<List<SellerOrderComboResponse>> getAllOrderCombos(QueryWrapper queryWrapper, String orderStatus);
 
     PaginationWrapper<List<CustomerOrderComboResponse>> getOrderComboCustomerCanReport(QueryWrapper queryWrapper);
 
