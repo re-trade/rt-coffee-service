@@ -18,7 +18,7 @@ public class PaymentMethodInitializer implements CommandLineRunner {
                 PaymentMethodEntity.builder()
                         .name("Pay OS")
                         .description("Pay via Pay OS")
-                        .imgUrl("https://payos.vn/wp-content/uploads/sites/13/2023/07/payos-logo.svg")
+                        .imgUrl("https://payos.vn/wp-content/uploads/2025/05/payos-logo-v2.svg")
                         .code("PAY_OS")
                         .type("3TH_SERVICE")
                         .handlerClass("org.retrade.main.handler.PayOSPaymentHandler")
