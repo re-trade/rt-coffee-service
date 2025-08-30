@@ -70,7 +70,7 @@ services:
       - "traefik.docker.network=retrade-network"
       - "traefik.constraint-label=retrade-service"
       - "traefik.http.routers.main-service.rule=PathPrefix(`/api/main/v1/`)"
-      - "traefik.http.routers.main-service.entrypoints=web"
+      - "traefik.http.routers.main-service.entrypoints=${PROTOCOL:-web}"
       - "traefik.http.services.main-service.loadbalancer.server.port=8080"
 
   feedback-notification-service:
@@ -113,7 +113,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.feedback-service.rule=PathPrefix(`/api/feedback-notification/v1/`)"
-      - "traefik.http.routers.feedback-service.entrypoints=web"
+      - "traefik.http.routers.feedback-service.entrypoints=${PROTOCOL:-web}"
       - "traefik.docker.network=retrade-network"
       - "traefik.constraint-label=retrade-service"
       - "traefik.http.services.feedback-service.loadbalancer.server.port=8080"
@@ -159,7 +159,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.storage-service.rule=PathPrefix(`/api/storage/v1/`)"
-      - "traefik.http.routers.storage-service.entrypoints=web"
+      - "traefik.http.routers.storage-service.entrypoints=${PROTOCOL:-web}"
       - "traefik.docker.network=retrade-network"
       - "traefik.constraint-label=retrade-service"
       - "traefik.http.services.storage-service.loadbalancer.server.port=8080"
@@ -207,7 +207,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.voucher-service.rule=PathPrefix(`/api/voucher/v1/`)"
-      - "traefik.http.routers.voucher-service.entrypoints=web"
+      - "traefik.http.routers.voucher-service.entrypoints=${PROTOCOL:-web}"
       - "traefik.docker.network=retrade-network"
       - "traefik.constraint-label=retrade-service"
       - "traefik.http.services.voucher-service.loadbalancer.server.port=8080"
@@ -246,7 +246,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.achievement-service.rule=PathPrefix(`/api/achievement/v1/`)"
-      - "traefik.http.routers.achievement-service.entrypoints=web"
+      - "traefik.http.routers.achievement-service.entrypoints=${PROTOCOL:-web}"
       - "traefik.docker.network=retrade-network"
       - "traefik.constraint-label=retrade-service"
       - "traefik.http.services.achievement-service.loadbalancer.server.port=8080"
@@ -288,7 +288,7 @@ services:
       - "traefik.http.routers.api-docs.rule=PathPrefix(`/api/docs`)"
       - "traefik.http.middlewares.strip-api-docs-prefix.stripprefix.prefixes=/api/docs"
       - "traefik.http.routers.api-docs.middlewares=strip-api-docs-prefix"
-      - "traefik.http.routers.api-docs.entrypoints=web"
+      - "traefik.http.routers.api-docs.entrypoints=${PROTOCOL:-web}"
       - "traefik.docker.network=retrade-network"
       - "traefik.constraint-label=retrade-service"
       - "traefik.http.services.api-docs.loadbalancer.server.port=80"
