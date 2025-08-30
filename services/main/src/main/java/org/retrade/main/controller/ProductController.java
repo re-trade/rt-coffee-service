@@ -338,4 +338,30 @@ public class ProductController {
                 .build());
     }
 
+    @GetMapping("seller/can-retrade")
+    @PreAuthorize("hasRole('ROLE_SELLER')")
+    public ResponseEntity<ResponseObject<List<ProductResponse>>> getProductSellerCanRetrade(@PageableDefault Pageable pageable, @RequestParam(name = "q", required = false) String query) {
+        var result = productService.getProductsCanRetrade(QueryWrapper.builder()
+                        .wrapSort(pageable)
+                        .search(query)
+                .build());
+        return ResponseEntity.ok(new ResponseObject.Builder<List<ProductResponse>>()
+                .success(true)
+                .code("SUCCESS")
+                .unwrapPaginationWrapper(result)
+                .messages("Lấy sản phẩm thành công")
+                .build());
+    }
+
+    @GetMapping("{id}/retrade")
+    public ResponseEntity<ResponseObject<ProductRetradeBaseResponse>> getProductRetradeDetail(@PathVariable String id) {
+        var result = productService.getProductRetradeDetail(id);
+        return ResponseEntity.ok(new ResponseObject.Builder<ProductRetradeBaseResponse>()
+                .success(true)
+                .code("SUCCESS")
+                .content(result)
+                .messages("Lấy sản phẩm thành công")
+                .build());
+    }
+
 }

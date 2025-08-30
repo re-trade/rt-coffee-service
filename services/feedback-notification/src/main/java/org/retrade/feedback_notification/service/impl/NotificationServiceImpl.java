@@ -142,6 +142,20 @@ public class NotificationServiceImpl implements NotificationService {
         }
     }
 
+    @Override
+    public void markAllNotificationAsRead() {
+        var account = authUtils.getUserAccountFromAuthentication();
+        var result = notificationRepository.findByAccountAndRead(account, false);
+        for (NotificationEntity notification : result) {
+            notification.setRead(true);
+        }
+        try {
+            notificationRepository.saveAll(result);
+        } catch (Exception e) {
+            throw new ActionFailedException("Failed to mark notification as read", e);
+        }
+    }
+
     private Predicate getPredicate(Map<String, QueryFieldWrapper> param, Root<NotificationEntity> root, CriteriaBuilder criteriaBuilder, List<Predicate> predicates) {
         if (param != null && !param.isEmpty()) {
             Predicate[] defaultPredicates = notificationRepository.createDefaultPredicate(criteriaBuilder, root, param);

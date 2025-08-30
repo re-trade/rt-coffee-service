@@ -392,6 +392,13 @@ public class OrderServiceImpl implements OrderService {
         return wrapCustomerOrderComboResponse(combo);
     }
 
+    @Transactional(readOnly = true)
+    @Override
+    public CustomerOrderComboResponse getAdminOrderComboById(String comboId) {
+        var combo = getOrderComboById(comboId);
+        return wrapCustomerOrderComboResponse(combo);
+    }
+
     @Override
     public List<OrderResponse> getOrdersByCurrentCustomer() {
         CustomerEntity customer = getCurrentCustomerAccount();
@@ -488,13 +495,11 @@ public class OrderServiceImpl implements OrderService {
         if (seller == null) {
             throw new ValidationException("Tài khoản không phải là khách hàng");
         }
-        var search = queryWrapper.search().toString();
         QueryFieldWrapper keyword = queryWrapper.search().remove("keyword");
 
         return orderComboRepository.query(queryWrapper, (param) -> (root, query, criteriaBuilder) -> {
+            assert query != null;
             List<Predicate> predicates = new ArrayList<>();
-
-
             predicates.add(criteriaBuilder.equal(root.get("seller"), seller));
             if (orderStatus != null) {
                 predicates.add(criteriaBuilder.equal(root.get("orderStatus").get("code"), orderStatus));
@@ -503,7 +508,6 @@ public class OrderServiceImpl implements OrderService {
                         OrderStatusCodes.PENDING, OrderStatusCodes.PAYMENT_CANCELLED, OrderStatusCodes.PAYMENT_FAILED
                 ));
             }
-
             if (keyword != null && !keyword.getValue().toString().trim().isEmpty()) {
                 String searchPattern = "%" + keyword.getValue().toString().toLowerCase() + "%";
                 Join<OrderComboEntity, OrderDestinationEntity> destinationJoin = root.join("orderDestination", JoinType.LEFT);
@@ -522,9 +526,48 @@ public class OrderServiceImpl implements OrderService {
                         noItemsPredicate
                 ));
             }
-            if (query != null) {
-                query.distinct(true);
+            query.distinct(true);
+            return getOrderComboPredicate(param, root, criteriaBuilder, predicates);
+        }, (items) -> {
+            var list = items.map(this::wrapSellerOrderComboResponse).stream().toList();
+            return new PaginationWrapper.Builder<List<SellerOrderComboResponse>>()
+                    .setPaginationInfo(items)
+                    .setData(list)
+                    .build();
+        });
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PaginationWrapper<List<SellerOrderComboResponse>> getAllOrderCombos(QueryWrapper queryWrapper, String orderStatus) {
+        QueryFieldWrapper keyword = queryWrapper.search().remove("keyword");
+        return orderComboRepository.query(queryWrapper, (param) -> (root, query, criteriaBuilder) -> {
+            assert query != null;
+            List<Predicate> predicates = new ArrayList<>();
+            if (keyword != null && !keyword.getValue().toString().trim().isEmpty()) {
+                String searchPattern = "%" + keyword.getValue().toString().toLowerCase() + "%";
+                Join<OrderComboEntity, OrderDestinationEntity> destinationJoin = root.join("orderDestination", JoinType.LEFT);
+                Join<OrderComboEntity, OrderItemEntity> itemJoin = root.joinSet("orderItems", JoinType.LEFT);
+                Join<OrderComboEntity, SellerEntity> sellerJoin = root.join("seller", JoinType.INNER);
+                Predicate sellerNamePredicate = criteriaBuilder.like(
+                        criteriaBuilder.lower(sellerJoin.get("shopName")), searchPattern
+                );
+                Predicate customerNamePredicate = criteriaBuilder.like(
+                        criteriaBuilder.lower(destinationJoin.get("customerName")), searchPattern
+                );
+                Predicate productNamePredicate = criteriaBuilder.like(
+                        criteriaBuilder.lower(itemJoin.get("productName")), searchPattern
+                );
+                Predicate noItemsPredicate = criteriaBuilder.isEmpty(root.get("orderItems"));
+
+                predicates.add(criteriaBuilder.or(
+                        sellerNamePredicate,
+                        customerNamePredicate,
+                        productNamePredicate,
+                        noItemsPredicate
+                ));
             }
+            query.distinct(true);
             return getOrderComboPredicate(param, root, criteriaBuilder, predicates);
         }, (items) -> {
             var list = items.map(this::wrapSellerOrderComboResponse).stream().toList();

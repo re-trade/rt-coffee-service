@@ -37,25 +37,23 @@ public class PlatformSettingController {
 
     @PostMapping("fee")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
-    public ResponseEntity<ResponseObject<PlatformFeeTierResponse>> insertPlatformFeeTierConfig(@RequestBody PlatformFeeTierInsertRequest request) {
-        var result = platformSettingService.upsertTier(request);
-        return ResponseEntity.ok(new ResponseObject.Builder<PlatformFeeTierResponse>()
+    public ResponseEntity<ResponseObject<Void>> insertPlatformFeeTierConfig(@RequestBody PlatformFeeTierInsertRequest request) {
+        platformSettingService.upsertTier(request);
+        return ResponseEntity.ok(new ResponseObject.Builder<Void>()
                 .success(true)
                 .code("SUCCESS")
                 .messages("Insert platform fee tier config successfully.")
-                .content(result)
                 .build());
     }
 
     @PutMapping("fee/{id}")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
-    public ResponseEntity<ResponseObject<PlatformFeeTierResponse>> updatePlatformFeeTierConfig(@RequestBody PlatformFeeTierInsertRequest request, @PathVariable String id) {
-        var result = platformSettingService.updateTier(id, request);
-        return ResponseEntity.ok(new ResponseObject.Builder<PlatformFeeTierResponse>()
+    public ResponseEntity<ResponseObject<Void>> updatePlatformFeeTierConfig(@RequestBody PlatformFeeTierInsertRequest request, @PathVariable String id) {
+        platformSettingService.updateTier(id, request);
+        return ResponseEntity.ok(new ResponseObject.Builder<Void>()
                 .success(true)
                 .code("SUCCESS")
                 .messages("Update platform fee tier config successfully.")
-                .content(result)
                 .build());
     }
 }

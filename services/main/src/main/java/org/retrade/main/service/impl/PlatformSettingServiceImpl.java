@@ -85,7 +85,7 @@ public class PlatformSettingServiceImpl implements PlatformSettingService {
 
     @Transactional(rollbackFor = {ActionFailedException.class, ValidationException.class, Exception.class})
     @Override
-    public PlatformFeeTierResponse upsertTier(PlatformFeeTierInsertRequest dto) {
+    public void upsertTier(PlatformFeeTierInsertRequest dto) {
         validateTier(dto);
 
         List<PlatformFeeTierEntity> tiers = platformFeeTierRepository.findAll(Sort.by("minPrice"));
@@ -99,13 +99,12 @@ public class PlatformSettingServiceImpl implements PlatformSettingService {
 
         tiers.add(newTier);
 
-        PlatformFeeTierEntity result = rebuildAndSaveTiers(tiers, newTier.getDescription(), null);
-        return wrapPlatformFeeTierResponse(result);
+        rebuildAndSaveTiers(tiers);
     }
 
     @Transactional(rollbackFor = {ActionFailedException.class, ValidationException.class, Exception.class})
     @Override
-    public PlatformFeeTierResponse updateTier(String id, PlatformFeeTierInsertRequest dto) {
+    public void updateTier(String id, PlatformFeeTierInsertRequest dto) {
         validateTier(dto);
 
         List<PlatformFeeTierEntity> tiers = platformFeeTierRepository.findAll(Sort.by("minPrice"));
@@ -120,8 +119,7 @@ public class PlatformSettingServiceImpl implements PlatformSettingService {
         existing.setFeeRate(dto.getFeeRate());
         existing.setDescription(dto.getDescription());
 
-        PlatformFeeTierEntity result = rebuildAndSaveTiers(tiers, null, id);
-        return wrapPlatformFeeTierResponse(result);
+        rebuildAndSaveTiers(tiers);
     }
 
     @Override
@@ -165,9 +163,7 @@ public class PlatformSettingServiceImpl implements PlatformSettingService {
         }
     }
 
-    private PlatformFeeTierEntity rebuildAndSaveTiers(List<PlatformFeeTierEntity> tiers,
-                                                      String insertedDescription,
-                                                      String updatedId) {
+    private void rebuildAndSaveTiers(List<PlatformFeeTierEntity> tiers) {
         tiers.sort(Comparator.comparing(PlatformFeeTierEntity::getMinPrice));
 
         BigDecimal lastMax = BigDecimal.ZERO;
@@ -181,17 +177,5 @@ public class PlatformSettingServiceImpl implements PlatformSettingService {
 
         platformFeeTierRepository.deleteAllInBatch();
         List<PlatformFeeTierEntity> saved = platformFeeTierRepository.saveAll(tiers);
-
-        if (insertedDescription != null) {
-            return saved.stream()
-                    .filter(t -> t.getDescription().equals(insertedDescription))
-                    .findFirst()
-                    .orElseThrow(() -> new ActionFailedException("Tier insert failed"));
-        } else {
-            return saved.stream()
-                    .filter(t -> t.getId().equals(updatedId))
-                    .findFirst()
-                    .orElseThrow(() -> new ActionFailedException("Tier update failed"));
-        }
     }
 }

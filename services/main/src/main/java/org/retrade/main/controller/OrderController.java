@@ -292,6 +292,18 @@ public class OrderController {
                 .build());
     }
 
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @GetMapping("admin/combo/{id}")
+    public ResponseEntity<ResponseObject<CustomerOrderComboResponse>> getAdminOrderCombosById(@PathVariable String id) {
+        var order = orderService.getAdminOrderComboById(id);
+        return ResponseEntity.ok(new ResponseObject.Builder<CustomerOrderComboResponse>()
+                .success(true)
+                .code("SUCCESS")
+                .content(order)
+                .messages("Danh sách đơn hàng đã được lấy thành công")
+                .build());
+    }
+
     @PreAuthorize("hasRole('ROLE_SELLER')")
     @GetMapping("seller")
     public ResponseEntity<ResponseObject<List<CustomerOrderComboResponse>>> getOrderCombosBySeller(@RequestParam(required = false, name = "q") String q,
@@ -318,6 +330,26 @@ public class OrderController {
                 .wrapSort(pageable)
                 .build();
         var orders = orderService.getAllOrderCombosBySeller(queryWrapper,orderStatus);
+        return ResponseEntity.ok(new ResponseObject.Builder<List<SellerOrderComboResponse>>()
+                .success(true)
+                .code("SUCCESS")
+                .unwrapPaginationWrapper(orders)
+                .messages("Danh sách đơn hàng đã được lấy thành công")
+                .build());
+    }
+
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @GetMapping("combo")
+    public ResponseEntity<ResponseObject<List<SellerOrderComboResponse>>> getAllOrderCombos(
+            @Parameter(description = "Search query to filter products") @RequestParam(required = false, name = "q") String search,
+            @RequestParam(required = false) String orderStatus,
+            @PageableDefault Pageable pageable) {
+        var queryWrapper = new QueryWrapper
+                .QueryWrapperBuilder()
+                .search(search)
+                .wrapSort(pageable)
+                .build();
+        var orders = orderService.getAllOrderCombos(queryWrapper,orderStatus);
         return ResponseEntity.ok(new ResponseObject.Builder<List<SellerOrderComboResponse>>()
                 .success(true)
                 .code("SUCCESS")

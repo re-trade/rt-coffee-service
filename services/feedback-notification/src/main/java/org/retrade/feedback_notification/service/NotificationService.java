@@ -18,4 +18,6 @@ public interface NotificationService {
     void testGlobalNotification();
 
     void markAsRead(String id);
+
+    void markAllNotificationAsRead();
 }

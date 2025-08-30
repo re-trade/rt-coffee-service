@@ -23,10 +23,7 @@ import org.retrade.main.model.dto.request.UpdateProductQuantityRequest;
 import org.retrade.main.model.dto.request.UpdateProductRequest;
 import org.retrade.main.model.dto.request.UpdateProductStatusRequest;
 import org.retrade.main.model.dto.response.*;
-import org.retrade.main.model.entity.BrandEntity;
-import org.retrade.main.model.entity.CategoryEntity;
-import org.retrade.main.model.entity.ProductEntity;
-import org.retrade.main.model.entity.SellerEntity;
+import org.retrade.main.model.entity.*;
 import org.retrade.main.repository.elasticsearch.ProductElasticsearchRepository;
 import org.retrade.main.repository.jpa.*;
 import org.retrade.main.service.ProductService;
@@ -61,6 +58,7 @@ public class ProductServiceImpl implements ProductService {
     private final ProductRecommendGrpcClient productRecommendGrpcClient;
     private final OrderComboRepository orderComboRepository;
     private final AccountRepository accountRepository;
+    private final OrderItemRepository orderItemRepository;
 
 
     @Override
@@ -477,6 +475,89 @@ public class ProductServiceImpl implements ProductService {
                 .totaOrders(totalOrder)
                 .totalUsers(totalAccount)
                 .totalSoldProducts(totalProductSell)
+                .build();
+    }
+
+    @Override
+    public PaginationWrapper<List<ProductResponse>> getProductsCanRetrade(QueryWrapper queryWrapper) {
+        var account = authUtils.getUserAccountFromAuthentication();
+        if (account.getCustomer() == null) {
+            throw new ValidationException("Not a customer");
+        }
+        var customer = account.getCustomer();
+        return productRepository.query(queryWrapper, (param) -> ((root, query, criteriaBuilder) -> {
+            assert query != null;
+            query.distinct(true);
+            var predicates = new ArrayList<Predicate>();
+            var orderItemJoin = root.joinSet("orderItems", JoinType.INNER);
+            var orderComboJoin = orderItemJoin.join("orderCombo", JoinType.INNER);
+            var orderJoin = orderItemJoin.join("order", JoinType.INNER);
+            predicates.add(criteriaBuilder.equal(orderJoin.get("customer"), customer));
+            predicates.add(criteriaBuilder.equal(orderComboJoin.get("orderStatus").get("code"), OrderStatusCodes.COMPLETED));
+            var orderSum = criteriaBuilder.coalesce(criteriaBuilder.sum(orderItemJoin.get("quantity")), 0);
+
+            var subquery = query.subquery(Long.class);
+            var rrRoot = subquery.from(ReTradeRecordEntity.class);
+            subquery.select(criteriaBuilder.coalesce(criteriaBuilder.sum(rrRoot.get("quantity")), 0L));
+            subquery.where(criteriaBuilder.equal(rrRoot.get("orderItem").get("id"), orderItemJoin.get("id")));
+
+            query.groupBy(root.get("id"), orderItemJoin.get("id"));
+            query.having(criteriaBuilder.gt(
+                    orderSum,
+                    subquery.getSelection()
+            ));
+
+            return getPredicate(param, root, criteriaBuilder, predicates);
+        }), (items) -> {
+            var list = items.map(this::mapToProductResponse).stream().toList();
+            return new PaginationWrapper.Builder<List<ProductResponse>>()
+                    .setPaginationInfo(items)
+                    .setData(list)
+                    .build();
+        });
+    }
+
+    @Override
+    public ProductRetradeBaseResponse getProductRetradeDetail(String id) {
+        var account = authUtils.getUserAccountFromAuthentication();
+        if (account.getCustomer() == null) {
+            throw new ValidationException("Not a customer");
+        }
+        var customer = account.getCustomer();
+        var product = productRepository.findById(id).orElseThrow(() -> new ValidationException("Not found product with id: " + id));
+        var brand = product.getBrand();
+        var maxRetrade = orderItemRepository.findRetradeInfoByProduct(product, customer, OrderStatusCodes.COMPLETED);
+        var orderItems = orderItemRepository.findOrderItemRetradeProjectionsByProduct(product, customer, OrderStatusCodes.COMPLETED);
+        var orderItemResponse = orderItems.stream().map(item -> OrderItemRetradeResponse.builder()
+                .id(item.getId())
+                .productId(item.getProductId())
+                .quantity(item.getQuantity())
+                .retradeQuantity(item.getRetradeQuantity())
+                .sellerId(item.getSellerId())
+                .sellerName(item.getSellerName())
+                .sellerAvatarUrl(item.getSellerAvatarUrl())
+                .build()).collect(Collectors.toSet());
+        return ProductRetradeBaseResponse.builder()
+                .id(product.getId())
+                .name(product.getName())
+                .sellerId(product.getSeller().getId())
+                .sellerShopName(product.getSeller().getShopName())
+                .shortDescription(product.getShortDescription())
+                .description(product.getDescription())
+                .thumbnail(product.getThumbnail())
+                .productImages(product.getProductImages())
+                .brand(brand != null ? brand.getName() : "N/A")
+                .brandId(brand != null ? brand.getId() : null)
+                .warrantyExpiryDate(product.getWarrantyExpiryDate())
+                .condition(product.getCondition())
+                .model(product.getModel())
+                .currentPrice(product.getCurrentPrice())
+                .categories(covertCategoryEntitiesToCategories(product.getCategories()))
+                .tags(product.getTags())
+                .retradeQuantity(maxRetrade.getRetradeQuantity())
+                .orderItemRetrades(orderItemResponse)
+                .createdAt(product.getCreatedDate() != null ? product.getCreatedDate().toLocalDateTime() : null)
+                .updatedAt(product.getUpdatedDate() != null ? product.getUpdatedDate().toLocalDateTime() : null)
                 .build();
     }
 
