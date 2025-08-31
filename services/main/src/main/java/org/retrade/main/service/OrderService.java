@@ -36,7 +36,7 @@ public interface OrderService {
 
     CustomerOrderComboResponse getCustomerOrderComboById(String comboId);
 
-    CustomerOrderComboResponse getAdminOrderComboById(String comboId);
+    SellerOrderComboResponse getAdminOrderComboById(String comboId);
 
     List<OrderResponse> getOrdersByCurrentCustomer();
 

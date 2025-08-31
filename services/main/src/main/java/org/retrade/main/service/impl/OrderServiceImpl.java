@@ -394,9 +394,9 @@ public class OrderServiceImpl implements OrderService {
 
     @Transactional(readOnly = true)
     @Override
-    public CustomerOrderComboResponse getAdminOrderComboById(String comboId) {
+    public SellerOrderComboResponse getAdminOrderComboById(String comboId) {
         var combo = getOrderComboById(comboId);
-        return wrapCustomerOrderComboResponse(combo);
+        return wrapSellerOrderComboResponse(combo);
     }
 
     @Override
