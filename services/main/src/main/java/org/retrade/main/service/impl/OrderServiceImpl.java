@@ -126,6 +126,7 @@ public class OrderServiceImpl implements OrderService {
             List<Predicate> predicates = new ArrayList<>();
             if (query != null) {
                 query.distinct(true);
+                query.orderBy(criteriaBuilder.desc(root.get("updatedDate")));
             }
             var destinationJoin = root.join("orderDestination", JoinType.INNER);
             var orderJoin = destinationJoin.join("order", JoinType.INNER);
@@ -146,6 +147,7 @@ public class OrderServiceImpl implements OrderService {
     public PaginationWrapper<List<OrderResponse>> getAllOrders(QueryWrapper queryWrapper) {
         return orderRepository.query(queryWrapper, (param) -> (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
+            assert query != null;
             return getPredicate(param, root, criteriaBuilder, predicates);
         }, (items) -> {
             var list = items.map(this::mapToOrderResponse).stream().toList();
@@ -394,9 +396,9 @@ public class OrderServiceImpl implements OrderService {
 
     @Transactional(readOnly = true)
     @Override
-    public CustomerOrderComboResponse getAdminOrderComboById(String comboId) {
+    public SellerOrderComboResponse getAdminOrderComboById(String comboId) {
         var combo = getOrderComboById(comboId);
-        return wrapCustomerOrderComboResponse(combo);
+        return wrapSellerOrderComboResponse(combo);
     }
 
     @Override
@@ -527,6 +529,7 @@ public class OrderServiceImpl implements OrderService {
                 ));
             }
             query.distinct(true);
+            query.orderBy(criteriaBuilder.desc(root.get("updatedDate")));
             return getOrderComboPredicate(param, root, criteriaBuilder, predicates);
         }, (items) -> {
             var list = items.map(this::wrapSellerOrderComboResponse).stream().toList();
@@ -568,6 +571,7 @@ public class OrderServiceImpl implements OrderService {
                 ));
             }
             query.distinct(true);
+            query.orderBy(criteriaBuilder.desc(root.get("updatedDate")));
             return getOrderComboPredicate(param, root, criteriaBuilder, predicates);
         }, (items) -> {
             var list = items.map(this::wrapSellerOrderComboResponse).stream().toList();
@@ -587,6 +591,7 @@ public class OrderServiceImpl implements OrderService {
         var customer = account.getCustomer();
         return orderComboRepository.query(queryWrapper, (param) -> ((root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
+            assert query != null;
             var destinationJoin = root.join("orderDestination", JoinType.INNER);
             var orderJoin = destinationJoin.join("order", JoinType.INNER);
             predicates.add(criteriaBuilder.equal(orderJoin.get("customer"), customer));
@@ -605,6 +610,7 @@ public class OrderServiceImpl implements OrderService {
                     OrderStatusCodes.RETURNED
             );
             predicates.add(root.get("orderStatus").get("code").in(allowedStatus));
+            query.orderBy(criteriaBuilder.desc(root.get("updatedDate")));
             return getCustomerOrderComboPredicate(param, root, criteriaBuilder, predicates);
         }), (items) -> {
             var list = items.map(this::wrapCustomerOrderComboResponse).stream().toList();
@@ -857,6 +863,7 @@ public class OrderServiceImpl implements OrderService {
                 .sellerName(orderItem.getProduct().getSeller().getShopName())
                 .sellerId(orderItem.getProduct().getSeller().getId())
                 .unitPrice(orderItem.getBasePrice())
+                .quantity(orderItem.getQuantity())
                 .totalPrice(orderItem.getBasePrice())
                 .shortDescription(orderItem.getShortDescription())
                 .build();

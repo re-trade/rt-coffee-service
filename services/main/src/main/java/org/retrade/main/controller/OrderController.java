@@ -67,7 +67,7 @@ public class OrderController {
             @Parameter(description = "Order ID", required = true)
             @PathVariable String orderId) {
 
-        OrderResponse orderResponse = orderService.getOrderById(orderId);
+        var orderResponse = orderService.getOrderById(orderId);
 
         return ResponseEntity.ok(new ResponseObject.Builder<OrderResponse>()
                 .success(true)
@@ -294,9 +294,9 @@ public class OrderController {
 
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     @GetMapping("admin/combo/{id}")
-    public ResponseEntity<ResponseObject<CustomerOrderComboResponse>> getAdminOrderCombosById(@PathVariable String id) {
+    public ResponseEntity<ResponseObject<SellerOrderComboResponse>> getAdminOrderCombosById(@PathVariable String id) {
         var order = orderService.getAdminOrderComboById(id);
-        return ResponseEntity.ok(new ResponseObject.Builder<CustomerOrderComboResponse>()
+        return ResponseEntity.ok(new ResponseObject.Builder<SellerOrderComboResponse>()
                 .success(true)
                 .code("SUCCESS")
                 .content(order)

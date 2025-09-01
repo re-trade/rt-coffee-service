@@ -155,6 +155,8 @@ public class SellerServiceImpl implements SellerService {
     public PaginationWrapper<List<SellerResponse>> getSellers(QueryWrapper wrapper) {
         return sellerRepository.query(wrapper, (param) -> (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
+            assert query != null;
+            query.orderBy(criteriaBuilder.desc(root.get("updatedDate")));
             return getSellerPredicate(param, root, criteriaBuilder, predicates);
         }, (items) -> {
             var list = items.map(this::wrapSellerResponse).stream().toList();

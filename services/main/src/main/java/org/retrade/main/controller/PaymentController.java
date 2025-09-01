@@ -7,14 +7,13 @@ import lombok.RequiredArgsConstructor;
 import org.retrade.common.model.dto.request.QueryWrapper;
 import org.retrade.common.model.dto.response.ResponseObject;
 import org.retrade.main.model.dto.request.PaymentInitRequest;
-import org.retrade.main.model.dto.response.PaymentMethodResponse;
-import org.retrade.main.model.dto.response.PaymentOrderStatusResponse;
-import org.retrade.main.model.dto.response.ProductResponse;
+import org.retrade.main.model.dto.response.*;
 import org.retrade.main.service.PaymentService;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
@@ -151,6 +150,33 @@ public class PaymentController {
                 .success(true)
                 .code("SUCCESS")
                 .content(result)
+                .messages("Kiểm tra trạng thái thanh toán thành công")
+                .build());
+    }
+
+    @GetMapping("order/root/{orderId}")
+    @PreAuthorize("hasRole('ROLE_CUSTOMER')")
+    public ResponseEntity<ResponseObject<PaymentOrderBillStatusResponse>> checkOrderPaymentStatusByOrderId(@PathVariable String orderId) {
+        var result = paymentService.checkOrderPaymentStatusByOrderId(orderId);
+        return ResponseEntity.ok(new ResponseObject.Builder<PaymentOrderBillStatusResponse>()
+                .success(true)
+                .code("SUCCESS")
+                .content(result)
+                .messages("Kiểm tra trạng thái thanh toán thành công")
+                .build());
+    }
+
+    @GetMapping("order/root/{orderId}/history")
+    @PreAuthorize("hasRole('ROLE_CUSTOMER')")
+    public ResponseEntity<ResponseObject<List<PaymentHistoryResponse>>> getPaymentHistoryByOrderId(
+            @PathVariable String orderId,
+            @RequestParam(required = false, name = "q") String query,
+            @PageableDefault Pageable pageable) {
+        var result = paymentService.getOrderPaymentHistory(orderId, QueryWrapper.builder().search(query).wrapSort(pageable).build());
+        return ResponseEntity.ok(new ResponseObject.Builder<List<PaymentHistoryResponse>>()
+                .success(true)
+                .code("SUCCESS")
+                .unwrapPaginationWrapper(result)
                 .messages("Kiểm tra trạng thái thanh toán thành công")
                 .build());
     }
