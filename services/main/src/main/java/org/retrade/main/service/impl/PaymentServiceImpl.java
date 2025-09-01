@@ -16,6 +16,7 @@ import org.retrade.main.model.constant.PaymentStatusEnum;
 import org.retrade.main.model.dto.request.PaymentInitRequest;
 import org.retrade.main.model.dto.response.PaymentHistoryResponse;
 import org.retrade.main.model.dto.response.PaymentMethodResponse;
+import org.retrade.main.model.dto.response.PaymentOrderBillStatusResponse;
 import org.retrade.main.model.dto.response.PaymentOrderStatusResponse;
 import org.retrade.main.model.entity.*;
 import org.retrade.main.model.other.PaymentAPICallback;
@@ -160,8 +161,58 @@ public class PaymentServiceImpl implements PaymentService {
             throw new ValidationException("Không tìm thấy gói đơn hàng");
         }
         var orderEntity = orderRepository.findOrderByOrderComboId(orderComboId).orElseThrow(() -> new ValidationException("Không tìm thấy đơn hàng"));
-        var paymentHistory = paymentHistoryRepository.findByOrder(orderEntity);
+        var isFullyPaid= checkOrderIsPaid(orderEntity);
+        Set<String> relatedComboIds = orderComboRepository.findByOrderDestination(orderEntity.getOrderDestination()).stream()
+                .map(BaseSQLEntity::getId)
+                .collect(Collectors.toSet());
+        return PaymentOrderStatusResponse.builder()
+                .paid(isFullyPaid)
+                .orderId(orderEntity.getId())
+                .relatedComboIds(relatedComboIds)
+                .build();
+    }
 
+    @Override
+    public PaginationWrapper<List<PaymentHistoryResponse>> getOrderPaymentHistory(String orderId, QueryWrapper queryWrapper) {
+        var account = authUtils.getUserAccountFromAuthentication();
+        var customer = account.getCustomer();
+        if (customer == null) {
+            throw new ValidationException("Người dùng không phải khách hàng");
+        }
+        var order = orderRepository.findById(orderId).orElseThrow(() -> new ValidationException("Không tìm thấy gói đơn hàng"));
+        if (!Objects.equals(order.getCustomer().getId(), customer.getId())) {
+            throw new ValidationException("Bạn không sở hữu món hàng này");
+        }
+        return paymentHistoryRepository.query(queryWrapper, (param) -> (root, query, criteriaBuilder) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            predicates.add(criteriaBuilder.equal(root.get("order"), order));
+            return getPredicatePaymentHistory(param, root, criteriaBuilder, predicates);
+        }, (items) -> {
+            var list = items.map(this::mapToPaymentHistoryResponse).stream().toList();
+            return new PaginationWrapper.Builder<List<PaymentHistoryResponse>>()
+                    .setPaginationInfo(items)
+                    .setData(list)
+                    .build();
+        });
+    }
+
+    @Override
+    public PaymentOrderBillStatusResponse checkOrderPaymentStatusByOrderId(String orderId) {
+        var account = authUtils.getUserAccountFromAuthentication();
+        var customerEntity = account.getCustomer();
+        if (customerEntity == null) {
+            throw new ValidationException("Người dùng không phải khách hàng");
+        }
+        var orderEntity = orderRepository.findById(orderId).orElseThrow(() -> new ValidationException("Không tìm thấy gói đơn hàng"));
+        var isFullyPaid =  checkOrderIsPaid(orderEntity);
+        return PaymentOrderBillStatusResponse.builder()
+                .paid(isFullyPaid)
+                .orderId(orderEntity.getId())
+                .build();
+    }
+
+    private boolean checkOrderIsPaid(OrderEntity orderEntity) {
+        var paymentHistory = paymentHistoryRepository.findByOrder(orderEntity);
         Map<String, List<PaymentHistoryEntity>> grouped = paymentHistory.stream()
                 .collect(Collectors.groupingBy(ph -> switch (ph.getPaymentStatus()) {
                     case CREATED -> "created";
@@ -173,18 +224,7 @@ public class PaymentServiceImpl implements PaymentService {
         var totalPaid = paidHistories.stream()
                 .map(PaymentHistoryEntity::getPaymentTotal)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-
-        boolean isFullyPaid = totalPaid.compareTo(orderEntity.getGrandTotal()) >= 0;
-        Set<String> relatedComboIds = orderComboRepository.findByOrderDestination(orderEntity.getOrderDestination()).stream()
-                .map(BaseSQLEntity::getId)
-                .collect(Collectors.toSet());
-
-        return PaymentOrderStatusResponse.builder()
-                .paid(isFullyPaid)
-                .orderId(orderEntity.getId())
-                .relatedComboIds(relatedComboIds)
-                .build();
+        return totalPaid.compareTo(orderEntity.getGrandTotal()) >= 0;
     }
 
 
@@ -221,9 +261,11 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     private PaymentHistoryResponse mapToPaymentHistoryResponse(PaymentHistoryEntity payment) {
+        var paymentMethod = payment.getPaymentMethod();
         return PaymentHistoryResponse.builder()
                 .orderId(payment.getOrder().getId())
-                .paymentMethodName(payment.getPaymentMethod().getName())
+                .paymentMethodName(paymentMethod.getName())
+                .paymentMethodIcon(paymentMethod.getImgUrl())
                 .paymentTotal(payment.getPaymentTotal())
                 .paymentContent(payment.getPaymentContent())
                 .paymentCode(payment.getPaymentCode())

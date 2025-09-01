@@ -6,6 +6,7 @@ import org.retrade.common.model.dto.response.PaginationWrapper;
 import org.retrade.main.model.dto.request.PaymentInitRequest;
 import org.retrade.main.model.dto.response.PaymentHistoryResponse;
 import org.retrade.main.model.dto.response.PaymentMethodResponse;
+import org.retrade.main.model.dto.response.PaymentOrderBillStatusResponse;
 import org.retrade.main.model.dto.response.PaymentOrderStatusResponse;
 import org.retrade.main.model.other.PaymentProviderCallbackWrapper;
 
@@ -27,4 +28,8 @@ public interface PaymentService {
 
 
     PaymentOrderStatusResponse checkOrderPaymentStatusByOrderComboId(String orderComboId);
+
+    PaginationWrapper<List<PaymentHistoryResponse>> getOrderPaymentHistory(String orderId, QueryWrapper queryWrapper);
+
+    PaymentOrderBillStatusResponse checkOrderPaymentStatusByOrderId(String orderId);
 }

@@ -67,7 +67,7 @@ public class OrderController {
             @Parameter(description = "Order ID", required = true)
             @PathVariable String orderId) {
 
-        OrderResponse orderResponse = orderService.getOrderById(orderId);
+        var orderResponse = orderService.getOrderById(orderId);
 
         return ResponseEntity.ok(new ResponseObject.Builder<OrderResponse>()
                 .success(true)

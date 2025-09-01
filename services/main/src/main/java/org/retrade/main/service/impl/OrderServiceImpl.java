@@ -857,6 +857,7 @@ public class OrderServiceImpl implements OrderService {
                 .sellerName(orderItem.getProduct().getSeller().getShopName())
                 .sellerId(orderItem.getProduct().getSeller().getId())
                 .unitPrice(orderItem.getBasePrice())
+                .quantity(orderItem.getQuantity())
                 .totalPrice(orderItem.getBasePrice())
                 .shortDescription(orderItem.getShortDescription())
                 .build();
