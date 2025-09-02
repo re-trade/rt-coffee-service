@@ -8,10 +8,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.retrade.common.model.dto.request.QueryWrapper;
 import org.retrade.common.model.dto.response.ResponseObject;
-import org.retrade.main.model.dto.request.CreateProductRequest;
-import org.retrade.main.model.dto.request.UpdateProductQuantityRequest;
-import org.retrade.main.model.dto.request.UpdateProductRequest;
-import org.retrade.main.model.dto.request.UpdateProductStatusRequest;
+import org.retrade.main.model.dto.request.*;
 import org.retrade.main.model.dto.response.*;
 import org.retrade.main.service.ProductPriceHistoryService;
 import org.retrade.main.service.ProductService;
@@ -275,6 +272,17 @@ public class ProductController {
                 .success(true)
                 .code("SUCCESS")
                 .messages("Hủy duyệt sản phẩm thành công")
+                .build());
+    }
+
+    @PutMapping("{id}/approved")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    public ResponseEntity<ResponseObject<Void>> approveProduct(@RequestBody ProductApproveRequest request, @PathVariable String id) {
+        productService.approveProduct(request, id);
+        return ResponseEntity.ok(new ResponseObject.Builder<Void>()
+                .success(true)
+                .code("SUCCESS")
+                .messages("Xác minh sản phẩm thành công")
                 .build());
     }
 
