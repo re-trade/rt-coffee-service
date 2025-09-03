@@ -8,24 +8,25 @@ import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch._types.query_dsl.TextQueryType;
 import jakarta.persistence.criteria.*;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.retrade.common.model.dto.request.QueryFieldWrapper;
 import org.retrade.common.model.dto.request.QueryWrapper;
 import org.retrade.common.model.dto.response.PaginationWrapper;
 import org.retrade.common.model.exception.ActionFailedException;
 import org.retrade.common.model.exception.ValidationException;
 import org.retrade.main.client.ProductRecommendGrpcClient;
+import org.retrade.main.model.constant.NotificationTypeCode;
 import org.retrade.main.model.constant.OrderStatusCodes;
 import org.retrade.main.model.constant.ProductStatusEnum;
 import org.retrade.main.model.document.CategoryInfoDocument;
 import org.retrade.main.model.document.ProductDocument;
-import org.retrade.main.model.dto.request.CreateProductRequest;
-import org.retrade.main.model.dto.request.UpdateProductQuantityRequest;
-import org.retrade.main.model.dto.request.UpdateProductRequest;
-import org.retrade.main.model.dto.request.UpdateProductStatusRequest;
+import org.retrade.main.model.dto.request.*;
 import org.retrade.main.model.dto.response.*;
 import org.retrade.main.model.entity.*;
+import org.retrade.main.model.message.SocketNotificationMessage;
 import org.retrade.main.repository.elasticsearch.ProductElasticsearchRepository;
 import org.retrade.main.repository.jpa.*;
+import org.retrade.main.service.MessageProducerService;
 import org.retrade.main.service.ProductService;
 import org.retrade.main.util.AuthUtils;
 import org.springframework.data.domain.Page;
@@ -44,6 +45,7 @@ import java.math.BigDecimal;
 import java.util.*;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ProductServiceImpl implements ProductService {
@@ -59,6 +61,7 @@ public class ProductServiceImpl implements ProductService {
     private final OrderComboRepository orderComboRepository;
     private final AccountRepository accountRepository;
     private final OrderItemRepository orderItemRepository;
+    private final MessageProducerService messageProducerService;
 
 
     @Override
@@ -387,6 +390,7 @@ public class ProductServiceImpl implements ProductService {
         try {
             var result = productRepository.save(product);
             saveProductDocument(result, result.getId());
+            sendApproveProductSocketNotification(true, null, result.getSeller().getAccount());
         } catch (Exception ex) {
             throw new ActionFailedException("Xác thực sản phẩm thất bại", ex);
         }
@@ -405,6 +409,34 @@ public class ProductServiceImpl implements ProductService {
             productRepository.save(product);
         } catch (Exception ex) {
             throw new ActionFailedException("Hủy xác thực sản phẩm thất bại", ex);
+        }
+    }
+
+    @Override
+    @Transactional(rollbackFor = {ActionFailedException.class, Exception.class})
+    public void approveProduct(ProductApproveRequest request, String id) {
+        var productEntity = getProductEntityById(id);
+        if (productEntity.getStatus() != ProductStatusEnum.INIT) {
+            throw new ValidationException("Sản phẩm không ở trạng thái khởi tạo (INIT)");
+        }
+        if (request.getApproved() == null) {
+            request.setApproved(false);
+        }
+        if (request.getApproved()) {
+            productEntity.setVerified(true);
+            productEntity.setStatus(ProductStatusEnum.ACTIVE);
+        } else {
+            productEntity.setStatus(ProductStatusEnum.INACTIVE);
+            productEntity.setVerified(false);
+        }
+        try {
+            var result = productRepository.save(productEntity);
+            if (request.getApproved()) {
+                saveProductDocument(result, result.getId());
+            }
+            sendApproveProductSocketNotification(request.getApproved(), request.getReason(), result.getSeller().getAccount());
+        } catch (Exception ex) {
+            throw new ActionFailedException("");
         }
     }
 
@@ -1136,5 +1168,26 @@ public class ProductServiceImpl implements ProductService {
     private void saveProductDocument(ProductEntity productEntity) {
         var product = ProductDocument.wrapEntityToDocument(productEntity);
         productSearchRepository.save(product);
+    }
+
+    private void sendApproveProductSocketNotification(boolean approved, String reason, AccountEntity accountEntity) {
+        var accountId = accountEntity.getId();
+        SocketNotificationMessage message = SocketNotificationMessage.builder()
+                .messageId(java.util.UUID.randomUUID().toString())
+                .accountId(accountId)
+                .title(approved ? "Duyệt sản phẩm" : "Từ chối sản phẩm")
+                .type(NotificationTypeCode.SYSTEM)
+                .message(approved
+                        ? "Sản phẩm của bạn đã được duyệt."
+                        : "Sản phẩm của bạn đã bị từ chối.")
+                .content(approved
+                        ? "Xin chúc mừng! Sản phẩm của bạn đã được duyệt và sẽ sớm hiển thị trên hệ thống."
+                        : "Lý do từ chối: " + reason)
+                .build();
+        try {
+            messageProducerService.sendSocketNotification(message);
+        } catch (Exception e) {
+            log.error("Error when sending notification", e);
+        }
     }
 }

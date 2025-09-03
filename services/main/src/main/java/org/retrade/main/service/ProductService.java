@@ -2,10 +2,7 @@ package org.retrade.main.service;
 
 import org.retrade.common.model.dto.request.QueryWrapper;
 import org.retrade.common.model.dto.response.PaginationWrapper;
-import org.retrade.main.model.dto.request.CreateProductRequest;
-import org.retrade.main.model.dto.request.UpdateProductQuantityRequest;
-import org.retrade.main.model.dto.request.UpdateProductRequest;
-import org.retrade.main.model.dto.request.UpdateProductStatusRequest;
+import org.retrade.main.model.dto.request.*;
 import org.retrade.main.model.dto.response.*;
 
 import java.util.List;
@@ -43,6 +40,8 @@ public interface ProductService {
     void verifyProduct(String id);
 
     void unverifyProduct(String id);
+
+    void approveProduct(ProductApproveRequest request, String id);
 
     FieldAdvanceSearch filedAdvanceSearch(QueryWrapper queryWrapper);
 

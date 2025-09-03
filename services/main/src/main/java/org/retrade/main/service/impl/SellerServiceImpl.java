@@ -100,12 +100,16 @@ public class SellerServiceImpl implements SellerService {
             throw new ValidationException("Người dùng không có quyền phê duyệt người bán");
         }
         var sellerEntity = sellerRepository.findById(request.getSellerId()).orElseThrow(() -> new ValidationException("No such seller existed seller"));
-        validateApproveSeller(sellerEntity, request.getForced());
+        if (request.getForced() == null) {
+            request.setForced(false);
+        }
         if (!request.getApprove()) {
             sellerEntity.setVerified(false);
             sellerEntity.setRejectReason(request.getReason());
         } else {
+            validateApproveSeller(sellerEntity, request.getForced());
             sellerEntity.setVerified(true);
+            sellerEntity.setRejectReason(null);
             if (request.getForced()) {
                 sellerEntity.setIdentityVerified(IdentityVerifiedStatusEnum.VERIFIED);
             }
